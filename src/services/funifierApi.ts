@@ -164,7 +164,10 @@ export class FunifierApiService {
    */
   public async getLeaderboards(): Promise<Leaderboard[]> {
     return this.retryRequest(async () => {
+      console.log('Fetching leaderboards from:', `${this.config.serverUrl}/leaderboard`);
       const response = await this.axiosInstance.get('/leaderboard');
+      
+      console.log('Leaderboards response:', response.data);
       
       if (!Array.isArray(response.data)) {
         throw new Error('Invalid leaderboards response format');
@@ -195,7 +198,9 @@ export class FunifierApiService {
 
       // Use the aggregate endpoint that matches your working test
       const url = `/leaderboard/${leaderboardId}/leader/aggregate?${params.toString()}`;
+      console.log('Fetching leaderboard data from:', `${this.config.serverUrl}${url}`);
       const response = await this.axiosInstance.post(url, []);
+      console.log('Leaderboard data response:', response.data);
 
       // The API returns an array of players directly
       if (!Array.isArray(response.data)) {

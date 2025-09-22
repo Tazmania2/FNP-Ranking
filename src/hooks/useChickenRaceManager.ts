@@ -1,8 +1,9 @@
-import { useEffect, useCallback, useMemo } from 'react';
+import { useEffect, useCallback, useMemo, useState } from 'react';
 import { FunifierApiService } from '../services/funifierApi';
 import { useRealTimeUpdatesWithLoading } from './useRealTimeUpdates';
 import { usePositionTransitions } from './usePositionTransitions';
 import { useLeaderboardData } from './useAppState';
+import { useLeaderboardStore } from '../store/leaderboardStore';
 import type { FunifierConfig } from '../types';
 
 /**
@@ -39,6 +40,9 @@ export const useChickenRaceManager = (config: ChickenRaceManagerConfig = {}) => 
     realTimeConfig = {},
     transitionConfig = {},
   } = config;
+
+  // Track initialization attempts to prevent infinite loops
+  const [initializationAttempted, setInitializationAttempted] = useState(false);
 
   // Create API service instance
   const apiService = useMemo(() => {
@@ -90,13 +94,41 @@ export const useChickenRaceManager = (config: ChickenRaceManagerConfig = {}) => 
    */
   const initializeRace = useCallback(async () => {
     try {
+      setInitializationAttempted(true);
       setLoadingState('leaderboards', true);
       clearError();
 
       let fetchedLeaderboards: any[] = [];
       
-      // Fetch available leaderboards from API
-      fetchedLeaderboards = await apiService.getLeaderboards();
+      try {
+        // Try to fetch available leaderboards from API
+        fetchedLeaderboards = await apiService.getLeaderboards();
+      } catch (leaderboardsError) {
+        console.warn('Failed to fetch leaderboards list, will try to use known leaderboard directly:', leaderboardsError);
+        
+        // If getLeaderboards fails, try to fetch data directly from the known leaderboard
+        // This will help us determine if the leaderboard exists
+        try {
+          const testResponse = await apiService.getLeaderboardData('EVeTmET', { live: true });
+          if (testResponse && testResponse.leaders) {
+            // The leaderboard exists, create a mock leaderboard entry
+            fetchedLeaderboards = [{
+              _id: 'EVeTmET',
+              title: 'Main Leaderboard',
+              description: 'Primary leaderboard',
+            }];
+          }
+        } catch (dataError) {
+          console.error('Failed to fetch leaderboard data:', dataError);
+          setError({
+            type: 'network',
+            message: 'Unable to connect to leaderboard service. Please check your API configuration.',
+            retryable: true,
+            timestamp: Date.now(),
+          });
+          return;
+        }
+      }
       
       if (fetchedLeaderboards.length === 0) {
         setError({
@@ -108,7 +140,11 @@ export const useChickenRaceManager = (config: ChickenRaceManagerConfig = {}) => 
         return;
       }
 
-      // Initialize with first leaderboard
+      // Set the leaderboards in the store first
+      const leaderboardStore = useLeaderboardStore.getState();
+      leaderboardStore.setLeaderboards(fetchedLeaderboards);
+
+      // Then initialize with first leaderboard
       const firstLeaderboard = fetchedLeaderboards[0];
       switchToLeaderboard(firstLeaderboard._id);
 
@@ -183,6 +219,7 @@ export const useChickenRaceManager = (config: ChickenRaceManagerConfig = {}) => 
     }
 
     clearError();
+    setInitializationAttempted(false); // Reset initialization flag for retry
 
     // Determine what operation to retry based on current state
     if (!hasLeaderboards) {
@@ -240,10 +277,10 @@ export const useChickenRaceManager = (config: ChickenRaceManagerConfig = {}) => 
 
   // Auto-initialize on mount if API config is provided
   useEffect(() => {
-    if (apiConfig && !hasLeaderboards && !isLoading && !hasError) {
+    if (apiConfig && !hasLeaderboards && !isLoading && !hasError && !initializationAttempted) {
       initializeRace();
     }
-  }, [apiConfig, hasLeaderboards, isLoading, hasError, initializeRace]);
+  }, [apiConfig, hasLeaderboards, isLoading, hasError, initializationAttempted, initializeRace]);
 
   return {
     // State
