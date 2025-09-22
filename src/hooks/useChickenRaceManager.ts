@@ -165,9 +165,12 @@ export const useChickenRaceManager = (config: ChickenRaceManagerConfig = {}) => 
     leaderboardStore.setCurrentLeaderboardId(mockLeaderboard._id);
     updatePlayers(MOCK_LEADERBOARD_DATA);
     
-    // Clear any errors
+    // Clear any errors and loading states
     clearError();
-  }, [updatePlayers, clearError]);
+    setLoadingState('leaderboards', false);
+    setLoadingState('currentLeaderboard', false);
+    setLoadingState('switchingLeaderboard', false);
+  }, [updatePlayers, clearError, setLoadingState]);
 
   /**
    * Initialize the chicken race with leaderboards
