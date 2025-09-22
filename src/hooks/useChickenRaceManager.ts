@@ -219,6 +219,10 @@ export const useChickenRaceManager = (config: ChickenRaceManagerConfig = {}) => 
    * Manually refresh current leaderboard data
    */
   const refreshData = useCallback(async () => {
+    console.log('🚨 refreshData DISABLED to prevent API loop');
+    return; // DISABLED to prevent aggregate API loop
+    
+    /* DISABLED CODE:
     if (!currentLeaderboardId) {
       return;
     }
@@ -240,12 +244,17 @@ export const useChickenRaceManager = (config: ChickenRaceManagerConfig = {}) => 
     } finally {
       setLoadingState('currentLeaderboard', false);
     }
+    */
   }, [currentLeaderboardId, apiService, setLoadingState, clearError, setError, updatePlayers]);
 
   /**
    * Switch to a different leaderboard
    */
   const changeLeaderboard = useCallback(async (leaderboardId: string) => {
+    console.log('🚨 changeLeaderboard DISABLED to prevent API loop');
+    return; // DISABLED to prevent aggregate API loop
+    
+    /* DISABLED CODE:
     try {
       setLoadingState('switchingLeaderboard', true);
       clearError();
@@ -267,6 +276,7 @@ export const useChickenRaceManager = (config: ChickenRaceManagerConfig = {}) => 
     } finally {
       setLoadingState('switchingLeaderboard', false);
     }
+    */
   }, [apiService, setLoadingState, clearError, setError, switchToLeaderboard, updatePlayers]);
 
   /**
