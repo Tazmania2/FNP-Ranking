@@ -18,6 +18,7 @@ The following environment variables must be configured in Vercel:
 
 | Variable | Description | Example Value |
 |----------|-------------|---------------|
+| `VITE_FUNIFIER_SERVER_URL` | Funifier API server URL with version | `https://service2.funifier.com/v3` |
 | `VITE_FUNIFIER_API_KEY` | Your Funifier API key | `your_api_key_here` |
 | `VITE_FUNIFIER_AUTH_TOKEN` | Your Funifier Basic auth token | `Basic your_base64_encoded_token_here` |
 

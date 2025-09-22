@@ -114,7 +114,7 @@ describe('FunifierApiService', () => {
 
       const result = await apiService.getLeaderboards();
 
-      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/leaderboards');
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/leaderboard');
       expect(result).toEqual(mockLeaderboards);
     });
 
@@ -135,7 +135,7 @@ describe('FunifierApiService', () => {
 
       const result = await apiService.getLeaderboardData(leaderboardId);
 
-      expect(mockAxiosInstance.get).toHaveBeenCalledWith(`/leaderboards/${leaderboardId}`);
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith(`/leaderboard/${leaderboardId}`);
       expect(result).toEqual(mockLeaderboardResponse);
     });
 
@@ -151,7 +151,7 @@ describe('FunifierApiService', () => {
       await apiService.getLeaderboardData(leaderboardId, options);
 
       expect(mockAxiosInstance.get).toHaveBeenCalledWith(
-        `/leaderboards/${leaderboardId}?live=true&maxResults=10&period=daily`
+        `/leaderboard/${leaderboardId}?live=true&maxResults=10&period=daily`
       );
     });
 

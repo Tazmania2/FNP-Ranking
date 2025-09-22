@@ -164,7 +164,7 @@ export class FunifierApiService {
    */
   public async getLeaderboards(): Promise<Leaderboard[]> {
     return this.retryRequest(async () => {
-      const response = await this.axiosInstance.get('/leaderboards');
+      const response = await this.axiosInstance.get('/leaderboard');
       
       if (!Array.isArray(response.data)) {
         throw new Error('Invalid leaderboards response format');
@@ -194,7 +194,7 @@ export class FunifierApiService {
         params.append('period', options.period);
       }
 
-      const url = `/leaderboards/${leaderboardId}${params.toString() ? `?${params.toString()}` : ''}`;
+      const url = `/leaderboard/${leaderboardId}${params.toString() ? `?${params.toString()}` : ''}`;
       const response = await this.axiosInstance.get(url);
 
       // Validate response structure
