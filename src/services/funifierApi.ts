@@ -188,7 +188,12 @@ export class FunifierApiService {
       console.log('✅ Leaderboards response received:', response.data);
 
       if (!Array.isArray(response.data)) {
-        throw new Error('Invalid leaderboards response format');
+        throw new Error('Invalid leaderboards response format - expected array');
+      }
+
+      if (response.data.length === 0) {
+        console.warn('⚠️ No leaderboards found in API response');
+        return [];
       }
 
       // Sanitize leaderboard data
@@ -197,8 +202,17 @@ export class FunifierApiService {
         title: leaderboard.title || `Leaderboard ${leaderboard._id}`,
         description: leaderboard.description || '',
         principalType: leaderboard.principalType || 0,
-        operation: leaderboard.operation || 'sum',
-        period: leaderboard.period || 'all',
+        operation: leaderboard.operation || {
+          type: 0,
+          achievement_type: 0,
+          item: 'total',
+          sort: -1
+        },
+        period: leaderboard.period || {
+          type: 0,
+          timeAmount: 0,
+          timeScale: 0
+        },
       }));
 
       console.log('🧹 Sanitized leaderboards:', sanitizedLeaderboards);
@@ -213,6 +227,8 @@ export class FunifierApiService {
     leaderboardId: string,
     options: LeaderboardOptions = {}
   ): Promise<LeaderboardResponse> {
+    console.log('🎯 getLeaderboardData() called with:', { leaderboardId, options });
+    
     return this.retryRequest(async () => {
       const params = new URLSearchParams();
 
@@ -228,7 +244,7 @@ export class FunifierApiService {
       // Use the aggregate endpoint that matches your working test
       const url = `/leaderboard/${leaderboardId}/leader/aggregate?${params.toString()}`;
       console.log(
-        'Fetching leaderboard data from:',
+        '🌐 Fetching leaderboard data from:',
         `${this.config.serverUrl}${url}`
       );
       const response = await this.axiosInstance.post(url, []);
@@ -236,7 +252,19 @@ export class FunifierApiService {
 
       // The API returns an array of players directly
       if (!Array.isArray(response.data)) {
-        throw new Error('Invalid leaderboard data response format');
+        throw new Error(`Invalid leaderboard data response format - expected array, got ${typeof response.data}`);
+      }
+
+      if (response.data.length === 0) {
+        console.warn(`⚠️ No players found in leaderboard ${leaderboardId}`);
+        return {
+          leaderboard: {
+            _id: leaderboardId,
+            title: `Leaderboard ${leaderboardId}`,
+            description: 'Empty leaderboard',
+          },
+          leaders: [],
+        } as LeaderboardResponse;
       }
 
       // Sanitize player data to prevent XSS
@@ -299,8 +327,15 @@ export class FunifierApiService {
    */
   public async testConnection(): Promise<boolean> {
     try {
-      // Use the working aggregate endpoint instead of getLeaderboards
-      await this.getLeaderboardData('EVeTmET', { live: true });
+      // Test connection by fetching leaderboards list first
+      const leaderboards = await this.getLeaderboards();
+      if (leaderboards.length === 0) {
+        console.warn('API connection successful but no leaderboards found');
+        return false;
+      }
+      
+      // Test with the first available leaderboard
+      await this.getLeaderboardData(leaderboards[0]._id, { live: true });
       return true;
     } catch (error) {
       console.error('API connection test failed:', error);

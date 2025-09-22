@@ -280,9 +280,9 @@ export const useChickenRaceManager = (config: ChickenRaceManagerConfig = {}) => 
       const leaderboardStore = useLeaderboardStore.getState();
       leaderboardStore.setLeaderboards(fetchedLeaderboards);
 
-      // Switch to the first leaderboard (or EVeTmET if available)
-      const targetLeaderboard = fetchedLeaderboards.find(lb => lb._id === 'EVeTmET') || fetchedLeaderboards[0];
-      console.log('🎯 Switching to leaderboard:', targetLeaderboard._id);
+      // Switch to the first available leaderboard (removed hardcoded EVeTmET dependency)
+      const targetLeaderboard = fetchedLeaderboards[0];
+      console.log('🎯 Switching to leaderboard:', targetLeaderboard._id, 'from', fetchedLeaderboards.length, 'available leaderboards');
       
       // Set the leaderboard in store without triggering additional API calls
       leaderboardStore.setCurrentLeaderboard(targetLeaderboard);
