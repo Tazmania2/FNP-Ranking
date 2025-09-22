@@ -162,6 +162,51 @@ export const ChickenRace: React.FC<ChickenRaceProps> = React.memo(({
     hidePlayerTooltip,
   } = useTooltipManager({ players, isEnabled: !isLoading });
 
+  // Track window width for responsive behavior
+  const [windowWidth, setWindowWidth] = useState(() => 
+    typeof window !== 'undefined' ? window.innerWidth : 1920
+  );
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const handleResize = () => {
+      setWindowWidth(window.innerWidth);
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Calculate responsive player limits and scrolling
+  const { visiblePlayers, needsScrolling, raceTrackWidth } = useMemo(() => {
+    // Define player limits based on screen width
+    let maxVisiblePlayers: number;
+    if (windowWidth >= 1920) {
+      maxVisiblePlayers = 25; // Desktop
+    } else if (windowWidth >= 768) {
+      maxVisiblePlayers = 15; // Tablet
+    } else {
+      maxVisiblePlayers = 10; // Mobile
+    }
+
+    const needsScroll = players.length > maxVisiblePlayers;
+    
+    // Calculate race track width based on player count
+    let trackWidth = 100; // Default 100% width
+    if (needsScroll) {
+      // Extend width proportionally to accommodate all players
+      const ratio = players.length / maxVisiblePlayers;
+      trackWidth = Math.min(ratio * 100, 300); // Max 300% width
+    }
+
+    return {
+      visiblePlayers: maxVisiblePlayers,
+      needsScrolling: needsScroll,
+      raceTrackWidth: trackWidth,
+    };
+  }, [players.length, windowWidth]);
+
   // Calculate chicken positions based on rankings or use provided positions
   const chickenPositions = useMemo((): ChickenPosition[] => {
     if (!players.length) return [];
@@ -198,10 +243,19 @@ export const ChickenRace: React.FC<ChickenRaceProps> = React.memo(({
       .sort(([a], [b]) => b - a) // Sort by score descending (highest first)
       .forEach(([, groupPlayers]) => {
         // Calculate horizontal position for this rank group
-        // First place (position 1) should be at ~85%, last place at ~15%
+        // Adjust positioning based on whether scrolling is needed
         const totalPlayers = sortedPlayers.length;
         const rankProgress = currentRankIndex / Math.max(totalPlayers - 1, 1);
-        const xPosition = 85 - (rankProgress * 70); // 85% to 15% range
+        
+        let xPosition: number;
+        if (needsScrolling) {
+          // When scrolling, spread players across the extended width
+          // First place at ~95%, last place at ~5% of the extended track
+          xPosition = 95 - (rankProgress * 90);
+        } else {
+          // Normal positioning when no scrolling needed
+          xPosition = 85 - (rankProgress * 70); // 85% to 15% range
+        }
         
         // For tied players, arrange them vertically at the same horizontal position
         groupPlayers.forEach((player, indexInGroup) => {
@@ -222,7 +276,7 @@ export const ChickenRace: React.FC<ChickenRaceProps> = React.memo(({
       });
 
     return positions;
-  }, [players, playerPositions]);
+  }, [players, playerPositions, needsScrolling]);
 
   // Memoize chicken components to prevent unnecessary re-renders
   const chickenComponents = useMemo(() => {
@@ -273,8 +327,15 @@ export const ChickenRace: React.FC<ChickenRaceProps> = React.memo(({
         <p className="text-sm lg:text-base text-gray-600">🏁 Chicken Race Championship 🏁</p>
       </div>
 
-      {/* Race Track */}
-      <div className="chicken-race-container relative w-full h-64 sm:h-80 lg:h-96 bg-gradient-to-b from-sky-200 via-sky-100 to-green-200 rounded-lg border-2 sm:border-4 border-brown-600 overflow-hidden">
+      {/* Race Track Container with Horizontal Scrolling */}
+      <div className={`race-track-viewport relative w-full h-64 sm:h-80 lg:h-96 rounded-lg border-2 sm:border-4 border-brown-600 ${needsScrolling ? 'overflow-x-auto overflow-y-hidden' : 'overflow-hidden'}`}>
+        <div 
+          className="chicken-race-container relative bg-gradient-to-b from-sky-200 via-sky-100 to-green-200 h-full"
+          style={{ 
+            width: `${raceTrackWidth}%`,
+            minWidth: '100%'
+          }}
+        >
         {/* Track decorations */}
         <div className="absolute inset-0">
           {/* Finish line */}
@@ -297,37 +358,66 @@ export const ChickenRace: React.FC<ChickenRaceProps> = React.memo(({
           ))}
         </div>
 
-        {/* Chickens */}
-        {chickenComponents}
+          {/* Chickens */}
+          {chickenComponents}
 
-        {/* Tooltip System */}
-        <Tooltip
-          isVisible={tooltips.isVisible}
-          position={tooltips.position}
-          content={tooltips.content}
-          onClose={hidePlayerTooltip}
-        />
+          {/* Tooltip System */}
+          <Tooltip
+            isVisible={tooltips.isVisible}
+            position={tooltips.position}
+            content={tooltips.content}
+            onClose={hidePlayerTooltip}
+          />
 
-        {/* Race Info Overlay */}
-        <div className="race-info-overlay absolute top-2 sm:top-4 left-2 sm:left-4 bg-white/90 rounded-lg p-2 sm:p-3 shadow-lg">
-          <div className="text-xs sm:text-sm font-medium text-gray-800">
-            🏆 {players.length} Racers
+          {/* Race Info Overlay */}
+          <div className="race-info-overlay absolute top-2 sm:top-4 left-2 sm:left-4 bg-white/90 rounded-lg p-2 sm:p-3 shadow-lg">
+            <div className="text-xs sm:text-sm font-medium text-gray-800">
+              🏆 {players.length} Racers
+            </div>
+            <div className="text-xs text-gray-600 hidden sm:block">
+              Leader: {players.find(p => p.position === 1)?.name || 'N/A'}
+            </div>
+            {needsScrolling && (
+              <div className="text-xs text-blue-600 mt-1">
+                ← Scroll to see all players →
+              </div>
+            )}
           </div>
-          <div className="text-xs text-gray-600 hidden sm:block">
-            Leader: {players.find(p => p.position === 1)?.name || 'N/A'}
+
+          {/* Position Legend */}
+          <div className="absolute bottom-2 sm:bottom-4 right-2 sm:right-4 bg-white/90 rounded-lg p-2 sm:p-3 shadow-lg">
+            <div className="text-xs font-medium text-gray-800 mb-1 hidden sm:block">Position Guide</div>
+            <div className="flex items-center gap-1 sm:gap-2 text-xs text-gray-600">
+              <span>🥇 1st</span>
+              <span className="hidden sm:inline">→</span>
+              <span>🏁 Finish</span>
+            </div>
           </div>
         </div>
 
-        {/* Position Legend */}
-        <div className="absolute bottom-2 sm:bottom-4 right-2 sm:right-4 bg-white/90 rounded-lg p-2 sm:p-3 shadow-lg">
-          <div className="text-xs font-medium text-gray-800 mb-1 hidden sm:block">Position Guide</div>
-          <div className="flex items-center gap-1 sm:gap-2 text-xs text-gray-600">
-            <span>🥇 1st</span>
-            <span className="hidden sm:inline">→</span>
-            <span>🏁 Finish</span>
-          </div>
-        </div>
+        {/* Scroll Indicators */}
+        {needsScrolling && (
+          <>
+            <div className="scroll-indicator-left absolute left-0 top-1/2 transform -translate-y-1/2 bg-blue-500/80 text-white p-2 rounded-r-lg shadow-lg z-20 pointer-events-none">
+              <div className="text-xs font-medium">←</div>
+            </div>
+            <div className="scroll-indicator-right absolute right-0 top-1/2 transform -translate-y-1/2 bg-blue-500/80 text-white p-2 rounded-l-lg shadow-lg z-20 pointer-events-none">
+              <div className="text-xs font-medium">→</div>
+            </div>
+          </>
+        )}
       </div>
+
+      {/* Scrolling Instructions */}
+      {needsScrolling && (
+        <div className="mt-2 text-center">
+          <div className="inline-flex items-center gap-2 bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-xs">
+            <span>📱</span>
+            <span>Deslize horizontalmente para ver todos os {players.length} jogadores</span>
+            <span>👆</span>
+          </div>
+        </div>
+      )}
 
       {/* Race Stats */}
       <div className="mt-3 lg:mt-4 grid grid-cols-3 gap-2 sm:gap-4 text-center">
@@ -335,17 +425,24 @@ export const ChickenRace: React.FC<ChickenRaceProps> = React.memo(({
           <div className="text-lg sm:text-xl lg:text-2xl font-bold text-yellow-600">
             {players.find(p => p.position === 1)?.total || 0}
           </div>
-          <div className="text-xs sm:text-sm text-gray-600">Leader Points</div>
+          <div className="text-xs sm:text-sm text-gray-600">Pontos do Líder</div>
         </div>
         <div className="stats-card bg-white rounded-lg p-2 sm:p-4 shadow-sm">
           <div className="text-lg sm:text-xl lg:text-2xl font-bold text-blue-600">{players.length}</div>
-          <div className="text-xs sm:text-sm text-gray-600">Total Racers</div>
+          <div className="text-xs sm:text-sm text-gray-600">
+            Total de Corredores
+            {needsScrolling && (
+              <div className="text-xs text-blue-500 mt-1">
+                ({visiblePlayers} visíveis)
+              </div>
+            )}
+          </div>
         </div>
         <div className="stats-card bg-white rounded-lg p-2 sm:p-4 shadow-sm">
           <div className="text-lg sm:text-xl lg:text-2xl font-bold text-green-600">
             {Math.max(...players.map(p => p.total)) - Math.min(...players.map(p => p.total))}
           </div>
-          <div className="text-xs sm:text-sm text-gray-600">Point Spread</div>
+          <div className="text-xs sm:text-sm text-gray-600">Diferença de Pontos</div>
         </div>
       </div>
     </div>

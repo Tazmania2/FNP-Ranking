@@ -101,6 +101,84 @@
   overflow: hidden;
 }
 
+/* Race track viewport with horizontal scrolling */
+.race-track-viewport {
+  position: relative;
+  /* Custom scrollbar styling */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(59, 130, 246, 0.5) rgba(0, 0, 0, 0.1);
+}
+
+.race-track-viewport::-webkit-scrollbar {
+  height: 8px;
+}
+
+.race-track-viewport::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 4px;
+}
+
+.race-track-viewport::-webkit-scrollbar-thumb {
+  background: rgba(59, 130, 246, 0.5);
+  border-radius: 4px;
+  transition: background 0.3s ease;
+}
+
+.race-track-viewport::-webkit-scrollbar-thumb:hover {
+  background: rgba(59, 130, 246, 0.7);
+}
+
+/* Scroll indicators */
+.scroll-indicator-left,
+.scroll-indicator-right {
+  transition: opacity 0.3s ease;
+  animation: scroll-pulse 2s ease-in-out infinite;
+}
+
+@keyframes scroll-pulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 0.9; }
+}
+
+/* Hide scroll indicators when not needed */
+.race-track-viewport:not(.overflow-x-auto) .scroll-indicator-left,
+.race-track-viewport:not(.overflow-x-auto) .scroll-indicator-right {
+  display: none;
+}
+
+/* Smooth scrolling behavior */
+.race-track-viewport {
+  scroll-behavior: smooth;
+}
+
+/* Touch scrolling optimization for mobile */
+.race-track-viewport {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+}
+
+/* Scrolling instructions animation */
+@keyframes scroll-hint {
+  0%, 100% { transform: translateX(0px); }
+  50% { transform: translateX(4px); }
+}
+
+.scroll-instructions {
+  animation: scroll-hint 2s ease-in-out infinite;
+}
+
+/* Auto-hide scroll indicators after user interaction */
+.race-track-viewport.user-scrolled .scroll-indicator-left,
+.race-track-viewport.user-scrolled .scroll-indicator-right {
+  opacity: 0.3;
+  transition: opacity 0.5s ease;
+}
+
+.race-track-viewport.user-scrolled:hover .scroll-indicator-left,
+.race-track-viewport.user-scrolled:hover .scroll-indicator-right {
+  opacity: 0.8;
+}
+
 /* Track lane lines with subtle animation */
 .track-lane {
   opacity: 0.3;
@@ -275,6 +353,23 @@
     display: flex;
     align-items: center;
     justify-content: center;
+  }
+
+  /* Mobile scrolling enhancements */
+  .race-track-viewport {
+    /* Larger scrollbar for mobile */
+    scrollbar-width: auto;
+  }
+
+  .race-track-viewport::-webkit-scrollbar {
+    height: 12px;
+  }
+
+  /* More prominent scroll indicators on mobile */
+  .scroll-indicator-left,
+  .scroll-indicator-right {
+    padding: 0.75rem;
+    font-size: 1rem;
   }
 }
 
