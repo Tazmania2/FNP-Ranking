@@ -119,15 +119,24 @@ export const useChickenRaceManager = (config: ChickenRaceManagerConfig = {}) => 
     clearError,
   } = useLeaderboardData();
 
-  // Set up real-time updates - TEMPORARILY DISABLED to stop the loop
-  const realTimeUpdates = useRealTimeUpdatesWithLoading(apiService, {
-    pollingInterval: 30000, // 30 seconds default
-    enabled: false, // DISABLED to prevent aggregate endpoint loop
-    maxRetries: 3,
-    retryDelay: 1000,
-    pauseOnHidden: true,
-    ...realTimeConfig,
-  });
+  // COMPLETELY DISABLE real-time updates hook to stop the aggregate loop
+  const realTimeUpdates = {
+    isPolling: false,
+    isUpdating: false,
+    retryCount: 0,
+    timeSinceLastUpdate: 0,
+    lastSuccessfulUpdate: 0,
+    startPolling: () => console.log('🚨 Real-time polling disabled'),
+    stopPolling: () => console.log('🚨 Real-time polling disabled'),
+    forceUpdate: () => console.log('🚨 Real-time updates disabled'),
+    config: {
+      pollingInterval: 30000,
+      enabled: false,
+      maxRetries: 3,
+      retryDelay: 1000,
+      pauseOnHidden: true,
+    },
+  };
 
   // Set up position transitions
   const positionTransitions = usePositionTransitions(players, {
