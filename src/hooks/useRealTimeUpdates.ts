@@ -39,10 +39,10 @@ export const useRealTimeUpdates = (
     currentLeaderboardId,
     players,
     updatePlayers,
-    setLoadingState,
+    // setLoadingState, // Currently unused but may be needed for future features
     setError,
     clearError,
-    lastUpdated,
+    // lastUpdated, // Currently unused but may be needed for future features
   } = useLeaderboardData();
 
   // Refs for managing intervals and retry state

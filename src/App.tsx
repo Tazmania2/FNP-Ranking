@@ -94,10 +94,7 @@ function App() {
               {leaderboards.length > 0 && (
                 <div className="w-full sm:w-auto">
                   <LeaderboardSelector
-                    leaderboards={leaderboards}
-                    currentLeaderboardId={currentLeaderboard?._id || ''}
                     onLeaderboardChange={changeLeaderboard}
-                    isLoading={loading.switchingLeaderboard}
                   />
                 </div>
               )}
@@ -197,7 +194,7 @@ function App() {
               {/* Sidebar - Mobile: Top, Desktop: Right */}
               <div className="lg:col-span-1 order-1 lg:order-2">
                 <Sidebar
-                  players={players.slice(0, 5)}
+                  topPlayers={players.slice(0, 5)}
                   currentLeaderboard={currentLeaderboard}
                   totalPlayers={players.length}
                   isLoading={loading.currentLeaderboard}

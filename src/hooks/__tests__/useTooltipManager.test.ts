@@ -271,7 +271,7 @@ describe('useTooltipManager Hook', () => {
 
   it('cleans up timers on unmount', () => {
     const clearIntervalSpy = vi.spyOn(global, 'clearInterval');
-    const clearTimeoutSpy = vi.spyOn(global, 'clearTimeout');
+    // const clearTimeoutSpy = vi.spyOn(global, 'clearTimeout');
 
     const { unmount } = renderHook(() =>
       useTooltipManager({ players: mockPlayers })

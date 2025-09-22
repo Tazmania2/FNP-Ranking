@@ -1,3 +1,4 @@
+
 import { renderHook, act, waitFor } from '@testing-library/react';
 import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { useChickenRaceManager } from '../useChickenRaceManager';
@@ -205,7 +206,7 @@ describe('useChickenRaceManager Integration', () => {
       mockLeaderboardData.isLoading = false;
       mockLeaderboardData.hasError = false;
 
-      const { result } = renderHook(() => useChickenRaceManager({
+      renderHook(() => useChickenRaceManager({
         apiConfig: mockApiConfig,
       }));
 
@@ -375,7 +376,7 @@ describe('useChickenRaceManager Integration', () => {
 
       const { result } = renderHook(() => useChickenRaceManager());
 
-      const initializeSpy = vi.spyOn(result.current, 'initializeRace');
+      // const initializeSpy = vi.spyOn(result.current, 'initializeRace');
 
       act(() => {
         result.current.retryFailedOperation();

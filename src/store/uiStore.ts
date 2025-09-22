@@ -1,35 +1,34 @@
+
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 import type { 
   UIState, 
-  TooltipState, 
   TooltipContent, 
-  ChickenAnimation, 
-  AutoCycleState 
+  ChickenAnimation
 } from '../types';
 
 interface UIActions {
   // Tooltip management
-  showTooltip: (playerId: string, position: { x: number; y: number }, content: TooltipContent) => void;
+  showTooltip: (_playerId: string, _position: { x: number; y: number }, _content: TooltipContent) => void;
   hideTooltip: () => void;
-  updateTooltipPosition: (position: { x: number; y: number }) => void;
+  updateTooltipPosition: (_position: { x: number; y: number }) => void;
   
   // Animation management
-  setChickenAnimations: (animations: ChickenAnimation[]) => void;
-  updateChickenAnimation: (playerId: string, animation: Partial<ChickenAnimation>) => void;
-  addChickenAnimation: (animation: ChickenAnimation) => void;
-  removeChickenAnimation: (playerId: string) => void;
+  setChickenAnimations: (_animations: ChickenAnimation[]) => void;
+  updateChickenAnimation: (_playerId: string, _animation: Partial<ChickenAnimation>) => void;
+  addChickenAnimation: (_animation: ChickenAnimation) => void;
+  removeChickenAnimation: (_playerId: string) => void;
   clearAnimations: () => void;
   
   // Auto-cycle management
-  setAutoCycleEnabled: (enabled: boolean) => void;
-  setAutoCycleIndex: (index: number) => void;
-  setNextSwitchTime: (time: number) => void;
-  setAutoCycleInterval: (intervalId: number | null) => void;
+  setAutoCycleEnabled: (_enabled: boolean) => void;
+  setAutoCycleIndex: (_index: number) => void;
+  setNextSwitchTime: (_time: number) => void;
+  setAutoCycleInterval: (_intervalId: number | null) => void;
   resetAutoCycle: () => void;
   
   // Initialization
-  setInitialized: (initialized: boolean) => void;
+  setInitialized: (_initialized: boolean) => void;
   
   // Reset functions
   resetUI: () => void;
@@ -56,7 +55,7 @@ const initialState: UIState = {
 
 export const useUIStore = create<UIStore>()(
   devtools(
-    (set, get) => ({
+    (set) => ({
       ...initialState,
 
       // Tooltip management actions

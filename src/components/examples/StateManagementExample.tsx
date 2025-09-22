@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { useChickenRaceApp } from '../../hooks';
 import type { Leaderboard } from '../../types';
 
@@ -30,7 +30,7 @@ const StateManagementExample: React.FC = () => {
   } = useChickenRaceApp();
 
   // Example leaderboards for demonstration
-  const exampleLeaderboards: Leaderboard[] = [
+  const exampleLeaderboards: Leaderboard[] = useMemo(() => [
     {
       _id: 'demo-lb-1',
       title: 'Demo Leaderboard 1',
@@ -65,14 +65,14 @@ const StateManagementExample: React.FC = () => {
         timeScale: 1,
       },
     },
-  ];
+  ], []);
 
   // Initialize the app on mount
   useEffect(() => {
     if (!isInitialized) {
       initializeApp(exampleLeaderboards);
     }
-  }, [isInitialized, initializeApp]);
+  }, [isInitialized, initializeApp, exampleLeaderboards]);
 
   // Simulate loading some players
   const handleLoadPlayers = () => {

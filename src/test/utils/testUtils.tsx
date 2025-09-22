@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import React, { ReactElement } from 'react';
 import { render, RenderOptions } from '@testing-library/react';
 import { vi } from 'vitest';
@@ -151,7 +152,7 @@ export const mockAnimationFrame = () => {
     return ++id;
   });
 
-  const mockCancelAnimationFrame = vi.fn((id: number) => {
+  const mockCancelAnimationFrame = vi.fn(() => {
     // Implementation for cancel if needed
   });
 

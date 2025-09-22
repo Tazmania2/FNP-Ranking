@@ -110,7 +110,7 @@ export const useTooltipManager = ({ players, isEnabled = true }: UseTooltipManag
 
     let currentPlayerIndex = 0;
     const displayInterval = 1000; // 1 second between each tooltip
-    const totalDisplayTime = Math.min(players.length * displayInterval, 5000); // Max 5 seconds total
+    // const totalDisplayTime = Math.min(players.length * displayInterval, 5000); // Max 5 seconds total
 
     const showNextTooltip = () => {
       if (currentPlayerIndex >= players.length) {

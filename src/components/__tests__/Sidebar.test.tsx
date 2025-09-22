@@ -168,7 +168,7 @@ describe('Sidebar Component', () => {
       );
 
       // Check for chicken emojis (they should be present as text content)
-      const chickenElements = screen.getAllByText(/[🐔🐓🐤🐣🥚]/);
+      const chickenElements = screen.getAllByText(/[🐔🐓🐤🐣🥚]/u);
       expect(chickenElements).toHaveLength(3);
     });
   });

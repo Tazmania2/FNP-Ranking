@@ -3,10 +3,8 @@ import { ChevronDownIcon, ClockIcon, PlayIcon, PauseIcon } from '@heroicons/reac
 import { useLeaderboards, useCurrentLeaderboardId } from '../store/leaderboardStore';
 import { useAutoCycle } from '../store/uiStore';
 import { appStoreActions } from '../store/appStore';
-import type { Leaderboard } from '../types';
-
 interface LeaderboardSelectorProps {
-  onLeaderboardChange?: (leaderboardId: string) => void;
+  onLeaderboardChange?: (_leaderboardId: string) => void;
   className?: string;
 }
 

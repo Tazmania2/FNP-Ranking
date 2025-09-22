@@ -99,12 +99,13 @@ export const DetailedRanking: React.FC<DetailedRankingProps> = ({
           aValue = a.total;
           bValue = b.total;
           break;
-        case 'move':
+        case 'move': {
           // Sort by movement: up > same > down > no movement
           const moveOrder = { up: 3, same: 2, down: 1 };
           aValue = moveOrder[a.move as keyof typeof moveOrder] || 0;
           bValue = moveOrder[b.move as keyof typeof moveOrder] || 0;
           break;
+        }
         default:
           return 0;
       }

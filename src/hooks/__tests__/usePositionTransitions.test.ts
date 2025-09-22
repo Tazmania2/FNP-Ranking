@@ -114,7 +114,7 @@ describe('usePositionTransitions', () => {
       expect(mockAnimationManager.updatePlayerAnimation).toHaveBeenCalledTimes(3);
       
       // Check that all players got animations
-      mockPlayers.forEach((player, index) => {
+      mockPlayers.forEach((player) => {
         expect(mockAnimationManager.updatePlayerAnimation).toHaveBeenCalledWith(
           player._id,
           expect.objectContaining({

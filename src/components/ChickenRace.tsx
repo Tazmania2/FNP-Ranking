@@ -19,7 +19,7 @@ interface ChickenRaceProps {
 interface ChickenProps {
   player: Player;
   position: ChickenPosition;
-  onHover?: (playerId: string | null, element?: HTMLElement) => void;
+  onHover?: (_playerId: string | null, _element?: HTMLElement) => void;
 }
 
 // Individual Chicken component with optimized animations

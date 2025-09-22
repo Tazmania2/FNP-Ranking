@@ -1,3 +1,4 @@
+
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 import type { 
@@ -10,21 +11,22 @@ import type {
 
 interface LeaderboardActions {
   // Leaderboard management
-  setLeaderboards: (leaderboards: Leaderboard[]) => void;
-  setCurrentLeaderboard: (leaderboard: Leaderboard) => void;
-  setCurrentLeaderboardId: (id: string) => void;
-  setPlayers: (players: Player[]) => void;
+   
+  setLeaderboards: (_leaderboards: Leaderboard[]) => void;
+  setCurrentLeaderboard: (_leaderboard: Leaderboard) => void;
+  setCurrentLeaderboardId: (_id: string) => void;
+  setPlayers: (_players: Player[]) => void;
   
   // Loading state management
-  setLoading: (key: keyof LoadingState, value: boolean) => void;
-  setAllLoading: (loading: Partial<LoadingState>) => void;
+  setLoading: (_key: keyof LoadingState, _value: boolean) => void;
+  setAllLoading: (_loading: Partial<LoadingState>) => void;
   
   // Error handling
-  setError: (error: ApiError | null) => void;
+  setError: (_error: ApiError | null) => void;
   clearError: () => void;
   
   // Data refresh
-  setLastUpdated: (timestamp: number) => void;
+  setLastUpdated: (_timestamp: number) => void;
   
   // Reset functions
   resetLeaderboardData: () => void;
@@ -49,7 +51,7 @@ const initialState: LeaderboardState = {
 
 export const useLeaderboardStore = create<LeaderboardStore>()(
   devtools(
-    (set, get) => ({
+    (set) => ({
       ...initialState,
 
       // Leaderboard management actions

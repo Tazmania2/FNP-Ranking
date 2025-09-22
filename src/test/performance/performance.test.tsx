@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { render, screen, waitFor, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
@@ -133,7 +134,7 @@ describe('Performance Tests', () => {
 
   describe('Animation Performance', () => {
     it('should maintain 60fps during chicken animations', async () => {
-      const { container } = render(
+      render(
         <ChickenRace
           players={mockPlayersSet.small}
           leaderboardTitle="Animation Test"
@@ -141,8 +142,6 @@ describe('Performance Tests', () => {
         />
       );
 
-      const chickens = container.querySelectorAll('.chicken-container');
-      
       // Measure animation frame timing
       const frameTimes: number[] = [];
       let lastTime = performance.now();
@@ -199,7 +198,7 @@ describe('Performance Tests', () => {
     });
 
     it('should optimize animations for large player counts', async () => {
-      const { container } = render(
+      render(
         <ChickenRace
           players={mockPlayersSet.large}
           leaderboardTitle="Large Animation Test"
@@ -207,8 +206,6 @@ describe('Performance Tests', () => {
         />
       );
 
-      const chickens = container.querySelectorAll('.chicken-container');
-      
       // Should use efficient animation techniques for large counts
       chickens.forEach(chicken => {
         const style = window.getComputedStyle(chicken);
@@ -281,7 +278,7 @@ describe('Performance Tests', () => {
     });
 
     it('should handle component unmounting during async operations', async () => {
-      let resolvePromise: (value: any) => void;
+      let resolvePromise: () => void;
       const slowPromise = new Promise(resolve => {
         resolvePromise = resolve;
       });

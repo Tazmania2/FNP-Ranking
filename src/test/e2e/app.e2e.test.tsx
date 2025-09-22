@@ -1,5 +1,6 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
+
+import { render, screen, waitFor, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import userEvent from '@testing-library/user-event';
 import App from '../../App';
@@ -121,8 +122,6 @@ describe('App End-to-End Tests', () => {
 
   describe('Complete User Workflows', () => {
     it('should load app, display leaderboard selector, and show chicken race', async () => {
-      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
-      
       render(<App />);
 
       // Wait for initial load
@@ -258,8 +257,6 @@ describe('App End-to-End Tests', () => {
     });
 
     it('should show detailed ranking in second fold', async () => {
-      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
-      
       render(<App />);
 
       await waitFor(() => {

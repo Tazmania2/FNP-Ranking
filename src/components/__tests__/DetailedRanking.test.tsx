@@ -154,7 +154,7 @@ describe('DetailedRanking Component', () => {
       );
 
       // Check for chicken emojis (they appear in the title and header)
-      const chickenElements = screen.getAllByText(/[🐔🐓🐤🐣🥚]/);
+      const chickenElements = screen.getAllByText(/[🐔🐓🐤🐣🥚]/u);
       expect(chickenElements.length).toBeGreaterThanOrEqual(3);
     });
 
@@ -668,7 +668,7 @@ describe('DetailedRanking Component', () => {
       );
 
       // Check for chicken emojis (theme consistency)
-      const chickenElements = screen.getAllByText(/[🐔🐓🐤🐣🥚]/);
+      const chickenElements = screen.getAllByText(/[🐔🐓🐤🐣🥚]/u);
       expect(chickenElements.length).toBeGreaterThan(0);
 
       // Check for consistent styling with other components

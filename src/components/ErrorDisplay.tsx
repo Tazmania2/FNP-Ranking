@@ -100,10 +100,6 @@ export const ErrorDisplay: React.FC<ErrorDisplayProps> = ({
   size = 'medium',
   position = 'inline',
 }) => {
-  if (!error) {
-    return null;
-  }
-
   const handleRetry = useCallback(() => {
     if (onRetry) {
       onRetry();
@@ -115,6 +111,10 @@ export const ErrorDisplay: React.FC<ErrorDisplayProps> = ({
       onDismiss();
     }
   }, [onDismiss]);
+
+  if (!error) {
+    return null;
+  }
 
   // Size classes
   const sizeClasses = {
