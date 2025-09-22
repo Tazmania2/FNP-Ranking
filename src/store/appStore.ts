@@ -10,6 +10,9 @@ const AUTO_CYCLE_INTERVAL = 5 * 60 * 1000; // 5 minutes in milliseconds
  */
 export class AppStoreActions {
   private static instance: AppStoreActions;
+  private loggedMissingLeaderboards?: Set<string>;
+  private switchAttempts: Map<string, number> = new Map();
+  private readonly MAX_SWITCH_ATTEMPTS = 5;
 
   private constructor() {}
 
@@ -51,11 +54,32 @@ export class AppStoreActions {
     const leaderboardStore = useLeaderboardStore.getState();
     const uiStore = useUIStore.getState();
 
-    const leaderboard = leaderboardStore.leaderboards.find(lb => lb._id === leaderboardId);
-    if (!leaderboard) {
-      console.warn(`Leaderboard with ID ${leaderboardId} not found`);
+    // Track switch attempts to prevent infinite loops
+    const currentAttempts = this.switchAttempts.get(leaderboardId) || 0;
+    if (currentAttempts >= this.MAX_SWITCH_ATTEMPTS) {
+      console.error(`🚨 Maximum switch attempts (${this.MAX_SWITCH_ATTEMPTS}) exceeded for leaderboard ${leaderboardId}. Stopping to prevent infinite loop.`);
+      console.error('This usually indicates an API configuration issue or the leaderboard does not exist.');
       return;
     }
+    
+    this.switchAttempts.set(leaderboardId, currentAttempts + 1);
+
+    const leaderboard = leaderboardStore.leaderboards.find(lb => lb._id === leaderboardId);
+    if (!leaderboard) {
+      // Only log once per leaderboard ID to prevent spam
+      if (!this.loggedMissingLeaderboards) {
+        this.loggedMissingLeaderboards = new Set();
+      }
+      if (!this.loggedMissingLeaderboards.has(leaderboardId)) {
+        console.warn(`Leaderboard with ID ${leaderboardId} not found. Available leaderboards:`, leaderboardStore.leaderboards.map(lb => lb._id));
+        console.trace('switchToLeaderboard call stack:');
+        this.loggedMissingLeaderboards.add(leaderboardId);
+      }
+      return;
+    }
+
+    // Reset counter on successful switch
+    this.switchAttempts.delete(leaderboardId);
 
     // Set loading state
     leaderboardStore.setLoading('switchingLeaderboard', true);
@@ -145,6 +169,14 @@ export class AppStoreActions {
   };
 
   /**
+   * Reset switch attempt counters (useful for manual retries)
+   */
+  public resetSwitchCounters = () => {
+    this.switchAttempts.clear();
+    this.loggedMissingLeaderboards?.clear();
+  };
+
+  /**
    * Clean up resources when the app is unmounted
    */
   public cleanup = () => {
@@ -155,6 +187,9 @@ export class AppStoreActions {
       clearInterval(uiStore.autoCycle.intervalId);
       uiStore.setAutoCycleInterval(null);
     }
+
+    // Reset counters
+    this.resetSwitchCounters();
 
     // Reset stores
     useLeaderboardStore.getState().resetStore();

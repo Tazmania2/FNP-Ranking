@@ -24,6 +24,7 @@ function App() {
     players,
     loading,
     error,
+    usingMockData,
     
     // Status
     raceStatus,
@@ -110,6 +111,28 @@ function App() {
           </div>
         </div>
       </header>
+
+      {/* Mock Data Warning Banner */}
+      {usingMockData && (
+        <div className="bg-yellow-500/90 backdrop-blur-sm border-b border-yellow-400/50">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+            <div className="flex items-center justify-center text-center">
+              <div className="flex items-center space-x-2">
+                <span className="text-yellow-900 text-lg">⚠️</span>
+                <span className="text-yellow-900 font-medium text-sm sm:text-base">
+                  Demo Mode: Showing mock data due to API connection issues
+                </span>
+                <button
+                  onClick={retryFailedOperation}
+                  className="ml-4 px-3 py-1 bg-yellow-600 text-white text-xs rounded hover:bg-yellow-700 transition-colors"
+                >
+                  Retry API
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">

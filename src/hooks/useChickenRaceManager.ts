@@ -4,6 +4,7 @@ import { useRealTimeUpdatesWithLoading } from './useRealTimeUpdates';
 import { usePositionTransitions } from './usePositionTransitions';
 import { useLeaderboardData } from './useAppState';
 import { useLeaderboardStore } from '../store/leaderboardStore';
+import { appStoreActions } from '../store/appStore';
 import type { FunifierConfig } from '../types';
 
 /**
@@ -43,6 +44,54 @@ export const useChickenRaceManager = (config: ChickenRaceManagerConfig = {}) => 
 
   // Track initialization attempts to prevent infinite loops
   const [initializationAttempted, setInitializationAttempted] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
+  const [usingMockData, setUsingMockData] = useState(false);
+
+  // Mock data fallback
+  const MOCK_LEADERBOARD_DATA = [
+    {
+      "_id": "cesar.domingos@cidadania4u.com.br_E7HHB2I",
+      "total": 17.5,
+      "position": 1,
+      "move": "up",
+      "player": "cesar.domingos@cidadania4u.com.br",
+      "name": "Cesar Domingos",
+      "extra": {"cache": "E7HHB2I"},
+      "boardId": "EVeTmET"
+    },
+    {
+      "_id": "taira.rabelo@cidadania4u.com.br_E7HHB2I",
+      "total": 17,
+      "position": 2,
+      "move": "up",
+      "player": "taira.rabelo@cidadania4u.com.br",
+      "name": "Tairã Rabelo",
+      "extra": {"cache": "E7HHB2I"},
+      "boardId": "EVeTmET"
+    },
+    {
+      "_id": "iuri.helou@cidadania4u.com.br_E7HHB2I",
+      "total": 14,
+      "position": 3,
+      "move": "up",
+      "player": "iuri.helou@cidadania4u.com.br",
+      "name": "Iuri Helou",
+      "extra": {"cache": "E7HHB2I"},
+      "boardId": "EVeTmET"
+    },
+    {
+      "_id": "game@grupo4u.com.br_E7HHB2I",
+      "total": 10,
+      "position": 4,
+      "move": "up",
+      "player": "game@grupo4u.com.br",
+      "name": "Admin Game",
+      "extra": {"cache": "E7HHB2I"},
+      "boardId": "EVeTmET"
+    }
+  ];
+
+  const MAX_RETRY_ATTEMPTS = 10;
 
   // Create API service instance
   const apiService = useMemo(() => {
@@ -90,19 +139,58 @@ export const useChickenRaceManager = (config: ChickenRaceManagerConfig = {}) => 
   });
 
   /**
+   * Fallback to mock data when API fails repeatedly
+   */
+  const useMockDataFallback = useCallback(() => {
+    console.warn('🐔 API failed after maximum retries. Using mock data for demonstration.');
+    console.warn('Mock data is being displayed. This is not real leaderboard data.');
+    
+    setUsingMockData(true);
+    
+    // Create mock leaderboard
+    const mockLeaderboard = {
+      _id: 'EVeTmET',
+      title: 'Demo Leaderboard (Mock Data)',
+      description: 'This is mock data shown due to API connection issues',
+    };
+
+    // Set mock leaderboard and data in store
+    const leaderboardStore = useLeaderboardStore.getState();
+    leaderboardStore.setLeaderboards([mockLeaderboard]);
+    leaderboardStore.setCurrentLeaderboard(mockLeaderboard);
+    leaderboardStore.setCurrentLeaderboardId(mockLeaderboard._id);
+    updatePlayers(MOCK_LEADERBOARD_DATA);
+    
+    // Clear any errors
+    clearError();
+  }, [updatePlayers, clearError]);
+
+  /**
    * Initialize the chicken race with leaderboards
    */
   const initializeRace = useCallback(async () => {
+    // Check if we've exceeded max retries
+    if (retryCount >= MAX_RETRY_ATTEMPTS) {
+      console.warn(`Maximum retry attempts (${MAX_RETRY_ATTEMPTS}) exceeded. Falling back to mock data.`);
+      useMockDataFallback();
+      return;
+    }
+
     try {
       setInitializationAttempted(true);
       setLoadingState('leaderboards', true);
       clearError();
+      
+      // Increment retry count
+      setRetryCount(prev => prev + 1);
+      console.log(`Initialization attempt ${retryCount + 1}/${MAX_RETRY_ATTEMPTS}`);
 
       let fetchedLeaderboards: any[] = [];
       
       try {
         // Try to fetch available leaderboards from API
         fetchedLeaderboards = await apiService.getLeaderboards();
+        console.log('Successfully fetched leaderboards:', fetchedLeaderboards);
       } catch (leaderboardsError) {
         console.warn('Failed to fetch leaderboards list, will try to use known leaderboard directly:', leaderboardsError);
         
@@ -111,6 +199,7 @@ export const useChickenRaceManager = (config: ChickenRaceManagerConfig = {}) => 
         try {
           const testResponse = await apiService.getLeaderboardData('EVeTmET', { live: true });
           if (testResponse && testResponse.leaders) {
+            console.log('Successfully fetched leaderboard data directly, creating leaderboard entry');
             // The leaderboard exists, create a mock leaderboard entry
             fetchedLeaderboards = [{
               _id: 'EVeTmET',
@@ -120,9 +209,17 @@ export const useChickenRaceManager = (config: ChickenRaceManagerConfig = {}) => 
           }
         } catch (dataError) {
           console.error('Failed to fetch leaderboard data:', dataError);
+          
+          // If we've tried multiple times, use mock data
+          if (retryCount >= MAX_RETRY_ATTEMPTS - 1) {
+            console.warn('API consistently failing, using mock data fallback');
+            useMockDataFallback();
+            return;
+          }
+          
           setError({
             type: 'network',
-            message: 'Unable to connect to leaderboard service. Please check your API configuration.',
+            message: `Unable to connect to leaderboard service (attempt ${retryCount + 1}/${MAX_RETRY_ATTEMPTS}). Please check your API configuration.`,
             retryable: true,
             timestamp: Date.now(),
           });
@@ -131,9 +228,15 @@ export const useChickenRaceManager = (config: ChickenRaceManagerConfig = {}) => 
       }
       
       if (fetchedLeaderboards.length === 0) {
+        if (retryCount >= MAX_RETRY_ATTEMPTS - 1) {
+          console.warn('No leaderboards found after maximum retries, using mock data fallback');
+          useMockDataFallback();
+          return;
+        }
+        
         setError({
           type: 'validation',
-          message: 'No leaderboards found',
+          message: `No leaderboards found (attempt ${retryCount + 1}/${MAX_RETRY_ATTEMPTS})`,
           retryable: true,
           timestamp: Date.now(),
         });
@@ -144,17 +247,33 @@ export const useChickenRaceManager = (config: ChickenRaceManagerConfig = {}) => 
       const leaderboardStore = useLeaderboardStore.getState();
       leaderboardStore.setLeaderboards(fetchedLeaderboards);
 
-      // Then initialize with first leaderboard
+      // Wait a bit for the store to update, then initialize with first leaderboard
       const firstLeaderboard = fetchedLeaderboards[0];
-      switchToLeaderboard(firstLeaderboard._id);
+      console.log('Setting up leaderboard:', firstLeaderboard);
+      
+      // Reset retry count on success
+      setRetryCount(0);
+      
+      // Use setTimeout to ensure the store update has propagated
+      setTimeout(() => {
+        switchToLeaderboard(firstLeaderboard._id);
+      }, 0);
 
     } catch (error) {
       console.error('Failed to initialize chicken race:', error);
+      
+      // If we've tried multiple times, use mock data
+      if (retryCount >= MAX_RETRY_ATTEMPTS - 1) {
+        console.warn('Initialization failed after maximum retries, using mock data fallback');
+        useMockDataFallback();
+        return;
+      }
+      
       setError(error as any);
     } finally {
       setLoadingState('leaderboards', false);
     }
-  }, [apiService, setLoadingState, clearError, setError, switchToLeaderboard]);
+  }, [apiService, setLoadingState, clearError, setError, switchToLeaderboard, retryCount, useMockDataFallback]);
 
   /**
    * Manually refresh current leaderboard data
@@ -220,6 +339,9 @@ export const useChickenRaceManager = (config: ChickenRaceManagerConfig = {}) => 
 
     clearError();
     setInitializationAttempted(false); // Reset initialization flag for retry
+    setRetryCount(0); // Reset retry counter for manual retry
+    setUsingMockData(false); // Reset mock data flag
+    appStoreActions.resetSwitchCounters(); // Reset switch attempt counters
 
     // Determine what operation to retry based on current state
     if (!hasLeaderboards) {
@@ -297,6 +419,8 @@ export const useChickenRaceManager = (config: ChickenRaceManagerConfig = {}) => 
     hasPlayers,
     isLoading,
     hasError,
+    usingMockData,
+    retryCount,
     raceStats: getRaceStats(),
     raceStatus: getRaceStatus(),
 
