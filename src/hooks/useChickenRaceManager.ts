@@ -187,44 +187,38 @@ export const useChickenRaceManager = (config: ChickenRaceManagerConfig = {}) => 
 
       let fetchedLeaderboards: any[] = [];
       
+      // Skip the getLeaderboards() call since it's causing the loop
+      // Go directly to testing the known leaderboard with the aggregate endpoint
+      console.log('Skipping leaderboards list API, testing known leaderboard directly...');
+      
       try {
-        // Try to fetch available leaderboards from API
-        fetchedLeaderboards = await apiService.getLeaderboards();
-        console.log('Successfully fetched leaderboards:', fetchedLeaderboards);
-      } catch (leaderboardsError) {
-        console.warn('Failed to fetch leaderboards list, will try to use known leaderboard directly:', leaderboardsError);
+        const testResponse = await apiService.getLeaderboardData('EVeTmET', { live: true });
+        if (testResponse && testResponse.leaders) {
+          console.log('Successfully fetched leaderboard data directly, creating leaderboard entry');
+          // The leaderboard exists, create a leaderboard entry
+          fetchedLeaderboards = [{
+            _id: 'EVeTmET',
+            title: 'Main Leaderboard',
+            description: 'Primary leaderboard',
+          }];
+        }
+      } catch (dataError) {
+        console.error('Failed to fetch leaderboard data:', dataError);
         
-        // If getLeaderboards fails, try to fetch data directly from the known leaderboard
-        // This will help us determine if the leaderboard exists
-        try {
-          const testResponse = await apiService.getLeaderboardData('EVeTmET', { live: true });
-          if (testResponse && testResponse.leaders) {
-            console.log('Successfully fetched leaderboard data directly, creating leaderboard entry');
-            // The leaderboard exists, create a mock leaderboard entry
-            fetchedLeaderboards = [{
-              _id: 'EVeTmET',
-              title: 'Main Leaderboard',
-              description: 'Primary leaderboard',
-            }];
-          }
-        } catch (dataError) {
-          console.error('Failed to fetch leaderboard data:', dataError);
-          
-          // If we've tried multiple times, use mock data
-          if (retryCount >= MAX_RETRY_ATTEMPTS - 1) {
-            console.warn('API consistently failing, using mock data fallback');
-            useMockDataFallback();
-            return;
-          }
-          
-          setError({
-            type: 'network',
-            message: `Unable to connect to leaderboard service (attempt ${retryCount + 1}/${MAX_RETRY_ATTEMPTS}). Please check your API configuration.`,
-            retryable: true,
-            timestamp: Date.now(),
-          });
+        // If we've tried multiple times, use mock data
+        if (retryCount >= MAX_RETRY_ATTEMPTS - 1) {
+          console.warn('API consistently failing, using mock data fallback');
+          useMockDataFallback();
           return;
         }
+        
+        setError({
+          type: 'network',
+          message: `Unable to connect to leaderboard service (attempt ${retryCount + 1}/${MAX_RETRY_ATTEMPTS}). Please check your API configuration.`,
+          retryable: true,
+          timestamp: Date.now(),
+        });
+        return;
       }
       
       if (fetchedLeaderboards.length === 0) {
@@ -397,12 +391,12 @@ export const useChickenRaceManager = (config: ChickenRaceManagerConfig = {}) => 
     positionTransitions.isAnimating,
   ]);
 
-  // Auto-initialize on mount if API config is provided
+  // Auto-initialize on mount if API config is provided - only run once
   useEffect(() => {
-    if (apiConfig && !hasLeaderboards && !isLoading && !hasError && !initializationAttempted) {
+    if (apiConfig && !initializationAttempted) {
       initializeRace();
     }
-  }, [apiConfig, hasLeaderboards, isLoading, hasError, initializationAttempted, initializeRace]);
+  }, [apiConfig, initializationAttempted, initializeRace]);
 
   return {
     // State
