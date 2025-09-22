@@ -166,10 +166,17 @@ export const useChickenRaceManager = (config: ChickenRaceManagerConfig = {}) => 
     updatePlayers(MOCK_LEADERBOARD_DATA);
     
     // Clear any errors and loading states
+    console.log('🐔 Clearing all loading states and errors...');
     clearError();
     setLoadingState('leaderboards', false);
     setLoadingState('currentLeaderboard', false);
     setLoadingState('switchingLeaderboard', false);
+    
+    // Force reset initialization flags
+    isInitializingRef.current = false;
+    retryCountRef.current = 0;
+    
+    console.log('🐔 Mock data setup complete!');
   }, [updatePlayers, clearError, setLoadingState]);
 
   /**
@@ -203,7 +210,9 @@ export const useChickenRaceManager = (config: ChickenRaceManagerConfig = {}) => 
       
       // TEMPORARILY DISABLE ALL API CALLS TO ISOLATE THE LOOP SOURCE
       console.log('🚨 ALL API CALLS DISABLED - Using mock data immediately');
+      console.log('🐔 Before useMockDataFallback - isInitializingRef:', isInitializingRef.current);
       useMockDataFallback();
+      console.log('🐔 After useMockDataFallback - isInitializingRef:', isInitializingRef.current);
       return;
 
     } catch (error) {
