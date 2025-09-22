@@ -1,4 +1,4 @@
-import { useEffect, useCallback, useMemo, useState } from 'react';
+import { useEffect, useCallback, useMemo, useState, useRef } from 'react';
 import { FunifierApiService } from '../services/funifierApi';
 import { useRealTimeUpdatesWithLoading } from './useRealTimeUpdates';
 import { usePositionTransitions } from './usePositionTransitions';
@@ -44,7 +44,8 @@ export const useChickenRaceManager = (config: ChickenRaceManagerConfig = {}) => 
 
   // Track initialization attempts to prevent infinite loops
   const [initializationAttempted, setInitializationAttempted] = useState(false);
-  const [retryCount, setRetryCount] = useState(0);
+  const retryCountRef = useRef(0);
+  const isInitializingRef = useRef(false);
   const [usingMockData, setUsingMockData] = useState(false);
 
   // Mock data fallback
@@ -169,21 +170,28 @@ export const useChickenRaceManager = (config: ChickenRaceManagerConfig = {}) => 
    * Initialize the chicken race with leaderboards
    */
   const initializeRace = useCallback(async () => {
+    // Prevent multiple simultaneous initialization attempts
+    if (isInitializingRef.current) {
+      console.log('Initialization already in progress, skipping...');
+      return;
+    }
+
     // Check if we've exceeded max retries
-    if (retryCount >= MAX_RETRY_ATTEMPTS) {
+    if (retryCountRef.current >= MAX_RETRY_ATTEMPTS) {
       console.warn(`Maximum retry attempts (${MAX_RETRY_ATTEMPTS}) exceeded. Falling back to mock data.`);
       useMockDataFallback();
       return;
     }
 
     try {
+      isInitializingRef.current = true;
       setInitializationAttempted(true);
       setLoadingState('leaderboards', true);
       clearError();
       
       // Increment retry count
-      setRetryCount(prev => prev + 1);
-      console.log(`Initialization attempt ${retryCount + 1}/${MAX_RETRY_ATTEMPTS}`);
+      retryCountRef.current += 1;
+      console.log(`Initialization attempt ${retryCountRef.current}/${MAX_RETRY_ATTEMPTS}`);
 
       let fetchedLeaderboards: any[] = [];
       
@@ -201,7 +209,7 @@ export const useChickenRaceManager = (config: ChickenRaceManagerConfig = {}) => 
         console.error('Failed to fetch leaderboard data:', dataError);
         
         // If we've tried multiple times, use mock data
-        if (retryCount >= MAX_RETRY_ATTEMPTS - 1) {
+        if (retryCountRef.current >= MAX_RETRY_ATTEMPTS - 1) {
           console.warn('API consistently failing, using mock data fallback');
           useMockDataFallback();
           return;
@@ -209,7 +217,7 @@ export const useChickenRaceManager = (config: ChickenRaceManagerConfig = {}) => 
         
         setError({
           type: 'network',
-          message: `Unable to connect to leaderboard service (attempt ${retryCount + 1}/${MAX_RETRY_ATTEMPTS}). Please check your API configuration.`,
+          message: `Unable to connect to leaderboard service (attempt ${retryCountRef.current}/${MAX_RETRY_ATTEMPTS}). Please check your API configuration.`,
           retryable: true,
           timestamp: Date.now(),
         });
@@ -217,7 +225,7 @@ export const useChickenRaceManager = (config: ChickenRaceManagerConfig = {}) => 
       }
       
       if (fetchedLeaderboards.length === 0) {
-        if (retryCount >= MAX_RETRY_ATTEMPTS - 1) {
+        if (retryCountRef.current >= MAX_RETRY_ATTEMPTS - 1) {
           console.warn('No leaderboards found after maximum retries, using mock data fallback');
           useMockDataFallback();
           return;
@@ -225,7 +233,7 @@ export const useChickenRaceManager = (config: ChickenRaceManagerConfig = {}) => 
         
         setError({
           type: 'validation',
-          message: `No leaderboards found (attempt ${retryCount + 1}/${MAX_RETRY_ATTEMPTS})`,
+          message: `No leaderboards found (attempt ${retryCountRef.current}/${MAX_RETRY_ATTEMPTS})`,
           retryable: true,
           timestamp: Date.now(),
         });
@@ -241,7 +249,7 @@ export const useChickenRaceManager = (config: ChickenRaceManagerConfig = {}) => 
       console.log('Setting up leaderboard:', firstLeaderboard);
       
       // Reset retry count on success
-      setRetryCount(0);
+      retryCountRef.current = 0;
       
       // Use setTimeout to ensure the store update has propagated
       setTimeout(() => {
@@ -252,7 +260,7 @@ export const useChickenRaceManager = (config: ChickenRaceManagerConfig = {}) => 
       console.error('Failed to initialize chicken race:', error);
       
       // If we've tried multiple times, use mock data
-      if (retryCount >= MAX_RETRY_ATTEMPTS - 1) {
+      if (retryCountRef.current >= MAX_RETRY_ATTEMPTS - 1) {
         console.warn('Initialization failed after maximum retries, using mock data fallback');
         useMockDataFallback();
         return;
@@ -261,8 +269,9 @@ export const useChickenRaceManager = (config: ChickenRaceManagerConfig = {}) => 
       setError(error as any);
     } finally {
       setLoadingState('leaderboards', false);
+      isInitializingRef.current = false;
     }
-  }, [apiService, setLoadingState, clearError, setError, switchToLeaderboard, retryCount, useMockDataFallback]);
+  }, [apiService, setLoadingState, clearError, setError, switchToLeaderboard, useMockDataFallback]);
 
   /**
    * Manually refresh current leaderboard data
@@ -328,7 +337,8 @@ export const useChickenRaceManager = (config: ChickenRaceManagerConfig = {}) => 
 
     clearError();
     setInitializationAttempted(false); // Reset initialization flag for retry
-    setRetryCount(0); // Reset retry counter for manual retry
+    retryCountRef.current = 0; // Reset retry counter for manual retry
+    isInitializingRef.current = false; // Reset initialization in progress flag
     setUsingMockData(false); // Reset mock data flag
     appStoreActions.resetSwitchCounters(); // Reset switch attempt counters
 
@@ -391,7 +401,8 @@ export const useChickenRaceManager = (config: ChickenRaceManagerConfig = {}) => 
     if (apiConfig && !initializationAttempted) {
       initializeRace();
     }
-  }, [apiConfig, initializationAttempted, initializeRace]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [apiConfig, initializationAttempted]); // Intentionally excluding initializeRace to prevent infinite loop
 
   return {
     // State
@@ -409,7 +420,7 @@ export const useChickenRaceManager = (config: ChickenRaceManagerConfig = {}) => 
     isLoading,
     hasError,
     usingMockData,
-    retryCount,
+    retryCount: retryCountRef.current,
     raceStats: getRaceStats(),
     raceStatus: getRaceStatus(),
 
