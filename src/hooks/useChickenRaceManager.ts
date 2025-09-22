@@ -51,47 +51,67 @@ export const useChickenRaceManager = (config: ChickenRaceManagerConfig = {}) => 
   const isInitializingRef = useRef(false);
   const [usingMockData, setUsingMockData] = useState(false);
 
-  // Mock data fallback
+  // Dados simulados para fallback
   const MOCK_LEADERBOARD_DATA = [
     {
-      "_id": "cesar.domingos@cidadania4u.com.br_E7HHB2I",
-      "total": 17.5,
+      "_id": "ana.silva@exemplo.com.br_DEMO1",
+      "total": 95,
       "position": 1,
       "move": "up" as const,
-      "player": "cesar.domingos@cidadania4u.com.br",
-      "name": "Cesar Domingos",
-      "extra": {"cache": "E7HHB2I"},
-      "boardId": "EVeTmET"
+      "player": "ana.silva@exemplo.com.br",
+      "name": "Ana Silva",
+      "extra": {"cache": "DEMO1"},
+      "boardId": "DEMO"
     },
     {
-      "_id": "taira.rabelo@cidadania4u.com.br_E7HHB2I",
-      "total": 17,
+      "_id": "bruno.costa@exemplo.com.br_DEMO2",
+      "total": 87,
       "position": 2,
       "move": "up" as const,
-      "player": "taira.rabelo@cidadania4u.com.br",
-      "name": "Tairã Rabelo",
-      "extra": {"cache": "E7HHB2I"},
-      "boardId": "EVeTmET"
+      "player": "bruno.costa@exemplo.com.br",
+      "name": "Bruno Costa",
+      "extra": {"cache": "DEMO2"},
+      "boardId": "DEMO"
     },
     {
-      "_id": "iuri.helou@cidadania4u.com.br_E7HHB2I",
-      "total": 14,
+      "_id": "carlos.mendes@exemplo.com.br_DEMO3",
+      "total": 82,
       "position": 3,
-      "move": "up" as const,
-      "player": "iuri.helou@cidadania4u.com.br",
-      "name": "Iuri Helou",
-      "extra": {"cache": "E7HHB2I"},
-      "boardId": "EVeTmET"
+      "move": "down" as const,
+      "player": "carlos.mendes@exemplo.com.br",
+      "name": "Carlos Mendes",
+      "extra": {"cache": "DEMO3"},
+      "boardId": "DEMO"
     },
     {
-      "_id": "game@grupo4u.com.br_E7HHB2I",
-      "total": 10,
+      "_id": "diana.santos@exemplo.com.br_DEMO4",
+      "total": 78,
       "position": 4,
       "move": "up" as const,
-      "player": "game@grupo4u.com.br",
-      "name": "Admin Game",
-      "extra": {"cache": "E7HHB2I"},
-      "boardId": "EVeTmET"
+      "player": "diana.santos@exemplo.com.br",
+      "name": "Diana Santos",
+      "extra": {"cache": "DEMO4"},
+      "boardId": "DEMO"
+    },
+    {
+      "_id": "eduardo.lima@exemplo.com.br_DEMO5",
+      "total": 75,
+      "position": 5,
+      "move": "same" as const,
+      "player": "eduardo.lima@exemplo.com.br",
+      "name": "Eduardo Lima",
+      "extra": {"cache": "DEMO5"},
+      "boardId": "DEMO"
+    },
+    {
+      "_id": "fernanda.rocha@exemplo.com.br_DEMO6",
+      "total": 71,
+      "position": 6,
+      "move": "up" as const,
+      "player": "fernanda.rocha@exemplo.com.br",
+      "name": "Fernanda Rocha",
+      "extra": {"cache": "DEMO6"},
+      "boardId": "DEMO"
     }
   ];
 
@@ -173,11 +193,11 @@ export const useChickenRaceManager = (config: ChickenRaceManagerConfig = {}) => 
     
     setUsingMockData(true);
     
-    // Create mock leaderboard with proper typing
+    // Criar leaderboard simulado com tipagem adequada
     const mockLeaderboard = {
-      _id: 'EVeTmET',
-      title: 'Demo Leaderboard (Mock Data)',
-      description: 'This is mock data shown due to API connection issues',
+      _id: 'DEMO',
+      title: 'Ranking Demonstração (Dados Simulados)',
+      description: 'Estes são dados simulados mostrados devido a problemas de conexão com a API',
       principalType: 0,
       operation: {
         type: 0,
