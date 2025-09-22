@@ -8,7 +8,11 @@ import type {
   ApiError,
 } from '../types';
 import { apiConfig } from '../config/api';
-import { validateApiConfig, validatePlayerName, validateNumber } from '../utils/validation';
+import {
+  validateApiConfig,
+  validatePlayerName,
+  validateNumber,
+} from '../utils/validation';
 
 /**
  * Funifier API Service for handling all API communications
@@ -22,12 +26,12 @@ export class FunifierApiService {
 
   constructor(customConfig?: FunifierConfig) {
     this.config = customConfig || apiConfig.getConfig();
-    
+
     // Validate API configuration for security
     if (!validateApiConfig(this.config)) {
       throw new Error('Invalid API configuration provided');
     }
-    
+
     this.axiosInstance = this.createAxiosInstance();
   }
 
@@ -40,7 +44,7 @@ export class FunifierApiService {
       timeout: 10000, // 10 second timeout
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': this.config.authToken,
+        Authorization: this.config.authToken,
         'X-API-Key': this.config.apiKey,
       },
     });
@@ -66,7 +70,8 @@ export class FunifierApiService {
     if (error.code === 'ECONNABORTED' || error.code === 'ENOTFOUND') {
       return {
         type: 'network',
-        message: 'Network connection failed. Please check your internet connection.',
+        message:
+          'Network connection failed. Please check your internet connection.',
         retryable: true,
         timestamp,
         originalError: error,
@@ -139,14 +144,14 @@ export class FunifierApiService {
       } else {
         apiError = this.handleApiError(error as AxiosError);
       }
-      
+
       if (!apiError.retryable || attempt >= this.retryAttempts) {
         throw apiError;
       }
 
       const delay = this.retryDelay * Math.pow(2, attempt - 1);
-      await new Promise(resolve => setTimeout(resolve, delay));
-      
+      await new Promise((resolve) => setTimeout(resolve, delay));
+
       return this.retryRequest(requestFn, attempt + 1);
     }
   }
@@ -161,20 +166,18 @@ export class FunifierApiService {
 
   /**
    * Fetch list of available leaderboards
+   * DISABLED: This endpoint is causing infinite loops, using direct leaderboard access instead
    */
   public async getLeaderboards(): Promise<Leaderboard[]> {
-    return this.retryRequest(async () => {
-      console.log('Fetching leaderboards from:', `${this.config.serverUrl}/leaderboard`);
-      const response = await this.axiosInstance.get('/leaderboard');
-      
-      console.log('Leaderboards response:', response.data);
-      
-      if (!Array.isArray(response.data)) {
-        throw new Error('Invalid leaderboards response format');
-      }
-
-      return response.data as Leaderboard[];
-    });
+    console.warn('getLeaderboards() is disabled to prevent infinite loops. Using direct leaderboard access instead.');
+    
+    // Instead of calling the problematic endpoint, return a hardcoded leaderboard
+    // based on the known working leaderboard ID
+    return [{
+      _id: 'EVeTmET',
+      title: 'Main Leaderboard',
+      description: 'Primary leaderboard (direct access)',
+    }] as Leaderboard[];
   }
 
   /**
@@ -186,7 +189,7 @@ export class FunifierApiService {
   ): Promise<LeaderboardResponse> {
     return this.retryRequest(async () => {
       const params = new URLSearchParams();
-      
+
       if (options.live !== undefined) {
         params.append('live', options.live.toString());
       }
@@ -198,7 +201,10 @@ export class FunifierApiService {
 
       // Use the aggregate endpoint that matches your working test
       const url = `/leaderboard/${leaderboardId}/leader/aggregate?${params.toString()}`;
-      console.log('Fetching leaderboard data from:', `${this.config.serverUrl}${url}`);
+      console.log(
+        'Fetching leaderboard data from:',
+        `${this.config.serverUrl}${url}`
+      );
       const response = await this.axiosInstance.post(url, []);
       console.log('Leaderboard data response:', response.data);
 
@@ -213,8 +219,12 @@ export class FunifierApiService {
         name: validatePlayerName(player.name || ''),
         total: validateNumber(player.total),
         position: validateNumber(player.position),
-        previous_total: player.previous_total ? validateNumber(player.previous_total) : undefined,
-        previous_position: player.previous_position ? validateNumber(player.previous_position) : undefined,
+        previous_total: player.previous_total
+          ? validateNumber(player.previous_total)
+          : undefined,
+        previous_position: player.previous_position
+          ? validateNumber(player.previous_position)
+          : undefined,
       }));
 
       // Return in the expected format
@@ -235,7 +245,7 @@ export class FunifierApiService {
   public async getPlayerDetails(playerId: string): Promise<Player> {
     return this.retryRequest(async () => {
       const response = await this.axiosInstance.get(`/players/${playerId}`);
-      
+
       if (!response.data || !response.data._id) {
         throw new Error('Invalid player data response format');
       }
@@ -246,8 +256,12 @@ export class FunifierApiService {
         name: validatePlayerName(response.data.name || ''),
         total: validateNumber(response.data.total),
         position: validateNumber(response.data.position),
-        previous_total: response.data.previous_total ? validateNumber(response.data.previous_total) : undefined,
-        previous_position: response.data.previous_position ? validateNumber(response.data.previous_position) : undefined,
+        previous_total: response.data.previous_total
+          ? validateNumber(response.data.previous_total)
+          : undefined,
+        previous_position: response.data.previous_position
+          ? validateNumber(response.data.previous_position)
+          : undefined,
       };
 
       return sanitizedPlayer as Player;
@@ -259,7 +273,8 @@ export class FunifierApiService {
    */
   public async testConnection(): Promise<boolean> {
     try {
-      await this.getLeaderboards();
+      // Use the working aggregate endpoint instead of getLeaderboards
+      await this.getLeaderboardData('EVeTmET', { live: true });
       return true;
     } catch (error) {
       console.error('API connection test failed:', error);

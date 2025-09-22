@@ -187,20 +187,15 @@ export const useChickenRaceManager = (config: ChickenRaceManagerConfig = {}) => 
 
       let fetchedLeaderboards: any[] = [];
       
-      // Skip the getLeaderboards() call since it's causing the loop
-      // Go directly to testing the known leaderboard with the aggregate endpoint
-      console.log('Skipping leaderboards list API, testing known leaderboard directly...');
-      
       try {
-        const testResponse = await apiService.getLeaderboardData('EVeTmET', { live: true });
+        // Now safe to call getLeaderboards since it's been fixed to not make the problematic API call
+        fetchedLeaderboards = await apiService.getLeaderboards();
+        console.log('Successfully got leaderboards (using safe method):', fetchedLeaderboards);
+        
+        // Test the leaderboard data to make sure it works
+        const testResponse = await apiService.getLeaderboardData(fetchedLeaderboards[0]._id, { live: true });
         if (testResponse && testResponse.leaders) {
-          console.log('Successfully fetched leaderboard data directly, creating leaderboard entry');
-          // The leaderboard exists, create a leaderboard entry
-          fetchedLeaderboards = [{
-            _id: 'EVeTmET',
-            title: 'Main Leaderboard',
-            description: 'Primary leaderboard',
-          }];
+          console.log('Successfully verified leaderboard data access');
         }
       } catch (dataError) {
         console.error('Failed to fetch leaderboard data:', dataError);
