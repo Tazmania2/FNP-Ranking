@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    
+    <!-- Performance optimizations -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <!-- DNS prefetch for Funifier API will be configured at runtime -->
+    
+    <!-- Favicon and app icons -->
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/vite.svg" />
+    <link rel="manifest" href="/manifest.json" />
+    
+    <!-- Viewport and responsive design -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#3b82f6" />
+    <meta name="color-scheme" content="light dark" />
+    
+    <!-- SEO Meta Tags -->
+    <title>🐔 Chicken Race Ranking - Gamified Leaderboard Visualization</title>
+    <meta name="description" content="Transform your leaderboards into an engaging, animated chicken race experience. Real-time rankings with smooth animations and interactive features powered by Funifier." />
+    <meta name="keywords" content="leaderboard, gamification, ranking, chicken race, visualization, funifier, real-time, animated" />
+    <meta name="author" content="Chicken Race Ranking" />
+    <meta name="robots" content="index, follow" />
+    <link rel="canonical" href="https://chicken-race-ranking.vercel.app" />
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://chicken-race-ranking.vercel.app" />
+    <meta property="og:title" content="🐔 Chicken Race Ranking - Gamified Leaderboard Visualization" />
+    <meta property="og:description" content="Transform your leaderboards into an engaging, animated chicken race experience with real-time rankings and smooth animations." />
+    <meta property="og:image" content="https://chicken-race-ranking.vercel.app/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:site_name" content="Chicken Race Ranking" />
+    <meta property="og:locale" content="en_US" />
+    
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta property="twitter:url" content="https://chicken-race-ranking.vercel.app" />
+    <meta property="twitter:title" content="🐔 Chicken Race Ranking - Gamified Leaderboard Visualization" />
+    <meta property="twitter:description" content="Transform your leaderboards into an engaging, animated chicken race experience with real-time rankings and smooth animations." />
+    <meta property="twitter:image" content="https://chicken-race-ranking.vercel.app/og-image.png" />
+    <meta property="twitter:creator" content="@chickenrace" />
+    
+    <!-- Additional SEO -->
+    <meta name="application-name" content="Chicken Race Ranking" />
+    <meta name="apple-mobile-web-app-title" content="Chicken Race" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="msapplication-TileColor" content="#3b82f6" />
+    <meta name="msapplication-config" content="/browserconfig.xml" />
+    
+    <!-- Performance and Security -->
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
+    
+    <!-- Structured Data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "Chicken Race Ranking",
+      "description": "Gamified leaderboard visualization system with animated chicken race",
+      "url": "https://chicken-race-ranking.vercel.app",
+      "applicationCategory": "GameApplication",
+      "operatingSystem": "Web Browser",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      },
+      "creator": {
+        "@type": "Organization",
+        "name": "Chicken Race Ranking"
+      }
+    }
+    </script>
+    
+    <!-- Preload critical resources -->
+    <link rel="modulepreload" href="/src/main.tsx" />
+    
+    <!-- Critical CSS inlined for performance -->
+    <style>
+      /* Critical loading styles */
+      #app {
+        min-height: 100vh;
+        background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+      }
+      
+      /* Loading spinner for initial load */
+      .initial-loading {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+      }
+      
+      .loading-spinner {
+        width: 60px;
+        height: 60px;
+        font-size: 60px;
+        animation: spin 2s linear infinite;
+      }
+      
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+      
+      /* Hide loading when app is ready */
+      .app-ready .initial-loading {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Initial loading screen -->
+    <div class="initial-loading">
+      <div class="loading-spinner">🐔</div>
+    </div>
+    
+    <!-- Main app container -->
+    <div id="app"></div>
+    
+    <!-- Main application script -->
+    <script type="module" src="/src/main.tsx"></script>
+    
+    <!-- Service Worker registration for PWA capabilities -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js')
+            .then((registration) => {
+              console.log('SW registered: ', registration);
+            })
+            .catch((registrationError) => {
+              console.log('SW registration failed: ', registrationError);
+            });
+        });
+      }
+    </script>
+  </body>
+</html>

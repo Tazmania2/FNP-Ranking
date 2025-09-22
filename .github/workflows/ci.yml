@@ -1,0 +1,139 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: chicken-race-ranking/package-lock.json
+        
+    - name: Install dependencies
+      working-directory: ./chicken-race-ranking
+      run: npm ci
+      
+    - name: Run type checking
+      working-directory: ./chicken-race-ranking
+      run: npm run type-check
+      
+    - name: Run linting
+      working-directory: ./chicken-race-ranking
+      run: npm run lint
+      
+    - name: Run unit tests
+      working-directory: ./chicken-race-ranking
+      run: npm run test:run
+      
+    - name: Run tests with coverage
+      working-directory: ./chicken-race-ranking
+      run: npm run test:coverage
+      
+    - name: Upload coverage reports
+      uses: codecov/codecov-action@v4
+      with:
+        file: ./chicken-race-ranking/coverage/coverage-final.json
+        directory: ./chicken-race-ranking/coverage/
+        flags: unittests
+        name: chicken-race-ranking-coverage
+        fail_ci_if_error: true
+      
+    - name: Run build
+      working-directory: ./chicken-race-ranking
+      run: npm run build
+      
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: build-files
+        path: chicken-race-ranking/dist/
+        retention-days: 7
+
+  security-scan:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: chicken-race-ranking/package-lock.json
+        
+    - name: Install dependencies
+      working-directory: ./chicken-race-ranking
+      run: npm ci
+      
+    - name: Run security audit
+      working-directory: ./chicken-race-ranking
+      run: npm audit --audit-level=moderate
+      
+    - name: Check for sensitive data
+      run: |
+        # Check for potential API keys or tokens in code
+        if grep -r "VITE_FUNIFIER_API_KEY.*=" chicken-race-ranking/src/ || \
+           grep -r "VITE_FUNIFIER_AUTH_TOKEN.*=" chicken-race-ranking/src/ || \
+           grep -r "service2\.funifier\.com" chicken-race-ranking/src/ || \
+           grep -r "68a6752b6e1d0e2196db1b53" chicken-race-ranking/src/ || \
+           grep -r "NjhhNjc1MmI2ZTFkMGUyMTk2ZGIxYjUzOjY3ZWM0ZTRhMjMyN2Y3NGYzYTJmOTZmNQ==" chicken-race-ranking/src/ || \
+           grep -r "Basic.*=" chicken-race-ranking/src/; then
+          echo "❌ Sensitive data found in source code!"
+          exit 1
+        else
+          echo "✅ No sensitive data found in source code"
+        fi
+
+  preview-deployment:
+    runs-on: ubuntu-latest
+    needs: [test, security-scan]
+    if: github.event_name == 'pull_request'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Comment PR with deployment info
+      uses: actions/github-script@v7
+      with:
+        script: |
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: `🚀 **Preview Deployment**
+            
+            This PR will automatically create a preview deployment on Vercel.
+            
+            **Deployment Checklist:**
+            - ✅ Tests passed
+            - ✅ Security scan completed
+            - ✅ Build successful
+            
+            The preview URL will be available shortly after Vercel processes this PR.`
+          })
+
+  production-ready:
+    runs-on: ubuntu-latest
+    needs: [test, security-scan]
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+    - name: Production deployment notification
+      run: |
+        echo "🎉 Production deployment initiated"
+        echo "All checks passed - deploying to production via Vercel"

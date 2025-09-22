@@ -1,0 +1,460 @@
+/* ChickenRace Component Styles - Optimized for 60fps performance */
+
+/* Performance optimizations */
+.chicken-race-container,
+.chicken-container,
+.chicken-sprite {
+  /* Enable hardware acceleration */
+  transform: translate3d(0, 0, 0);
+  will-change: transform;
+  backface-visibility: hidden;
+  /* Contain layout calculations for better performance */
+  contain: layout style paint;
+}
+
+/* Chicken animation keyframes for enhanced movement */
+@keyframes chicken-bob {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-2px); }
+}
+
+@keyframes chicken-sway {
+  0%, 100% { transform: translateX(0px); }
+  25% { transform: translateX(-1px); }
+  75% { transform: translateX(1px); }
+}
+
+@keyframes chicken-wiggle {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-0.5deg); }
+  75% { transform: rotate(0.5deg); }
+}
+
+@keyframes chicken-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.02); }
+}
+
+/* Enhanced chicken sprite with optimized CSS animations as fallback */
+.chicken-sprite {
+  /* Use transform3d for hardware acceleration */
+  transform: translate3d(0, 0, 0);
+  will-change: transform;
+  backface-visibility: hidden;
+  
+  animation: 
+    chicken-bob 2s ease-in-out infinite,
+    chicken-sway 3s ease-in-out infinite,
+    chicken-wiggle 4s ease-in-out infinite,
+    chicken-pulse 5s ease-in-out infinite;
+  animation-delay: 0s, 0.5s, 1s, 1.5s;
+}
+
+/* Stagger animations for different chickens */
+.chicken-container:nth-child(2n) .chicken-sprite {
+  animation-delay: 0.2s, 0.7s, 1.2s, 1.7s;
+}
+
+.chicken-container:nth-child(3n) .chicken-sprite {
+  animation-delay: 0.4s, 0.9s, 1.4s, 1.9s;
+}
+
+.chicken-container:nth-child(4n) .chicken-sprite {
+  animation-delay: 0.6s, 1.1s, 1.6s, 2.1s;
+}
+
+/* Race track enhancements */
+.chicken-race-container {
+  background: linear-gradient(
+    to bottom,
+    #87ceeb 0%,
+    #87ceeb 20%,
+    #98fb98 20%,
+    #90ee90 100%
+  );
+  position: relative;
+  overflow: hidden;
+}
+
+/* Track lane lines with subtle animation */
+.track-lane {
+  opacity: 0.3;
+  animation: lane-shimmer 8s ease-in-out infinite;
+}
+
+@keyframes lane-shimmer {
+  0%, 100% { opacity: 0.2; }
+  50% { opacity: 0.4; }
+}
+
+/* Finish line animation */
+.finish-line {
+  background: repeating-linear-gradient(
+    0deg,
+    #000 0px,
+    #000 8px,
+    #fff 8px,
+    #fff 16px
+  );
+  animation: finish-line-wave 3s ease-in-out infinite;
+}
+
+@keyframes finish-line-wave {
+  0%, 100% { transform: scaleY(1); }
+  50% { transform: scaleY(1.02); }
+}
+
+/* Start line animation */
+.start-line {
+  background: repeating-linear-gradient(
+    0deg,
+    #000 0px,
+    #000 8px,
+    #fff 8px,
+    #fff 16px
+  );
+  animation: start-line-pulse 4s ease-in-out infinite;
+}
+
+@keyframes start-line-pulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 0.8; }
+}
+
+/* Position badge enhancements */
+.position-badge {
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  transition: all 0.3s ease;
+}
+
+.position-badge:hover {
+  transform: scale(1.1);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+/* Player name tag enhancements */
+.player-name-tag {
+  backdrop-filter: blur(4px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  transition: all 0.3s ease;
+}
+
+.chicken-container:hover .player-name-tag {
+  background: rgba(255, 255, 255, 0.95);
+  transform: scale(1.05);
+}
+
+/* Race info overlay enhancements */
+.race-info-overlay {
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  transition: all 0.3s ease;
+}
+
+.race-info-overlay:hover {
+  background: rgba(255, 255, 255, 0.95);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Stats cards enhancements */
+.stats-card {
+  transition: all 0.3s ease;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.stats-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+/* Loading animation enhancements */
+.loading-chicken {
+  animation: loading-spin 2s linear infinite;
+}
+
+@keyframes loading-spin {
+  0% { transform: rotate(0deg) scale(1); }
+  25% { transform: rotate(90deg) scale(1.1); }
+  50% { transform: rotate(180deg) scale(1); }
+  75% { transform: rotate(270deg) scale(1.1); }
+  100% { transform: rotate(360deg) scale(1); }
+}
+
+/* Shimmer animation for loading skeletons */
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+/* Touch interaction enhancements */
+.chicken-container {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.chicken-container:active {
+  transform: scale(0.95);
+}
+
+/* Mobile-specific hover states */
+@media (hover: none) and (pointer: coarse) {
+  .chicken-container:hover .player-name-tag {
+    background: rgba(255, 255, 255, 0.9);
+    transform: none;
+  }
+  
+  .chicken-container:hover .chicken-sprite {
+    transform: none;
+  }
+  
+  .position-badge:hover {
+    transform: none;
+  }
+}
+
+/* Responsive enhancements */
+@media (max-width: 768px) {
+  .chicken-sprite {
+    width: 2.5rem;
+    height: 2.5rem;
+  }
+  
+  .player-name-tag {
+    font-size: 0.7rem;
+    padding: 0.25rem 0.5rem;
+    max-width: 5rem;
+  }
+  
+  .position-badge {
+    width: 1.25rem;
+    height: 1.25rem;
+    font-size: 0.7rem;
+  }
+  
+  .race-info-overlay {
+    padding: 0.5rem;
+    font-size: 0.8rem;
+  }
+  
+  /* Increase touch targets */
+  .chicken-container {
+    min-width: 44px;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 640px) {
+  .chicken-race-container {
+    height: 16rem;
+  }
+  
+  .chicken-sprite {
+    width: 2rem;
+    height: 2rem;
+    font-size: 1rem;
+  }
+  
+  .player-name-tag {
+    font-size: 0.6rem;
+    padding: 0.2rem 0.4rem;
+    max-width: 4rem;
+  }
+  
+  .position-badge {
+    width: 1rem;
+    height: 1rem;
+    font-size: 0.6rem;
+  }
+  
+  /* Adjust track lanes for mobile */
+  .track-lane {
+    opacity: 0.2;
+  }
+  
+  /* Simplify animations on mobile */
+  .chicken-sprite {
+    animation-duration: 3s, 4s, 5s, 6s;
+  }
+}
+
+@media (max-width: 480px) {
+  .chicken-race-container {
+    height: 14rem;
+  }
+  
+  .chicken-sprite {
+    width: 1.75rem;
+    height: 1.75rem;
+    font-size: 0.9rem;
+  }
+  
+  .player-name-tag {
+    font-size: 0.55rem;
+    padding: 0.15rem 0.3rem;
+    max-width: 3.5rem;
+  }
+  
+  .position-badge {
+    width: 0.9rem;
+    height: 0.9rem;
+    font-size: 0.55rem;
+  }
+  
+  /* Further simplify for very small screens */
+  .race-info-overlay,
+  .stats-card {
+    font-size: 0.7rem;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .chicken-race-container {
+    border-width: 3px;
+    border-color: #000;
+  }
+  
+  .player-name-tag {
+    background: #fff;
+    color: #000;
+    border: 2px solid #000;
+  }
+  
+  .position-badge {
+    background: #000 !important;
+    color: #fff;
+    border: 2px solid #fff;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .chicken-sprite {
+    animation: none;
+  }
+  
+  .chicken-container {
+    transition: none;
+  }
+  
+  .loading-chicken {
+    animation: none;
+  }
+  
+  .track-lane,
+  .finish-line,
+  .start-line {
+    animation: none;
+  }
+}
+
+/* Mobile performance optimizations */
+@media (max-width: 768px) {
+  /* Use transform3d to enable hardware acceleration */
+  .chicken-container {
+    transform: translate3d(0, 0, 0);
+    will-change: transform;
+    contain: layout style paint;
+  }
+  
+  /* Optimize animations for mobile */
+  .chicken-sprite {
+    backface-visibility: hidden;
+    perspective: 1000px;
+    contain: layout style paint;
+  }
+  
+  /* Reduce animation complexity on mobile */
+  @media (max-width: 480px) {
+    .chicken-sprite {
+      animation: chicken-bob 3s ease-in-out infinite;
+      /* Reduce animation frequency for better performance */
+      animation-fill-mode: both;
+    }
+    
+    .chicken-container:nth-child(2n) .chicken-sprite {
+      animation-delay: 0.5s;
+    }
+    
+    .chicken-container:nth-child(3n) .chicken-sprite {
+      animation-delay: 1s;
+    }
+    
+    /* Limit number of animated elements on very small screens */
+    .chicken-container:nth-child(n+21) .chicken-sprite {
+      animation: none;
+    }
+  }
+}
+
+/* Landscape orientation adjustments */
+@media (max-height: 500px) and (orientation: landscape) {
+  .chicken-race-container {
+    height: 12rem;
+  }
+  
+  .chicken-sprite {
+    width: 1.5rem;
+    height: 1.5rem;
+    font-size: 0.8rem;
+  }
+  
+  .player-name-tag {
+    font-size: 0.5rem;
+    padding: 0.1rem 0.2rem;
+  }
+  
+  .position-badge {
+    width: 0.8rem;
+    height: 0.8rem;
+    font-size: 0.5rem;
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .chicken-race-container {
+    background: linear-gradient(
+      to bottom,
+      #1e3a8a 0%,
+      #1e3a8a 20%,
+      #166534 20%,
+      #15803d 100%
+    );
+  }
+  
+  .player-name-tag {
+    background: rgba(0, 0, 0, 0.8);
+    color: #fff;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+  }
+  
+  .race-info-overlay {
+    background: rgba(0, 0, 0, 0.9);
+    color: #fff;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+  }
+}
+
+/* Print styles */
+@media print {
+  .chicken-race-container {
+    background: #f0f0f0 !important;
+    border: 2px solid #000;
+  }
+  
+  .chicken-sprite {
+    animation: none;
+    filter: grayscale(100%);
+  }
+  
+  .race-info-overlay,
+  .stats-card {
+    background: #fff !important;
+    border: 1px solid #000;
+  }
+}

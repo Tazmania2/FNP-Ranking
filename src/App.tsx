@@ -1,0 +1,223 @@
+import { useState } from 'react';
+import { useChickenRaceManager } from './hooks/useChickenRaceManager';
+import { ChickenRace } from './components/ChickenRace';
+import { Sidebar } from './components/Sidebar';
+import { LazyDetailedRanking } from './components/LazyDetailedRanking';
+import { LeaderboardSelector } from './components/LeaderboardSelector';
+import { FloatingErrorDisplay } from './components/ErrorDisplay';
+import { LoadingDisplay, OverlayLoading } from './components/LoadingDisplay';
+import { RealTimeUpdatesExample } from './components/examples/RealTimeUpdatesExample';
+import type { FunifierConfig } from './types';
+
+function App() {
+  const [showDemo, setShowDemo] = useState(false);
+  const [apiConfig] = useState<FunifierConfig>({
+    serverUrl: import.meta.env.VITE_FUNIFIER_SERVER_URL || '',
+    apiKey: import.meta.env.VITE_FUNIFIER_API_KEY || '',
+    authToken: import.meta.env.VITE_FUNIFIER_AUTH_TOKEN || '',
+  });
+
+  const {
+    // State
+    leaderboards,
+    currentLeaderboard,
+    players,
+    loading,
+    error,
+    
+    // Status
+    raceStatus,
+    playerPositions,
+    
+    // Actions
+    initializeRace,
+    changeLeaderboard,
+    retryFailedOperation,
+    clearError,
+  } = useChickenRaceManager({
+    apiConfig: apiConfig.apiKey ? apiConfig : undefined,
+    realTimeConfig: {
+      pollingInterval: 30000, // 30 seconds
+      enabled: true,
+      maxRetries: 3,
+      retryDelay: 1000,
+      pauseOnHidden: true,
+    },
+    transitionConfig: {
+      transitionDuration: 1000,
+      easing: 'ease-out',
+      staggered: true,
+      staggerDelay: 100,
+      celebrateImprovements: true,
+    },
+  });
+
+  // Show demo if no API config is provided
+  if (showDemo || !apiConfig.apiKey) {
+    return <RealTimeUpdatesExample />;
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-green-400 via-blue-500 to-purple-600">
+      {/* Floating Error Display */}
+      <FloatingErrorDisplay
+        error={error}
+        onRetry={retryFailedOperation}
+        onDismiss={clearError}
+      />
+
+      {/* Header */}
+      <header className="bg-white/10 backdrop-blur-sm border-b border-white/20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex items-center space-x-2 sm:space-x-4">
+              <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-white">
+                🐔 Chicken Race Ranking
+              </h1>
+              {raceStatus.connectionStatus && (
+                <div className={`inline-flex items-center px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium ${
+                  raceStatus.connectionStatus === 'connected' 
+                    ? 'bg-green-100 text-green-800' 
+                    : 'bg-red-100 text-red-800'
+                }`}>
+                  <div className={`w-2 h-2 rounded-full mr-1 sm:mr-2 ${
+                    raceStatus.connectionStatus === 'connected' ? 'bg-green-400' : 'bg-red-400'
+                  }`} />
+                  <span className="hidden sm:inline">{raceStatus.connectionStatus}</span>
+                  <span className="sm:hidden">{raceStatus.connectionStatus === 'connected' ? '✓' : '✗'}</span>
+                </div>
+              )}
+            </div>
+
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-4 w-full sm:w-auto">
+              {/* Leaderboard Selector */}
+              {leaderboards.length > 0 && (
+                <div className="w-full sm:w-auto">
+                  <LeaderboardSelector
+                    leaderboards={leaderboards}
+                    currentLeaderboardId={currentLeaderboard?._id || ''}
+                    onLeaderboardChange={changeLeaderboard}
+                    isLoading={loading.switchingLeaderboard}
+                  />
+                </div>
+              )}
+
+              <button
+                onClick={() => setShowDemo(true)}
+                className="px-3 sm:px-4 py-2 bg-white/20 text-white rounded-lg hover:bg-white/30 transition-colors text-sm sm:text-base"
+              >
+                <span className="sm:hidden">Demo</span>
+                <span className="hidden sm:inline">Demo Mode</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {!raceStatus.isInitialized && !raceStatus.isLoading ? (
+          /* Welcome Screen */
+          <div className="text-center py-20">
+            <div className="text-white/80 text-8xl mb-8">🐔</div>
+            <h2 className="text-4xl font-bold text-white mb-4">
+              Welcome to Chicken Race!
+            </h2>
+            <p className="text-xl text-white/80 mb-8 max-w-2xl mx-auto">
+              Transform your leaderboards into an engaging, animated chicken race experience. 
+              Watch as players compete in real-time with smooth animations and live updates.
+            </p>
+            <div className="space-y-4">
+              <button
+                onClick={initializeRace}
+                disabled={loading.leaderboards}
+                className="px-8 py-4 bg-white text-blue-600 font-semibold rounded-lg hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {loading.leaderboards ? 'Initializing...' : 'Start the Race!'}
+              </button>
+              <div>
+                <button
+                  onClick={() => setShowDemo(true)}
+                  className="text-white/80 hover:text-white underline"
+                >
+                  Or try the demo mode
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : (
+          /* Race Interface */
+          <div className="space-y-8">
+            {/* Loading Overlay */}
+            {loading.leaderboards && (
+              <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                <div className="bg-white rounded-lg p-8 max-w-md mx-4">
+                  <LoadingDisplay
+                    loading={loading}
+                    variant="spinner"
+                    size="large"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Race Visualization */}
+            <div className="flex flex-col lg:grid lg:grid-cols-4 gap-4 lg:gap-8">
+              {/* Main Race Area */}
+              <div className="lg:col-span-3 relative order-2 lg:order-1">
+                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 sm:p-6 border border-white/20">
+                  {currentLeaderboard && (
+                    <div className="mb-4">
+                      <h2 className="text-lg sm:text-xl font-semibold text-white mb-2">
+                        {currentLeaderboard.title}
+                      </h2>
+                      <p className="text-white/80 text-xs sm:text-sm">
+                        {currentLeaderboard.description}
+                      </p>
+                    </div>
+                  )}
+
+                  <ChickenRace
+                    players={players}
+                    leaderboardTitle={currentLeaderboard?.title || ''}
+                    isLoading={loading.currentLeaderboard}
+                    playerPositions={playerPositions}
+                  />
+
+                  {/* Switching Overlay */}
+                  {loading.switchingLeaderboard && (
+                    <OverlayLoading
+                      loading={loading}
+                      message="Switching leaderboard..."
+                    />
+                  )}
+                </div>
+              </div>
+
+              {/* Sidebar - Mobile: Top, Desktop: Right */}
+              <div className="lg:col-span-1 order-1 lg:order-2">
+                <Sidebar
+                  players={players.slice(0, 5)}
+                  currentLeaderboard={currentLeaderboard}
+                  totalPlayers={players.length}
+                  isLoading={loading.currentLeaderboard}
+                />
+              </div>
+            </div>
+
+            {/* Detailed Ranking - Lazy Loaded */}
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
+              <LazyDetailedRanking
+                players={players}
+                currentLeaderboard={currentLeaderboard}
+                isLoading={loading.currentLeaderboard}
+              />
+            </div>
+          </div>
+        )}
+      </main>
+    </div>
+  );
+}
+
+export default App;
