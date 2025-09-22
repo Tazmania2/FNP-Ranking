@@ -121,8 +121,10 @@ const Chicken: React.FC<ChickenProps> = React.memo(({ player, position, onHover 
     >
       {/* Chicken Avatar */}
       <div className="flex flex-col items-center">
-        <div className="chicken-sprite w-12 h-12 mb-1 bg-yellow-400 rounded-full border-2 border-orange-400 flex items-center justify-center text-lg hover:scale-110 transition-transform will-change-transform">
-          🐔
+        <div className="chicken-sprite w-12 h-12 mb-1 flex items-center justify-center text-lg hover:scale-110 transition-transform will-change-transform">
+          <div className="running-chicken">
+            🐓
+          </div>
         </div>
         {/* Player Name */}
         <div className="player-name-tag text-xs font-medium text-gray-800 bg-white/80 px-2 py-1 rounded shadow-sm max-w-20 truncate">
@@ -243,7 +245,9 @@ export const ChickenRace: React.FC<ChickenRaceProps> = React.memo(({
     return (
       <div className="chicken-race-container w-full h-96 bg-gradient-to-b from-sky-200 to-green-200 rounded-lg flex items-center justify-center">
         <div className="text-center">
-          <div className="loading-chicken text-4xl mb-4">🐔</div>
+          <div className="loading-chicken text-4xl mb-4">
+            <div className="running-chicken">🐓</div>
+          </div>
           <p className="text-gray-600">Loading chicken race...</p>
         </div>
       </div>

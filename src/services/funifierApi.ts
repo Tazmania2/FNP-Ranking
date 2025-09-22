@@ -25,11 +25,17 @@ export class FunifierApiService {
   private retryDelay = 1000; // Base delay in milliseconds
 
   constructor(customConfig?: FunifierConfig) {
-    this.config = customConfig || apiConfig.getConfig();
+    const configFromManager = apiConfig.getConfig();
+    this.config = customConfig || configFromManager;
+
+    // If no valid config is available, throw error to trigger demo mode fallback
+    if (!this.config) {
+      throw new Error('No API configuration available - falling back to demo mode');
+    }
 
     // Validate API configuration for security
     if (!validateApiConfig(this.config)) {
-      throw new Error('Invalid API configuration provided');
+      throw new Error('Invalid API configuration provided - falling back to demo mode');
     }
 
     this.axiosInstance = this.createAxiosInstance();

@@ -11,10 +11,24 @@ import type { FunifierConfig } from './types';
 
 function App() {
   const [showDemo, setShowDemo] = useState(false);
-  const [apiConfig] = useState<FunifierConfig>({
-    serverUrl: import.meta.env.VITE_FUNIFIER_SERVER_URL || '',
-    apiKey: import.meta.env.VITE_FUNIFIER_API_KEY || '',
-    authToken: import.meta.env.VITE_FUNIFIER_AUTH_TOKEN || '',
+  const [forceDemo, setForceDemo] = useState(false);
+  
+  // Get API config from environment, allowing null for demo mode fallback
+  const [apiConfig] = useState<FunifierConfig | null>(() => {
+    const serverUrl = import.meta.env.VITE_FUNIFIER_SERVER_URL;
+    const apiKey = import.meta.env.VITE_FUNIFIER_API_KEY;
+    const authToken = import.meta.env.VITE_FUNIFIER_AUTH_TOKEN;
+
+    if (!serverUrl || !apiKey || !authToken) {
+      console.warn('🔧 Missing API configuration, will use demo mode');
+      return null;
+    }
+
+    return {
+      serverUrl: serverUrl.replace(/\/$/, ''),
+      apiKey,
+      authToken,
+    };
   });
 
   // Debug API config
@@ -25,16 +39,17 @@ function App() {
   });
   
   console.log('🔧 App.tsx - API Config:', {
-    serverUrl: apiConfig.serverUrl,
-    apiKey: apiConfig.apiKey,
-    authToken: apiConfig.authToken,
-    hasApiKey: !!apiConfig.apiKey,
+    hasConfig: !!apiConfig,
+    serverUrl: apiConfig?.serverUrl,
+    hasApiKey: !!apiConfig?.apiKey,
+    hasAuthToken: !!apiConfig?.authToken,
   });
   
   console.log('🔧 App.tsx - Show demo decision:', {
     showDemo,
-    hasApiKey: !!apiConfig.apiKey,
-    willShowDemo: showDemo || !apiConfig.apiKey,
+    forceDemo,
+    hasApiConfig: !!apiConfig,
+    willShowDemo: showDemo || forceDemo || !apiConfig,
   });
 
   const {
@@ -56,7 +71,7 @@ function App() {
     retryFailedOperation,
     clearError,
   } = useChickenRaceManager({
-    apiConfig: apiConfig.apiKey ? apiConfig : undefined,
+    apiConfig: apiConfig || undefined,
     realTimeConfig: {
       pollingInterval: 30000, // 30 seconds
       enabled: true,
@@ -71,10 +86,14 @@ function App() {
       staggerDelay: 100,
       celebrateImprovements: true,
     },
+    onAuthError: () => {
+      console.warn('🔐 Authentication error detected, switching to demo mode');
+      setForceDemo(true);
+    },
   });
 
-  // Show demo if no API config is provided
-  if (showDemo || !apiConfig.apiKey) {
+  // Show demo if no API config is provided or auth error occurred
+  if (showDemo || forceDemo || !apiConfig) {
     return <RealTimeUpdatesExample />;
   }
 

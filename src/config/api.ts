@@ -19,16 +19,19 @@ export class ApiConfigManager {
 
   /**
    * Initialize configuration from environment variables
+   * Returns null if configuration is missing (for demo mode fallback)
    */
-  public initializeConfig(): FunifierConfig {
+  public initializeConfig(): FunifierConfig | null {
     const serverUrl = import.meta.env.VITE_FUNIFIER_SERVER_URL;
     const apiKey = import.meta.env.VITE_FUNIFIER_API_KEY;
     const authToken = import.meta.env.VITE_FUNIFIER_AUTH_TOKEN;
 
+    // Return null instead of throwing error to allow demo mode fallback
     if (!serverUrl || !apiKey || !authToken) {
-      throw new Error(
-        'Missing required Funifier configuration. Please check your environment variables: VITE_FUNIFIER_SERVER_URL, VITE_FUNIFIER_API_KEY, VITE_FUNIFIER_AUTH_TOKEN'
+      console.warn(
+        'Missing Funifier configuration. Environment variables not found: VITE_FUNIFIER_SERVER_URL, VITE_FUNIFIER_API_KEY, VITE_FUNIFIER_AUTH_TOKEN. Falling back to demo mode.'
       );
+      return null;
     }
 
     this.config = {
@@ -42,8 +45,9 @@ export class ApiConfigManager {
 
   /**
    * Get current configuration
+   * Returns null if configuration is not available (for demo mode fallback)
    */
-  public getConfig(): FunifierConfig {
+  public getConfig(): FunifierConfig | null {
     if (!this.config) {
       return this.initializeConfig();
     }
@@ -56,7 +60,7 @@ export class ApiConfigManager {
   public validateConfig(): boolean {
     try {
       const config = this.getConfig();
-      return !!(config.serverUrl && config.apiKey && config.authToken);
+      return !!(config && config.serverUrl && config.apiKey && config.authToken);
     } catch {
       return false;
     }

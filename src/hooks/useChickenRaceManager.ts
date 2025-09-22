@@ -29,6 +29,8 @@ interface ChickenRaceManagerConfig {
     staggerDelay?: number;
     celebrateImprovements?: boolean;
   };
+  /** Callback for authentication errors */
+  onAuthError?: () => void;
 }
 
 /**
@@ -40,6 +42,7 @@ export const useChickenRaceManager = (config: ChickenRaceManagerConfig = {}) => 
     apiConfig,
     realTimeConfig = {},
     transitionConfig = {},
+    onAuthError,
   } = config;
 
   // Track initialization attempts to prevent infinite loops
@@ -96,8 +99,20 @@ export const useChickenRaceManager = (config: ChickenRaceManagerConfig = {}) => 
 
   // Create API service instance
   const apiService = useMemo(() => {
-    return new FunifierApiService(apiConfig);
-  }, [apiConfig]);
+    if (!apiConfig) {
+      return null;
+    }
+    try {
+      return new FunifierApiService(apiConfig);
+    } catch (error) {
+      console.error('Failed to create API service:', error);
+      // Trigger auth error callback if provided
+      if (onAuthError) {
+        onAuthError();
+      }
+      return null;
+    }
+  }, [apiConfig, onAuthError]);
 
   // Get leaderboard data and actions
   const {
@@ -198,6 +213,13 @@ export const useChickenRaceManager = (config: ChickenRaceManagerConfig = {}) => 
    * Initialize the chicken race with leaderboards
    */
   const initializeRace = useCallback(async () => {
+    // If no API service is available, fall back to mock data immediately
+    if (!apiService) {
+      console.warn('🔐 No API service available (likely auth error), falling back to mock data');
+      activateMockDataFallback();
+      return;
+    }
+
     // Prevent multiple simultaneous initialization attempts
     if (isInitializingRef.current) {
       console.log('Initialization already in progress, skipping...');
@@ -258,6 +280,16 @@ export const useChickenRaceManager = (config: ChickenRaceManagerConfig = {}) => 
 
     } catch (error) {
       console.error('Failed to initialize chicken race:', error);
+      
+      // Check if it's an auth error
+      if (error && typeof error === 'object' && 'type' in error && error.type === 'auth') {
+        console.warn('🔐 Authentication error detected, triggering demo mode');
+        if (onAuthError) {
+          onAuthError();
+        }
+        return;
+      }
+      
       setError(error as any);
       
       // Fall back to mock data if we've tried multiple times
@@ -269,12 +301,17 @@ export const useChickenRaceManager = (config: ChickenRaceManagerConfig = {}) => 
       setLoadingState('leaderboards', false);
       isInitializingRef.current = false;
     }
-  }, [apiService, setLoadingState, clearError, setError, switchToLeaderboard, activateMockDataFallback]);
+  }, [apiService, setLoadingState, clearError, setError, switchToLeaderboard, activateMockDataFallback, onAuthError]);
 
   /**
    * Manually refresh current leaderboard data
    */
   const refreshData = useCallback(async () => {
+    if (!apiService) {
+      console.warn('🔐 No API service available, cannot refresh data');
+      return;
+    }
+
     if (!currentLeaderboardId) {
       console.log('No current leaderboard ID, skipping refresh');
       return;
@@ -294,16 +331,31 @@ export const useChickenRaceManager = (config: ChickenRaceManagerConfig = {}) => 
 
     } catch (error) {
       console.error('Failed to refresh leaderboard data:', error);
+      
+      // Check if it's an auth error
+      if (error && typeof error === 'object' && 'type' in error && error.type === 'auth') {
+        console.warn('🔐 Authentication error during refresh, triggering demo mode');
+        if (onAuthError) {
+          onAuthError();
+        }
+        return;
+      }
+      
       setError(error as any);
     } finally {
       setLoadingState('currentLeaderboard', false);
     }
-  }, [currentLeaderboardId, apiService, setLoadingState, clearError, setError, updatePlayers]);
+  }, [currentLeaderboardId, apiService, setLoadingState, clearError, setError, updatePlayers, onAuthError]);
 
   /**
    * Switch to a different leaderboard
    */
   const changeLeaderboard = useCallback(async (leaderboardId: string) => {
+    if (!apiService) {
+      console.warn('🔐 No API service available, cannot switch leaderboard');
+      return;
+    }
+
     try {
       setLoadingState('switchingLeaderboard', true);
       clearError();
@@ -323,11 +375,21 @@ export const useChickenRaceManager = (config: ChickenRaceManagerConfig = {}) => 
 
     } catch (error) {
       console.error('Failed to switch leaderboard:', error);
+      
+      // Check if it's an auth error
+      if (error && typeof error === 'object' && 'type' in error && error.type === 'auth') {
+        console.warn('🔐 Authentication error during leaderboard switch, triggering demo mode');
+        if (onAuthError) {
+          onAuthError();
+        }
+        return;
+      }
+      
       setError(error as any);
     } finally {
       setLoadingState('switchingLeaderboard', false);
     }
-  }, [apiService, setLoadingState, clearError, setError, switchToLeaderboard, updatePlayers]);
+  }, [apiService, setLoadingState, clearError, setError, switchToLeaderboard, updatePlayers, onAuthError]);
 
   /**
    * Handle retry for failed operations
@@ -415,13 +477,23 @@ export const useChickenRaceManager = (config: ChickenRaceManagerConfig = {}) => 
   useEffect(() => {
     console.log('🐔 useEffect triggered:', {
       hasApiConfig: !!apiConfig,
+      hasApiService: !!apiService,
       initializationAttempted,
       isInitializing: isInitializingRef.current,
       retryCount: retryCountRef.current,
       usingMockData
     });
     
-    if (apiConfig && !initializationAttempted && !isInitializingRef.current) {
+    // If we have API config but no API service, it means there was an auth error
+    if (apiConfig && !apiService) {
+      console.warn('🔐 API config provided but no API service available, likely auth error');
+      if (onAuthError) {
+        onAuthError();
+      }
+      return;
+    }
+    
+    if (apiConfig && apiService && !initializationAttempted && !isInitializingRef.current) {
       console.log('🐔 Starting chicken race initialization...');
       console.log('🐔 API Config:', {
         serverUrl: apiConfig.serverUrl,
@@ -437,7 +509,7 @@ export const useChickenRaceManager = (config: ChickenRaceManagerConfig = {}) => 
       console.log('🐔 Initialization effect cleanup');
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [apiConfig, initializationAttempted]); // Intentionally excluding initializeRace to prevent infinite loop
+  }, [apiConfig, apiService, initializationAttempted, onAuthError]); // Intentionally excluding initializeRace to prevent infinite loop
 
   return {
     // State
