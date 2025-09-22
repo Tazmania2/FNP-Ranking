@@ -1,6 +1,6 @@
 # Deployment Checklist
 
-## Pre-Deployment Verification fROCE pUSH
+## Pre-Deployment Verification 
 
 Run this checklist before deploying to ensure everything is configured correctly:
 
