@@ -186,9 +186,31 @@ export const useAppState = () => {
     autoCycle: uiState.autoCycle,
     isInitialized: uiState.isInitialized,
 
-    // Actions
-    ...leaderboardState,
-    ...uiState,
+    // Actions - only include the action methods, not the state properties
+    setLeaderboards: leaderboardState.setLeaderboards,
+    setCurrentLeaderboard: leaderboardState.setCurrentLeaderboard,
+    setCurrentLeaderboardId: leaderboardState.setCurrentLeaderboardId,
+    setPlayers: leaderboardState.setPlayers,
+    setLoading: leaderboardState.setLoading,
+    setAllLoading: leaderboardState.setAllLoading,
+    setError: leaderboardState.setError,
+    clearError: leaderboardState.clearError,
+    setLastUpdated: leaderboardState.setLastUpdated,
+    resetLeaderboardData: leaderboardState.resetLeaderboardData,
+    resetStore: leaderboardState.resetStore,
+    
+    showTooltip: uiState.showTooltip,
+    hideTooltip: uiState.hideTooltip,
+    addChickenAnimation: uiState.addChickenAnimation,
+    updateChickenAnimation: uiState.updateChickenAnimation,
+    removeChickenAnimation: uiState.removeChickenAnimation,
+    clearAnimations: uiState.clearAnimations,
+    setAutoCycleEnabled: uiState.setAutoCycleEnabled,
+    setAutoCycleIndex: uiState.setAutoCycleIndex,
+    setAutoCycleInterval: uiState.setAutoCycleInterval,
+    setNextSwitchTime: uiState.setNextSwitchTime,
+    setInitialized: uiState.setInitialized,
+    resetUI: uiState.resetUI,
   };
 };
 

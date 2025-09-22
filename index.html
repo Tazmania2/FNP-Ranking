@@ -58,6 +58,18 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="referrer" content="strict-origin-when-cross-origin" />
     
+    <!-- Content Security Policy -->
+    <meta http-equiv="Content-Security-Policy" content="
+      default-src 'self';
+      script-src 'self' 'unsafe-inline' 'unsafe-eval';
+      style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+      font-src 'self' https://fonts.gstatic.com;
+      img-src 'self' data: https:;
+      connect-src 'self' https://service2.funifier.com wss://service2.funifier.com;
+      worker-src 'self';
+      manifest-src 'self';
+    " />
+    
     <!-- Structured Data -->
     <script type="application/ld+json">
     {

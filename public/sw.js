@@ -101,6 +101,12 @@ self.addEventListener('fetch', (event) => {
 // Cache-first strategy for static assets
 async function cacheFirstStrategy(request) {
   try {
+    // Skip chrome-extension and other unsupported schemes
+    const url = new URL(request.url);
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+      return fetch(request);
+    }
+    
     const cachedResponse = await caches.match(request);
     if (cachedResponse) {
       return cachedResponse;
@@ -108,8 +114,25 @@ async function cacheFirstStrategy(request) {
     
     const networkResponse = await fetch(request);
     if (networkResponse.ok) {
-      const cache = await caches.open(STATIC_CACHE_NAME);
-      cache.put(request, networkResponse.clone());
+      try {
+        const cache = await caches.open(STATIC_CACHE_NAME);
+        // Check if we have enough quota before caching
+        if ('storage' in navigator && 'estimate' in navigator.storage) {
+          const estimate = await navigator.storage.estimate();
+          const usagePercentage = (estimate.usage || 0) / (estimate.quota || 1);
+          
+          // Only cache if we're using less than 80% of quota
+          if (usagePercentage < 0.8) {
+            await cache.put(request, networkResponse.clone());
+          }
+        } else {
+          // Fallback: try to cache and handle quota errors
+          await cache.put(request, networkResponse.clone());
+        }
+      } catch (cacheError) {
+        console.warn('Failed to cache response:', cacheError);
+        // Continue without caching
+      }
     }
     
     return networkResponse;
@@ -118,8 +141,12 @@ async function cacheFirstStrategy(request) {
     
     // Return offline fallback for navigation requests
     if (request.mode === 'navigate') {
-      const cache = await caches.open(STATIC_CACHE_NAME);
-      return cache.match('/index.html');
+      try {
+        const cache = await caches.open(STATIC_CACHE_NAME);
+        return cache.match('/index.html');
+      } catch (fallbackError) {
+        console.error('Failed to get offline fallback:', fallbackError);
+      }
     }
     
     throw error;
@@ -129,11 +156,31 @@ async function cacheFirstStrategy(request) {
 // Network-first strategy for dynamic content
 async function networkFirstStrategy(request) {
   try {
+    // Skip chrome-extension and other unsupported schemes
+    const url = new URL(request.url);
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+      return fetch(request);
+    }
+    
     const networkResponse = await fetch(request);
     
     if (networkResponse.ok) {
-      const cache = await caches.open(DYNAMIC_CACHE_NAME);
-      cache.put(request, networkResponse.clone());
+      try {
+        const cache = await caches.open(DYNAMIC_CACHE_NAME);
+        // Check quota before caching
+        if ('storage' in navigator && 'estimate' in navigator.storage) {
+          const estimate = await navigator.storage.estimate();
+          const usagePercentage = (estimate.usage || 0) / (estimate.quota || 1);
+          
+          if (usagePercentage < 0.8) {
+            await cache.put(request, networkResponse.clone());
+          }
+        } else {
+          await cache.put(request, networkResponse.clone());
+        }
+      } catch (cacheError) {
+        console.warn('Failed to cache response:', cacheError);
+      }
     }
     
     return networkResponse;
@@ -147,8 +194,12 @@ async function networkFirstStrategy(request) {
     
     // Return offline fallback for navigation requests
     if (request.mode === 'navigate') {
-      const cache = await caches.open(STATIC_CACHE_NAME);
-      return cache.match('/index.html');
+      try {
+        const cache = await caches.open(STATIC_CACHE_NAME);
+        return cache.match('/index.html');
+      } catch (fallbackError) {
+        console.error('Failed to get offline fallback:', fallbackError);
+      }
     }
     
     throw error;

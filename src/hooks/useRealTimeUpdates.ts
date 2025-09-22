@@ -133,8 +133,10 @@ export const useRealTimeUpdates = (
       );
 
       if (hasChanges) {
-        // Update players with transition information
-        updatePlayers(changedPlayers);
+        // Use setTimeout to avoid state updates during render
+        setTimeout(() => {
+          updatePlayers(changedPlayers);
+        }, 0);
       }
 
       // Reset retry count on successful update
@@ -157,8 +159,10 @@ export const useRealTimeUpdates = (
           fetchLeaderboardData();
         }, delay);
       } else {
-        // Set error state for non-retryable errors or max retries exceeded
-        setError(apiError);
+        // Set error state for non-retryable errors or max retries exceeded - use setTimeout to avoid render issues
+        setTimeout(() => {
+          setError(apiError);
+        }, 0);
         retryCountRef.current = 0; // Reset for next polling cycle
       }
     } finally {
@@ -312,9 +316,14 @@ export const useRealTimeUpdatesWithLoading = (
   const { setLoadingState } = useLeaderboardData();
   const realTimeUpdates = useRealTimeUpdates(apiService, config);
 
-  // Update loading state based on update status
+  // Update loading state based on update status - use useEffect to avoid render-time updates
   useEffect(() => {
-    setLoadingState('currentLeaderboard', realTimeUpdates.isUpdating);
+    // Use setTimeout to ensure this runs after render
+    const timeoutId = setTimeout(() => {
+      setLoadingState('currentLeaderboard', realTimeUpdates.isUpdating);
+    }, 0);
+
+    return () => clearTimeout(timeoutId);
   }, [realTimeUpdates.isUpdating, setLoadingState]);
 
   return realTimeUpdates;

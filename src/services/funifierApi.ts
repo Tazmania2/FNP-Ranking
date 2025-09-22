@@ -175,7 +175,7 @@ export class FunifierApiService {
   }
 
   /**
-   * Fetch leaderboard data with players
+   * Fetch leaderboard data with players using the aggregate endpoint
    */
   public async getLeaderboardData(
     leaderboardId: string,
@@ -187,35 +187,40 @@ export class FunifierApiService {
       if (options.live !== undefined) {
         params.append('live', options.live.toString());
       }
-      if (options.maxResults !== undefined) {
-        params.append('maxResults', options.maxResults.toString());
-      }
       if (options.period !== undefined) {
         params.append('period', options.period);
+      } else {
+        params.append('period', ''); // Default empty period
       }
 
-      const url = `/leaderboard/${leaderboardId}${params.toString() ? `?${params.toString()}` : ''}`;
-      const response = await this.axiosInstance.get(url);
+      // Use the aggregate endpoint that matches your working test
+      const url = `/leaderboard/${leaderboardId}/leader/aggregate?${params.toString()}`;
+      const response = await this.axiosInstance.post(url, []);
 
-      // Validate response structure
-      if (!response.data || !response.data.leaderboard || !Array.isArray(response.data.leaders)) {
+      // The API returns an array of players directly
+      if (!Array.isArray(response.data)) {
         throw new Error('Invalid leaderboard data response format');
       }
 
       // Sanitize player data to prevent XSS
-      const sanitizedData = {
-        ...response.data,
-        leaders: response.data.leaders.map((player: any) => ({
-          ...player,
-          name: validatePlayerName(player.name || ''),
-          total: validateNumber(player.total),
-          position: validateNumber(player.position),
-          previous_total: player.previous_total ? validateNumber(player.previous_total) : undefined,
-          previous_position: player.previous_position ? validateNumber(player.previous_position) : undefined,
-        }))
-      };
+      const sanitizedPlayers = response.data.map((player: any) => ({
+        ...player,
+        name: validatePlayerName(player.name || ''),
+        total: validateNumber(player.total),
+        position: validateNumber(player.position),
+        previous_total: player.previous_total ? validateNumber(player.previous_total) : undefined,
+        previous_position: player.previous_position ? validateNumber(player.previous_position) : undefined,
+      }));
 
-      return sanitizedData as LeaderboardResponse;
+      // Return in the expected format
+      return {
+        leaderboard: {
+          _id: leaderboardId,
+          title: `Leaderboard ${leaderboardId}`,
+          description: 'Live leaderboard data',
+        },
+        leaders: sanitizedPlayers,
+      } as LeaderboardResponse;
     });
   }
 

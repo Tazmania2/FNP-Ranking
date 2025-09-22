@@ -93,14 +93,10 @@ export const useChickenRaceManager = (config: ChickenRaceManagerConfig = {}) => 
       setLoadingState('leaderboards', true);
       clearError();
 
-      // Test API connection first
-      const isConnected = await apiService.testConnection();
-      if (!isConnected) {
-        throw new Error('Failed to connect to Funifier API');
-      }
-
-      // Fetch available leaderboards
-      const fetchedLeaderboards = await apiService.getLeaderboards();
+      let fetchedLeaderboards: any[] = [];
+      
+      // Fetch available leaderboards from API
+      fetchedLeaderboards = await apiService.getLeaderboards();
       
       if (fetchedLeaderboards.length === 0) {
         setError({
