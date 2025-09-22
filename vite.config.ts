@@ -1,9 +1,13 @@
-import { defineConfig } from 'vite';
+import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
 
 // https://vitejs.dev/config/
-export default defineConfig({
+export default defineConfig(({ mode }) => {
+  // Load env file based on `mode` in the current working directory.
+  const env = loadEnv(mode, process.cwd(), '');
+  
+  return {
   plugins: [
     react({
       // Enable React Fast Refresh for better development experience
@@ -114,6 +118,10 @@ export default defineConfig({
   },
   define: {
     'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV),
+    // Explicitly define environment variables for production builds
+    'import.meta.env.VITE_FUNIFIER_SERVER_URL': JSON.stringify(env.VITE_FUNIFIER_SERVER_URL),
+    'import.meta.env.VITE_FUNIFIER_API_KEY': JSON.stringify(env.VITE_FUNIFIER_API_KEY),
+    'import.meta.env.VITE_FUNIFIER_AUTH_TOKEN': JSON.stringify(env.VITE_FUNIFIER_AUTH_TOKEN),
   },
   // Development server optimizations
   server: {
@@ -121,4 +129,5 @@ export default defineConfig({
       overlay: false,
     },
   },
+  };
 });

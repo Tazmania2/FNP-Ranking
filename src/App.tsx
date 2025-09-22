@@ -17,6 +17,26 @@ function App() {
     authToken: import.meta.env.VITE_FUNIFIER_AUTH_TOKEN || '',
   });
 
+  // Debug API config
+  console.log('🔧 App.tsx - Environment variables:', {
+    VITE_FUNIFIER_SERVER_URL: import.meta.env.VITE_FUNIFIER_SERVER_URL,
+    VITE_FUNIFIER_API_KEY: import.meta.env.VITE_FUNIFIER_API_KEY,
+    VITE_FUNIFIER_AUTH_TOKEN: import.meta.env.VITE_FUNIFIER_AUTH_TOKEN,
+  });
+  
+  console.log('🔧 App.tsx - API Config:', {
+    serverUrl: apiConfig.serverUrl,
+    apiKey: apiConfig.apiKey,
+    authToken: apiConfig.authToken,
+    hasApiKey: !!apiConfig.apiKey,
+  });
+  
+  console.log('🔧 App.tsx - Show demo decision:', {
+    showDemo,
+    hasApiKey: !!apiConfig.apiKey,
+    willShowDemo: showDemo || !apiConfig.apiKey,
+  });
+
   const {
     // State
     leaderboards,
