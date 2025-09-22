@@ -198,77 +198,13 @@ export const useChickenRaceManager = (config: ChickenRaceManagerConfig = {}) => 
 
       let fetchedLeaderboards: any[] = [];
       
-      try {
-        // Now safe to call getLeaderboards since it's been fixed to not make the problematic API call
-        fetchedLeaderboards = await apiService.getLeaderboards();
-        console.log('Successfully got leaderboards (using safe method):', fetchedLeaderboards);
-        
-        // Test the leaderboard data to make sure it works
-        const testResponse = await apiService.getLeaderboardData(fetchedLeaderboards[0]._id, { live: true });
-        if (testResponse && testResponse.leaders) {
-          console.log('Successfully verified leaderboard data access');
-        }
-      } catch (dataError) {
-        console.error('Failed to fetch leaderboard data:', dataError);
-        
-        // If we've tried multiple times, use mock data
-        if (retryCountRef.current >= MAX_RETRY_ATTEMPTS - 1) {
-          console.warn('API consistently failing, using mock data fallback');
-          useMockDataFallback();
-          return;
-        }
-        
-        setError({
-          type: 'network',
-          message: `Unable to connect to leaderboard service (attempt ${retryCountRef.current}/${MAX_RETRY_ATTEMPTS}). Please check your API configuration.`,
-          retryable: true,
-          timestamp: Date.now(),
-        });
-        return;
-      }
-      
-      if (fetchedLeaderboards.length === 0) {
-        if (retryCountRef.current >= MAX_RETRY_ATTEMPTS - 1) {
-          console.warn('No leaderboards found after maximum retries, using mock data fallback');
-          useMockDataFallback();
-          return;
-        }
-        
-        setError({
-          type: 'validation',
-          message: `No leaderboards found (attempt ${retryCountRef.current}/${MAX_RETRY_ATTEMPTS})`,
-          retryable: true,
-          timestamp: Date.now(),
-        });
-        return;
-      }
-
-      // Set the leaderboards in the store first
-      const leaderboardStore = useLeaderboardStore.getState();
-      leaderboardStore.setLeaderboards(fetchedLeaderboards);
-
-      // Wait a bit for the store to update, then initialize with first leaderboard
-      const firstLeaderboard = fetchedLeaderboards[0];
-      console.log('Setting up leaderboard:', firstLeaderboard);
-      
-      // Reset retry count on success
-      retryCountRef.current = 0;
-      
-      // Use setTimeout to ensure the store update has propagated
-      setTimeout(() => {
-        switchToLeaderboard(firstLeaderboard._id);
-      }, 0);
+      // TEMPORARILY DISABLE ALL API CALLS TO ISOLATE THE LOOP SOURCE
+      console.log('🚨 ALL API CALLS DISABLED - Using mock data immediately');
+      useMockDataFallback();
+      return;
 
     } catch (error) {
       console.error('Failed to initialize chicken race:', error);
-      
-      // If we've tried multiple times, use mock data
-      if (retryCountRef.current >= MAX_RETRY_ATTEMPTS - 1) {
-        console.warn('Initialization failed after maximum retries, using mock data fallback');
-        useMockDataFallback();
-        return;
-      }
-      
       setError(error as any);
     } finally {
       setLoadingState('leaderboards', false);
