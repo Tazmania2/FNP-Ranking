@@ -8,12 +8,8 @@
     "VITE_APP_TITLE": "Chicken Race Ranking",
     "VITE_API_POLLING_INTERVAL": "30000"
   },
-  "build": {
-    "env": {
-      "VITE_FUNIFIER_API_KEY": "@funifier_api_key",
-      "VITE_FUNIFIER_AUTH_TOKEN": "@funifier_auth_token"
-    }
-  },
+
+
   "headers": [
     {
       "source": "/(.*)",
