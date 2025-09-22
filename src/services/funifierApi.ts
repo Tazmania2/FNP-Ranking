@@ -168,10 +168,17 @@ export class FunifierApiService {
    * Fetch list of available leaderboards
    */
   public async getLeaderboards(): Promise<Leaderboard[]> {
+    console.log('🚀 getLeaderboards() called');
+    console.log('🚀 API Config:', {
+      serverUrl: this.config.serverUrl,
+      hasApiKey: !!this.config.apiKey,
+      hasAuthToken: !!this.config.authToken
+    });
+    
     return this.retryRequest(async () => {
-      console.log('Fetching leaderboards from:', `${this.config.serverUrl}/leaderboard`);
+      console.log('🌐 Making HTTP request to:', `${this.config.serverUrl}/leaderboard`);
       const response = await this.axiosInstance.get('/leaderboard');
-      console.log('Leaderboards response:', response.data);
+      console.log('✅ Leaderboards response received:', response.data);
 
       if (!Array.isArray(response.data)) {
         throw new Error('Invalid leaderboards response format');
@@ -187,6 +194,7 @@ export class FunifierApiService {
         period: leaderboard.period || 'all',
       }));
 
+      console.log('🧹 Sanitized leaderboards:', sanitizedLeaderboards);
       return sanitizedLeaderboards as Leaderboard[];
     });
   }

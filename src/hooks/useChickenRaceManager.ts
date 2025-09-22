@@ -92,7 +92,7 @@ export const useChickenRaceManager = (config: ChickenRaceManagerConfig = {}) => 
     }
   ];
 
-  const MAX_RETRY_ATTEMPTS = 10;
+  const MAX_RETRY_ATTEMPTS = 3; // Reduced to prevent immediate fallback
 
   // Create API service instance
   const apiService = useMemo(() => {
@@ -312,10 +312,21 @@ export const useChickenRaceManager = (config: ChickenRaceManagerConfig = {}) => 
    * Handle retry for failed operations
    */
   const retryFailedOperation = useCallback(() => {
-    if (!error) {
+    console.log('🔄 Retry button clicked!');
+    console.log('🔄 Current state:', {
+      hasError: !!error,
+      hasLeaderboards,
+      currentLeaderboardId,
+      usingMockData,
+      retryCount: retryCountRef.current
+    });
+
+    if (!error && !usingMockData) {
+      console.log('🔄 No error and not using mock data, nothing to retry');
       return;
     }
 
+    console.log('🔄 Resetting all states for retry...');
     clearError();
     setInitializationAttempted(false); // Reset initialization flag for retry
     retryCountRef.current = 0; // Reset retry counter for manual retry
@@ -324,12 +335,14 @@ export const useChickenRaceManager = (config: ChickenRaceManagerConfig = {}) => 
     appStoreActions.resetSwitchCounters(); // Reset switch attempt counters
 
     // Determine what operation to retry based on current state
-    if (!hasLeaderboards) {
+    if (!hasLeaderboards || usingMockData) {
+      console.log('🔄 Retrying initialization...');
       initializeRace();
     } else if (currentLeaderboardId) {
+      console.log('🔄 Retrying data refresh...');
       refreshData();
     }
-  }, [error, clearError, hasLeaderboards, currentLeaderboardId, initializeRace, refreshData]);
+  }, [error, clearError, hasLeaderboards, currentLeaderboardId, initializeRace, refreshData, usingMockData]);
 
   /**
    * Get race statistics
@@ -379,8 +392,21 @@ export const useChickenRaceManager = (config: ChickenRaceManagerConfig = {}) => 
 
   // Auto-initialize on mount if API config is provided - StrictMode compatible
   useEffect(() => {
+    console.log('🐔 useEffect triggered:', {
+      hasApiConfig: !!apiConfig,
+      initializationAttempted,
+      isInitializing: isInitializingRef.current,
+      retryCount: retryCountRef.current,
+      usingMockData
+    });
+    
     if (apiConfig && !initializationAttempted && !isInitializingRef.current) {
       console.log('🐔 Starting chicken race initialization...');
+      console.log('🐔 API Config:', {
+        serverUrl: apiConfig.serverUrl,
+        hasApiKey: !!apiConfig.apiKey,
+        hasAuthToken: !!apiConfig.authToken
+      });
       initializeRace();
     }
     
