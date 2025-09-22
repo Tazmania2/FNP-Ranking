@@ -119,15 +119,25 @@ export const useChickenRaceManager = (config: ChickenRaceManagerConfig = {}) => 
     clearError,
   } = useLeaderboardData();
 
-  // Set up real-time updates with careful configuration to prevent loops
-  const realTimeUpdates = useRealTimeUpdatesWithLoading(apiService, {
-    pollingInterval: 30000, // 30 seconds
-    enabled: realTimeConfig.enabled !== false, // Default to true unless explicitly disabled
-    maxRetries: 3,
-    retryDelay: 2000, // Longer delay to prevent rapid retries
-    pauseOnHidden: true,
-    ...realTimeConfig,
-  });
+  // TEMPORARILY DISABLE real-time updates to prevent infinite loops
+  // We'll re-enable this once we fix the loop issue
+  const realTimeUpdates = {
+    isPolling: false,
+    isUpdating: false,
+    retryCount: 0,
+    timeSinceLastUpdate: 0,
+    lastSuccessfulUpdate: 0,
+    startPolling: () => console.log('🚨 Real-time polling disabled to prevent loops'),
+    stopPolling: () => console.log('🚨 Real-time polling disabled to prevent loops'),
+    forceUpdate: () => console.log('🚨 Real-time updates disabled to prevent loops'),
+    config: {
+      pollingInterval: 30000,
+      enabled: false, // DISABLED
+      maxRetries: 3,
+      retryDelay: 2000,
+      pauseOnHidden: true,
+    },
+  };
 
   // Set up position transitions
   const positionTransitions = usePositionTransitions(players, {
@@ -228,7 +238,18 @@ export const useChickenRaceManager = (config: ChickenRaceManagerConfig = {}) => 
       const targetLeaderboard = fetchedLeaderboards.find(lb => lb._id === 'EVeTmET') || fetchedLeaderboards[0];
       console.log('🎯 Switching to leaderboard:', targetLeaderboard._id);
       
-      await switchToLeaderboard(targetLeaderboard._id);
+      // Set the leaderboard in store without triggering additional API calls
+      leaderboardStore.setCurrentLeaderboard(targetLeaderboard);
+      leaderboardStore.setCurrentLeaderboardId(targetLeaderboard._id);
+      
+      // Fetch initial data for this leaderboard
+      console.log('🔄 Fetching initial data for leaderboard:', targetLeaderboard._id);
+      const response = await apiService.getLeaderboardData(targetLeaderboard._id, {
+        live: true,
+      });
+      
+      console.log('✅ Initial leaderboard data loaded:', response.leaders.length, 'players');
+      updatePlayers(response.leaders);
 
       // Reset retry count on success
       retryCountRef.current = 0;
