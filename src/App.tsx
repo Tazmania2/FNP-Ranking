@@ -6,7 +6,7 @@ import { LazyDetailedRanking } from './components/LazyDetailedRanking';
 import { LeaderboardSelector } from './components/LeaderboardSelector';
 import { FloatingErrorDisplay } from './components/ErrorDisplay';
 import { LoadingDisplay, OverlayLoading } from './components/LoadingDisplay';
-import { RealTimeUpdatesExample } from './components/examples/RealTimeUpdatesExample';
+import ChickenRaceExample from './components/examples/ChickenRaceExample';
 import type { FunifierConfig } from './types';
 
 function App() {
@@ -94,7 +94,35 @@ function App() {
 
   // Show demo if no API config is provided or auth error occurred
   if (showDemo || forceDemo || !apiConfig) {
-    return <RealTimeUpdatesExample />;
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-green-400 via-blue-500 to-purple-600">
+        <div className="container mx-auto py-8">
+          {/* Demo Mode Banner */}
+          <div className="bg-yellow-500/90 backdrop-blur-sm border-b border-yellow-400/50 mb-6 rounded-lg mx-4">
+            <div className="px-4 py-3">
+              <div className="flex items-center justify-center text-center">
+                <div className="flex items-center space-x-2">
+                  <span className="text-yellow-900 text-lg">🎮</span>
+                  <span className="text-yellow-900 font-medium">
+                    Demo Mode: {!apiConfig ? 'No API configuration found' : 'API connection failed'}
+                  </span>
+                  {(forceDemo || !apiConfig) && (
+                    <button
+                      onClick={() => window.location.reload()}
+                      className="ml-4 px-3 py-1 bg-yellow-600 text-white text-xs rounded hover:bg-yellow-700 transition-colors"
+                    >
+                      Reload App
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <ChickenRaceExample />
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -199,7 +227,7 @@ function App() {
                   onClick={() => setShowDemo(true)}
                   className="text-white/80 hover:text-white underline"
                 >
-                  Or try the demo mode
+                  Or try the interactive demo
                 </button>
               </div>
             </div>
