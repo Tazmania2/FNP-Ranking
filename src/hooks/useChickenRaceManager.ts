@@ -142,19 +142,24 @@ export const useChickenRaceManager = (config: ChickenRaceManagerConfig = {}) => 
   /**
    * Fallback to mock data when API fails repeatedly
    */
-  const useMockDataFallback = useCallback(() => {
+  const activateMockDataFallback = useCallback(() => {
     console.warn('🐔 API failed after maximum retries. Using mock data for demonstration.');
     console.warn('Mock data is being displayed. This is not real leaderboard data.');
     
     setUsingMockData(true);
     
-    // Create mock leaderboard
+    // Create mock leaderboard with proper typing
     const mockLeaderboard = {
       _id: 'EVeTmET',
       title: 'Demo Leaderboard (Mock Data)',
       description: 'This is mock data shown due to API connection issues',
-      principalType: 0, // Should be number, not string
-      operation: 'sum',
+      principalType: 0,
+      operation: {
+        type: 0,
+        achievement_type: 0,
+        item: 'total',
+        sort: 1,
+      },
       period: 'all',
     };
 
@@ -177,7 +182,7 @@ export const useChickenRaceManager = (config: ChickenRaceManagerConfig = {}) => 
     retryCountRef.current = 0;
     
     console.log('🐔 Mock data setup complete!');
-  }, [updatePlayers, clearError, setLoadingState]);
+  }, [updatePlayers, clearError, setLoadingState, MOCK_LEADERBOARD_DATA]);
 
   /**
    * Initialize the chicken race with leaderboards
@@ -192,7 +197,7 @@ export const useChickenRaceManager = (config: ChickenRaceManagerConfig = {}) => 
     // Check if we've exceeded max retries
     if (retryCountRef.current >= MAX_RETRY_ATTEMPTS) {
       console.warn(`Maximum retry attempts (${MAX_RETRY_ATTEMPTS}) exceeded. Falling back to mock data.`);
-      useMockDataFallback();
+      activateMockDataFallback();
       return;
     }
 
@@ -237,13 +242,13 @@ export const useChickenRaceManager = (config: ChickenRaceManagerConfig = {}) => 
       // Fall back to mock data if we've tried multiple times
       if (retryCountRef.current >= 3) {
         console.warn('Multiple initialization failures, falling back to mock data');
-        useMockDataFallback();
+        activateMockDataFallback();
       }
     } finally {
       setLoadingState('leaderboards', false);
       isInitializingRef.current = false;
     }
-  }, [apiService, setLoadingState, clearError, setError, switchToLeaderboard, useMockDataFallback]);
+  }, [apiService, setLoadingState, clearError, setError, switchToLeaderboard, activateMockDataFallback]);
 
   /**
    * Manually refresh current leaderboard data
