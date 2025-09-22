@@ -1,6 +1,6 @@
 import { useEffect, useCallback, useMemo, useState, useRef } from 'react';
 import { FunifierApiService } from '../services/funifierApi';
-import { useRealTimeUpdatesWithLoading } from './useRealTimeUpdates';
+// import { useRealTimeUpdatesWithLoading } from './useRealTimeUpdates'; // Temporarily disabled
 import { usePositionTransitions } from './usePositionTransitions';
 import { useLeaderboardData } from './useAppState';
 import { useLeaderboardStore } from '../store/leaderboardStore';
@@ -185,7 +185,11 @@ export const useChickenRaceManager = (config: ChickenRaceManagerConfig = {}) => 
         item: 'total',
         sort: 1,
       },
-      period: 'all',
+      period: {
+        type: 0,
+        timeAmount: 0,
+        timeScale: 0,
+      },
     };
 
     // Set mock leaderboard and data in store

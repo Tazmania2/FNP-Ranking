@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Auth Error Test</title>
+</head>
+<body>
+    <h1>Testing Auth Error Handling</h1>
+    <p>This page tests what happens when API credentials are invalid.</p>
+    
+    <script>
+        // Test with invalid credentials
+        const testConfig = {
+            serverUrl: 'https://service2.funifier.com/v3',
+            apiKey: 'invalid_key',
+            authToken: 'invalid_token'
+        };
+        
+        console.log('Testing with invalid credentials:', testConfig);
+        
+        // Simulate API call with invalid credentials
+        fetch(`${testConfig.serverUrl}/leaderboard`, {
+            headers: {
+                'Authorization': testConfig.authToken,
+                'X-API-Key': testConfig.apiKey,
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => {
+            console.log('Response status:', response.status);
+            if (response.status === 401 || response.status === 403) {
+                console.log('✅ Auth error detected - should trigger demo mode');
+                document.body.innerHTML += '<p style="color: green;">✅ Auth error detected (status: ' + response.status + ') - should trigger demo mode</p>';
+            } else {
+                console.log('❌ Unexpected response status:', response.status);
+                document.body.innerHTML += '<p style="color: red;">❌ Unexpected response status: ' + response.status + '</p>';
+            }
+        })
+        .catch(error => {
+            console.log('Network error:', error);
+            document.body.innerHTML += '<p style="color: orange;">⚠️ Network error: ' + error.message + '</p>';
+        });
+    </script>
+</body>
+</html>

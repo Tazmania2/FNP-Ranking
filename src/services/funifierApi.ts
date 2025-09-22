@@ -26,18 +26,19 @@ export class FunifierApiService {
 
   constructor(customConfig?: FunifierConfig) {
     const configFromManager = apiConfig.getConfig();
-    this.config = customConfig || configFromManager;
+    const resolvedConfig = customConfig || configFromManager;
 
     // If no valid config is available, throw error to trigger demo mode fallback
-    if (!this.config) {
+    if (!resolvedConfig) {
       throw new Error('No API configuration available - falling back to demo mode');
     }
 
     // Validate API configuration for security
-    if (!validateApiConfig(this.config)) {
+    if (!validateApiConfig(resolvedConfig)) {
       throw new Error('Invalid API configuration provided - falling back to demo mode');
     }
 
+    this.config = resolvedConfig;
     this.axiosInstance = this.createAxiosInstance();
   }
 
