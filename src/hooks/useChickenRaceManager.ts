@@ -54,7 +54,7 @@ export const useChickenRaceManager = (config: ChickenRaceManagerConfig = {}) => 
       "_id": "cesar.domingos@cidadania4u.com.br_E7HHB2I",
       "total": 17.5,
       "position": 1,
-      "move": "up",
+      "move": "up" as const,
       "player": "cesar.domingos@cidadania4u.com.br",
       "name": "Cesar Domingos",
       "extra": {"cache": "E7HHB2I"},
@@ -64,7 +64,7 @@ export const useChickenRaceManager = (config: ChickenRaceManagerConfig = {}) => 
       "_id": "taira.rabelo@cidadania4u.com.br_E7HHB2I",
       "total": 17,
       "position": 2,
-      "move": "up",
+      "move": "up" as const,
       "player": "taira.rabelo@cidadania4u.com.br",
       "name": "Tairã Rabelo",
       "extra": {"cache": "E7HHB2I"},
@@ -74,7 +74,7 @@ export const useChickenRaceManager = (config: ChickenRaceManagerConfig = {}) => 
       "_id": "iuri.helou@cidadania4u.com.br_E7HHB2I",
       "total": 14,
       "position": 3,
-      "move": "up",
+      "move": "up" as const,
       "player": "iuri.helou@cidadania4u.com.br",
       "name": "Iuri Helou",
       "extra": {"cache": "E7HHB2I"},
@@ -84,7 +84,7 @@ export const useChickenRaceManager = (config: ChickenRaceManagerConfig = {}) => 
       "_id": "game@grupo4u.com.br_E7HHB2I",
       "total": 10,
       "position": 4,
-      "move": "up",
+      "move": "up" as const,
       "player": "game@grupo4u.com.br",
       "name": "Admin Game",
       "extra": {"cache": "E7HHB2I"},
@@ -119,10 +119,10 @@ export const useChickenRaceManager = (config: ChickenRaceManagerConfig = {}) => 
     clearError,
   } = useLeaderboardData();
 
-  // Set up real-time updates
+  // Set up real-time updates - TEMPORARILY DISABLED to stop the loop
   const realTimeUpdates = useRealTimeUpdatesWithLoading(apiService, {
     pollingInterval: 30000, // 30 seconds default
-    enabled: true,
+    enabled: false, // DISABLED to prevent aggregate endpoint loop
     maxRetries: 3,
     retryDelay: 1000,
     pauseOnHidden: true,
@@ -153,6 +153,9 @@ export const useChickenRaceManager = (config: ChickenRaceManagerConfig = {}) => 
       _id: 'EVeTmET',
       title: 'Demo Leaderboard (Mock Data)',
       description: 'This is mock data shown due to API connection issues',
+      principalType: 'user',
+      operation: 'sum',
+      period: 'all',
     };
 
     // Set mock leaderboard and data in store
@@ -396,11 +399,18 @@ export const useChickenRaceManager = (config: ChickenRaceManagerConfig = {}) => 
     positionTransitions.isAnimating,
   ]);
 
-  // Auto-initialize on mount if API config is provided - only run once
+  // Auto-initialize on mount if API config is provided - StrictMode compatible
   useEffect(() => {
-    if (apiConfig && !initializationAttempted) {
+    if (apiConfig && !initializationAttempted && !isInitializingRef.current) {
+      console.log('🐔 Starting chicken race initialization...');
       initializeRace();
     }
+    
+    // Cleanup function for StrictMode compatibility
+    return () => {
+      // This cleanup will run when the effect is cleaned up in StrictMode
+      console.log('🐔 Initialization effect cleanup');
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [apiConfig, initializationAttempted]); // Intentionally excluding initializeRace to prevent infinite loop
 
