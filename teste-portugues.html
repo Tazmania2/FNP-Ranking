@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste - Corrida de Galinhas em Português</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .test-case {
+            background: #f5f5f5;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border-left: 4px solid #007cba;
+        }
+        .success { border-left-color: #28a745; }
+        .error { border-left-color: #dc3545; }
+        .warning { border-left-color: #ffc107; }
+        code {
+            background: #e9ecef;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+        }
+    </style>
+</head>
+<body>
+    <h1>🐔 Teste da Corrida de Galinhas em Português</h1>
+    
+    <p>Este documento verifica se todas as traduções e funcionalidades estão funcionando corretamente.</p>
+
+    <div class="test-case success">
+        <h3>✅ Funcionalidades Implementadas</h3>
+        <ul>
+            <li><strong>Interface traduzida para português:</strong> Todos os textos da interface</li>
+            <li><strong>Sidebar com Top 5:</strong> Painel lateral mostrando os 5 melhores jogadores</li>
+            <li><strong>Nomes brasileiros:</strong> Jogadores com nomes tipicamente brasileiros</li>
+            <li><strong>Modo demo completo:</strong> Demonstração interativa com todas as funcionalidades</li>
+            <li><strong>Fallback automático:</strong> Quando a API falha, mostra o demo automaticamente</li>
+        </ul>
+    </div>
+
+    <div class="test-case warning">
+        <h3>⚠️ Cenários de Teste</h3>
+        <ol>
+            <li><strong>Modo Demo (sem API):</strong>
+                <ul>
+                    <li>Remover arquivo <code>.env.local</code></li>
+                    <li>Iniciar servidor: <code>npm run dev</code></li>
+                    <li>Verificar se mostra demo em português com sidebar</li>
+                </ul>
+            </li>
+            <li><strong>Modo API (com credenciais):</strong>
+                <ul>
+                    <li>Restaurar <code>.env.local</code> com credenciais válidas</li>
+                    <li>Verificar se conecta à API real</li>
+                    <li>Verificar se interface está em português</li>
+                </ul>
+            </li>
+            <li><strong>Fallback por erro de auth:</strong>
+                <ul>
+                    <li>Modificar credenciais para valores inválidos</li>
+                    <li>Verificar se cai automaticamente no modo demo</li>
+                </ul>
+            </li>
+        </ol>
+    </div>
+
+    <div class="test-case">
+        <h3>🎯 Elementos Traduzidos</h3>
+        <ul>
+            <li><strong>Título principal:</strong> "Ranking da Corrida de Galinhas"</li>
+            <li><strong>Botões:</strong> "Começar a Corrida!", "Modo Demo", "Tentar API"</li>
+            <li><strong>Sidebar:</strong> "Melhores Jogadores", "Mostrando top 5 de X jogadores"</li>
+            <li><strong>Demo:</strong> "Demonstração da Corrida de Galinhas"</li>
+            <li><strong>Controles:</strong> "Número de Jogadores", "Título da Corrida", "Atualizar Corrida"</li>
+            <li><strong>Status:</strong> "conectado/desconectado", "Sem mudança"</li>
+            <li><strong>Mensagens:</strong> "Bem-vindo à Corrida de Galinhas!"</li>
+        </ul>
+    </div>
+
+    <div class="test-case success">
+        <h3>🏆 Sidebar - Top 5 Jogadores</h3>
+        <p>O sidebar agora inclui:</p>
+        <ul>
+            <li>Lista dos 5 melhores jogadores</li>
+            <li>Posição com badges coloridas (ouro, prata, bronze)</li>
+            <li>Avatar de galinha para cada jogador</li>
+            <li>Pontuação formatada (K para milhares, M para milhões)</li>
+            <li>Indicadores de movimento (subiu ↗️, desceu ↘️, manteve ➡️)</li>
+            <li>Design responsivo (colapsa no mobile)</li>
+            <li>Informações do ranking atual</li>
+        </ul>
+    </div>
+
+    <div class="test-case">
+        <h3>🎮 Jogadores Brasileiros</h3>
+        <p>Nomes dos jogadores no demo:</p>
+        <ul>
+            <li>Ana Silva, Bruno Costa, Carlos Mendes</li>
+            <li>Diana Santos, Eduardo Lima, Fernanda Rocha</li>
+            <li>Gabriel Alves, Helena Martins, Igor Pereira</li>
+            <li>Julia Ferreira, Lucas Oliveira, Marina Souza</li>
+            <li>E mais nomes tipicamente brasileiros...</li>
+        </ul>
+    </div>
+
+    <h2>🧪 Checklist de Teste Manual</h2>
+    
+    <div class="test-case">
+        <h4>✅ Verificações Visuais</h4>
+        <ul>
+            <li>[ ] Interface principal em português</li>
+            <li>[ ] Sidebar aparece ao lado da corrida</li>
+            <li>[ ] Top 5 jogadores visíveis no sidebar</li>
+            <li>[ ] Badges de posição coloridas (ouro, prata, bronze)</li>
+            <li>[ ] Indicadores de movimento funcionando</li>
+            <li>[ ] Nomes brasileiros nos jogadores</li>
+            <li>[ ] Banner de modo demo em português</li>
+        </ul>
+    </div>
+
+    <div class="test-case">
+        <h4>✅ Verificações Funcionais</h4>
+        <ul>
+            <li>[ ] Animações das galinhas funcionando</li>
+            <li>[ ] Atualizações em tempo real no demo</li>
+            <li>[ ] Sidebar responsivo (colapsa no mobile)</li>
+            <li>[ ] Controles do demo funcionando</li>
+            <li>[ ] Fallback automático para demo quando API falha</li>
+            <li>[ ] Botão "Recarregar App" funciona</li>
+        </ul>
+    </div>
+
+    <h2>🎉 Resultado Esperado</h2>
+    <p>Uma experiência completa de corrida de galinhas em português, com sidebar mostrando o top 5, 
+    nomes brasileiros, e fallback automático para modo demo quando a API não está disponível.</p>
+</body>
+</html>

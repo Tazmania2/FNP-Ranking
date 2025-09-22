@@ -80,7 +80,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {/* Mobile Header with Collapse Toggle */}
       <div className="lg:hidden flex items-center justify-between p-4 border-b border-gray-200">
         <h2 className="text-lg font-bold text-gray-800">
-          🏆 Top Players
+          🏆 Melhores Jogadores
         </h2>
         <button
           onClick={() => setIsCollapsed(!isCollapsed)}
@@ -103,7 +103,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         {/* Header - Desktop Only */}
         <div className="hidden lg:block mb-6">
           <h2 className="text-xl font-bold text-gray-800 mb-2">
-            🏆 Top Players
+            🏆 Melhores Jogadores
           </h2>
           {currentLeaderboard && (
             <p className="text-sm text-gray-600">
@@ -111,7 +111,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </p>
           )}
           <p className="text-xs text-gray-500 mt-1">
-            Showing top 5 of {totalPlayers} players
+            Mostrando top 5 de {totalPlayers} jogadores
           </p>
         </div>
 
@@ -123,7 +123,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </p>
           )}
           <p className="text-xs text-gray-500">
-            Showing top 5 of {totalPlayers} players
+            Mostrando top 5 de {totalPlayers} jogadores
           </p>
         </div>
 
@@ -132,7 +132,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           {displayPlayers.length === 0 ? (
             <div className="text-center py-6 lg:py-8 text-gray-500">
               <div className="text-3xl lg:text-4xl mb-2">🐔</div>
-              <p className="text-sm lg:text-base">No players found</p>
+              <p className="text-sm lg:text-base">Nenhum jogador encontrado</p>
             </div>
           ) : (
             displayPlayers.map((player) => (
@@ -176,7 +176,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       )}
                       {player.move === 'same' && (
                         <span className="text-xs text-gray-500 flex items-center">
-                          ➡️ No change
+                          ➡️ Sem mudança
                         </span>
                       )}
                     </div>
@@ -190,7 +190,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         {/* Footer with last updated info */}
         <div className="mt-4 lg:mt-6 pt-3 lg:pt-4 border-t border-gray-200">
           <p className="text-xs text-gray-500 text-center">
-            Updates automatically with race data
+            Atualiza automaticamente com os dados da corrida
           </p>
         </div>
       </div>

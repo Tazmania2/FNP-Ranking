@@ -104,14 +104,14 @@ function App() {
                 <div className="flex items-center space-x-2">
                   <span className="text-yellow-900 text-lg">🎮</span>
                   <span className="text-yellow-900 font-medium">
-                    Demo Mode: {!apiConfig ? 'No API configuration found' : 'API connection failed'}
+                    Modo Demo: {!apiConfig ? 'Configuração da API não encontrada' : 'Falha na conexão com a API'}
                   </span>
                   {(forceDemo || !apiConfig) && (
                     <button
                       onClick={() => window.location.reload()}
                       className="ml-4 px-3 py-1 bg-yellow-600 text-white text-xs rounded hover:bg-yellow-700 transition-colors"
                     >
-                      Reload App
+                      Recarregar App
                     </button>
                   )}
                 </div>
@@ -140,7 +140,7 @@ function App() {
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="flex items-center space-x-2 sm:space-x-4">
               <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-white">
-                🐔 Chicken Race Ranking
+                🐔 Ranking da Corrida de Galinhas
               </h1>
               {raceStatus.connectionStatus && (
                 <div className={`inline-flex items-center px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium ${
@@ -151,7 +151,7 @@ function App() {
                   <div className={`w-2 h-2 rounded-full mr-1 sm:mr-2 ${
                     raceStatus.connectionStatus === 'connected' ? 'bg-green-400' : 'bg-red-400'
                   }`} />
-                  <span className="hidden sm:inline">{raceStatus.connectionStatus}</span>
+                  <span className="hidden sm:inline">{raceStatus.connectionStatus === 'connected' ? 'conectado' : 'desconectado'}</span>
                   <span className="sm:hidden">{raceStatus.connectionStatus === 'connected' ? '✓' : '✗'}</span>
                 </div>
               )}
@@ -172,7 +172,7 @@ function App() {
                 className="px-3 sm:px-4 py-2 bg-white/20 text-white rounded-lg hover:bg-white/30 transition-colors text-sm sm:text-base"
               >
                 <span className="sm:hidden">Demo</span>
-                <span className="hidden sm:inline">Demo Mode</span>
+                <span className="hidden sm:inline">Modo Demo</span>
               </button>
             </div>
           </div>
@@ -187,13 +187,13 @@ function App() {
               <div className="flex items-center space-x-2">
                 <span className="text-yellow-900 text-lg">⚠️</span>
                 <span className="text-yellow-900 font-medium text-sm sm:text-base">
-                  Demo Mode: Showing mock data due to API connection issues
+                  Modo Demo: Mostrando dados simulados devido a problemas de conexão com a API
                 </span>
                 <button
                   onClick={retryFailedOperation}
                   className="ml-4 px-3 py-1 bg-yellow-600 text-white text-xs rounded hover:bg-yellow-700 transition-colors"
                 >
-                  Retry API
+                  Tentar API
                 </button>
               </div>
             </div>
@@ -208,11 +208,11 @@ function App() {
           <div className="text-center py-20">
             <div className="text-white/80 text-8xl mb-8">🐔</div>
             <h2 className="text-4xl font-bold text-white mb-4">
-              Welcome to Chicken Race!
+              Bem-vindo à Corrida de Galinhas!
             </h2>
             <p className="text-xl text-white/80 mb-8 max-w-2xl mx-auto">
-              Transform your leaderboards into an engaging, animated chicken race experience. 
-              Watch as players compete in real-time with smooth animations and live updates.
+              Transforme seus rankings em uma experiência envolvente e animada de corrida de galinhas. 
+              Assista os jogadores competirem em tempo real com animações suaves e atualizações ao vivo.
             </p>
             <div className="space-y-4">
               <button
@@ -220,14 +220,14 @@ function App() {
                 disabled={loading.leaderboards}
                 className="px-8 py-4 bg-white text-blue-600 font-semibold rounded-lg hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
-                {loading.leaderboards ? 'Initializing...' : 'Start the Race!'}
+                {loading.leaderboards ? 'Inicializando...' : 'Começar a Corrida!'}
               </button>
               <div>
                 <button
                   onClick={() => setShowDemo(true)}
                   className="text-white/80 hover:text-white underline"
                 >
-                  Or try the interactive demo
+                  Ou experimente a demonstração interativa
                 </button>
               </div>
             </div>
@@ -275,7 +275,7 @@ function App() {
                   {loading.switchingLeaderboard && (
                     <OverlayLoading
                       loading={loading}
-                      message="Switching leaderboard..."
+                      message="Trocando ranking..."
                     />
                   )}
                 </div>
