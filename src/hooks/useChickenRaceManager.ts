@@ -119,24 +119,15 @@ export const useChickenRaceManager = (config: ChickenRaceManagerConfig = {}) => 
     clearError,
   } = useLeaderboardData();
 
-  // COMPLETELY DISABLE real-time updates hook to stop the aggregate loop
-  const realTimeUpdates = {
-    isPolling: false,
-    isUpdating: false,
-    retryCount: 0,
-    timeSinceLastUpdate: 0,
-    lastSuccessfulUpdate: 0,
-    startPolling: () => console.log('🚨 Real-time polling disabled'),
-    stopPolling: () => console.log('🚨 Real-time polling disabled'),
-    forceUpdate: () => console.log('🚨 Real-time updates disabled'),
-    config: {
-      pollingInterval: 30000,
-      enabled: false,
-      maxRetries: 3,
-      retryDelay: 1000,
-      pauseOnHidden: true,
-    },
-  };
+  // Set up real-time updates with careful configuration to prevent loops
+  const realTimeUpdates = useRealTimeUpdatesWithLoading(apiService, {
+    pollingInterval: 30000, // 30 seconds
+    enabled: realTimeConfig.enabled !== false, // Default to true unless explicitly disabled
+    maxRetries: 3,
+    retryDelay: 2000, // Longer delay to prevent rapid retries
+    pauseOnHidden: true,
+    ...realTimeConfig,
+  });
 
   // Set up position transitions
   const positionTransitions = usePositionTransitions(players, {
@@ -162,7 +153,7 @@ export const useChickenRaceManager = (config: ChickenRaceManagerConfig = {}) => 
       _id: 'EVeTmET',
       title: 'Demo Leaderboard (Mock Data)',
       description: 'This is mock data shown due to API connection issues',
-      principalType: 'user',
+      principalType: 0, // Should be number, not string
       operation: 'sum',
       period: 'all',
     };
@@ -215,18 +206,39 @@ export const useChickenRaceManager = (config: ChickenRaceManagerConfig = {}) => 
       retryCountRef.current += 1;
       console.log(`Initialization attempt ${retryCountRef.current}/${MAX_RETRY_ATTEMPTS}`);
 
-      let fetchedLeaderboards: any[] = [];
+      // Fetch leaderboards from API
+      console.log('🚀 Fetching leaderboards from API...');
+      const fetchedLeaderboards = await apiService.getLeaderboards();
+      console.log('✅ Leaderboards fetched:', fetchedLeaderboards);
+
+      if (fetchedLeaderboards.length === 0) {
+        throw new Error('No leaderboards available');
+      }
+
+      // Set leaderboards in store
+      const leaderboardStore = useLeaderboardStore.getState();
+      leaderboardStore.setLeaderboards(fetchedLeaderboards);
+
+      // Switch to the first leaderboard (or EVeTmET if available)
+      const targetLeaderboard = fetchedLeaderboards.find(lb => lb._id === 'EVeTmET') || fetchedLeaderboards[0];
+      console.log('🎯 Switching to leaderboard:', targetLeaderboard._id);
       
-      // TEMPORARILY DISABLE ALL API CALLS TO ISOLATE THE LOOP SOURCE
-      console.log('🚨 ALL API CALLS DISABLED - Using mock data immediately');
-      console.log('🐔 Before useMockDataFallback - isInitializingRef:', isInitializingRef.current);
-      useMockDataFallback();
-      console.log('🐔 After useMockDataFallback - isInitializingRef:', isInitializingRef.current);
-      return;
+      await switchToLeaderboard(targetLeaderboard._id);
+
+      // Reset retry count on success
+      retryCountRef.current = 0;
+      setUsingMockData(false);
+      console.log('🎉 Initialization successful!');
 
     } catch (error) {
       console.error('Failed to initialize chicken race:', error);
       setError(error as any);
+      
+      // Fall back to mock data if we've tried multiple times
+      if (retryCountRef.current >= 3) {
+        console.warn('Multiple initialization failures, falling back to mock data');
+        useMockDataFallback();
+      }
     } finally {
       setLoadingState('leaderboards', false);
       isInitializingRef.current = false;
@@ -237,11 +249,8 @@ export const useChickenRaceManager = (config: ChickenRaceManagerConfig = {}) => 
    * Manually refresh current leaderboard data
    */
   const refreshData = useCallback(async () => {
-    console.log('🚨 refreshData DISABLED to prevent API loop');
-    return; // DISABLED to prevent aggregate API loop
-    
-    /* DISABLED CODE:
     if (!currentLeaderboardId) {
+      console.log('No current leaderboard ID, skipping refresh');
       return;
     }
 
@@ -249,11 +258,12 @@ export const useChickenRaceManager = (config: ChickenRaceManagerConfig = {}) => 
       setLoadingState('currentLeaderboard', true);
       clearError();
 
+      console.log('🔄 Refreshing leaderboard data for:', currentLeaderboardId);
       const response = await apiService.getLeaderboardData(currentLeaderboardId, {
         live: true,
-        maxResults: 100,
       });
 
+      console.log('✅ Leaderboard data refreshed:', response.leaders.length, 'players');
       updatePlayers(response.leaders);
 
     } catch (error) {
@@ -262,30 +272,27 @@ export const useChickenRaceManager = (config: ChickenRaceManagerConfig = {}) => 
     } finally {
       setLoadingState('currentLeaderboard', false);
     }
-    */
   }, [currentLeaderboardId, apiService, setLoadingState, clearError, setError, updatePlayers]);
 
   /**
    * Switch to a different leaderboard
    */
   const changeLeaderboard = useCallback(async (leaderboardId: string) => {
-    console.log('🚨 changeLeaderboard DISABLED to prevent API loop');
-    return; // DISABLED to prevent aggregate API loop
-    
-    /* DISABLED CODE:
     try {
       setLoadingState('switchingLeaderboard', true);
       clearError();
 
+      console.log('🔄 Switching to leaderboard:', leaderboardId);
+      
       // Switch to new leaderboard
       switchToLeaderboard(leaderboardId);
 
       // Fetch data for new leaderboard
       const response = await apiService.getLeaderboardData(leaderboardId, {
         live: true,
-        maxResults: 100,
       });
 
+      console.log('✅ Leaderboard switched, loaded', response.leaders.length, 'players');
       updatePlayers(response.leaders);
 
     } catch (error) {
@@ -294,7 +301,6 @@ export const useChickenRaceManager = (config: ChickenRaceManagerConfig = {}) => 
     } finally {
       setLoadingState('switchingLeaderboard', false);
     }
-    */
   }, [apiService, setLoadingState, clearError, setError, switchToLeaderboard, updatePlayers]);
 
   /**

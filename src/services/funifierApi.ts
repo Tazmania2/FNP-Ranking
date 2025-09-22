@@ -166,18 +166,29 @@ export class FunifierApiService {
 
   /**
    * Fetch list of available leaderboards
-   * DISABLED: This endpoint is causing infinite loops, using direct leaderboard access instead
    */
   public async getLeaderboards(): Promise<Leaderboard[]> {
-    console.warn('getLeaderboards() is disabled to prevent infinite loops. Using direct leaderboard access instead.');
-    
-    // Instead of calling the problematic endpoint, return a hardcoded leaderboard
-    // based on the known working leaderboard ID
-    return [{
-      _id: 'EVeTmET',
-      title: 'Main Leaderboard',
-      description: 'Primary leaderboard (direct access)',
-    }] as Leaderboard[];
+    return this.retryRequest(async () => {
+      console.log('Fetching leaderboards from:', `${this.config.serverUrl}/leaderboard`);
+      const response = await this.axiosInstance.get('/leaderboard');
+      console.log('Leaderboards response:', response.data);
+
+      if (!Array.isArray(response.data)) {
+        throw new Error('Invalid leaderboards response format');
+      }
+
+      // Sanitize leaderboard data
+      const sanitizedLeaderboards = response.data.map((leaderboard: any) => ({
+        _id: leaderboard._id || '',
+        title: leaderboard.title || `Leaderboard ${leaderboard._id}`,
+        description: leaderboard.description || '',
+        principalType: leaderboard.principalType || 0,
+        operation: leaderboard.operation || 'sum',
+        period: leaderboard.period || 'all',
+      }));
+
+      return sanitizedLeaderboards as Leaderboard[];
+    });
   }
 
   /**
