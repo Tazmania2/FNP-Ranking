@@ -1,4 +1,4 @@
-# 🐔 Chicken Race Ranking
+# 🐔 Game FNP
 
 A gamified leaderboard visualization system that transforms traditional ranking displays into an engaging, animated chicken race experience. Built with React, TypeScript, and Tailwind CSS, integrating with the Funifier platform for real-time player data.
 

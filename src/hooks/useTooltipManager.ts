@@ -72,7 +72,8 @@ export const useTooltipManager = ({ players, isEnabled = true }: UseTooltipManag
   // Handle hover events on chicken elements
   const handleChickenHover = useCallback((
     playerId: string | null,
-    element?: HTMLElement
+    element?: HTMLElement,
+    mouseEvent?: React.MouseEvent<HTMLDivElement>
   ) => {
     if (!isEnabled) return;
 
@@ -80,7 +81,18 @@ export const useTooltipManager = ({ players, isEnabled = true }: UseTooltipManag
     const isMobile = 'ontouchstart' in window;
     
     if (playerId && element) {
-      const position = getElementScreenPosition(element);
+      let position;
+      
+      if (mouseEvent && !isMobile) {
+        // Use mouse position for desktop hover
+        position = {
+          x: mouseEvent.clientX,
+          y: mouseEvent.clientY - 5, // Position very close to mouse
+        };
+      } else {
+        // Fallback to element position for mobile or when mouse event not available
+        position = getElementScreenPosition(element);
+      }
       
       if (isMobile) {
         // On mobile, toggle tooltip - if same player is already shown, hide it
