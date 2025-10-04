@@ -16,7 +16,7 @@ const hideInitialLoading = () => {
   
   // Log performance metrics
   const loadTime = performance.now() - startTime;
-  console.log(`App loaded in ${loadTime.toFixed(2)}ms`);
+  // console.log(`App loaded in ${loadTime.toFixed(2)}ms`);
 };
 
 // Create root and render app
@@ -36,15 +36,15 @@ if ('PerformanceObserver' in window) {
   const observer = new PerformanceObserver((list) => {
     for (const entry of list.getEntries()) {
       if (entry.entryType === 'largest-contentful-paint') {
-        console.log('LCP:', entry.startTime);
+        // console.log('LCP:', entry.startTime);
       }
       if (entry.entryType === 'first-input') {
         const fidEntry = entry as PerformanceEventTiming;
-        console.log('FID:', fidEntry.processingStart - fidEntry.startTime);
+        // console.log('FID:', fidEntry.processingStart - fidEntry.startTime);
       }
       if (entry.entryType === 'layout-shift') {
         const clsEntry = entry as any; // Layout shift entries have different typing
-        console.log('CLS:', clsEntry.value);
+        // console.log('CLS:', clsEntry.value);
       }
     }
   });
@@ -57,7 +57,7 @@ if ('serviceWorker' in navigator && import.meta.env.PROD) {
   window.addEventListener('load', async () => {
     try {
       const registration = await navigator.serviceWorker.register('/sw.js');
-      console.log('SW registered: ', registration);
+      // console.log('SW registered: ', registration);
       
       // Listen for updates
       registration.addEventListener('updatefound', () => {
@@ -66,13 +66,13 @@ if ('serviceWorker' in navigator && import.meta.env.PROD) {
           newWorker.addEventListener('statechange', () => {
             if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
               // New content is available, notify user
-              console.log('New content available, please refresh');
+              // console.log('New content available, please refresh');
             }
           });
         }
       });
     } catch (error) {
-      console.log('SW registration failed: ', error);
+      // console.log('SW registration failed: ', error);
     }
   });
 }

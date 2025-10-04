@@ -73,11 +73,11 @@ export const Tooltip: React.FC<TooltipProps> = ({
   return (
     <div
       ref={tooltipRef}
-      className="tooltip-container fixed z-50 pointer-events-auto sm:pointer-events-none"
+      className="tooltip-container fixed z-[9999] pointer-events-auto sm:pointer-events-none"
       style={{
         left: `${adjustedPosition.x}px`,
         top: `${adjustedPosition.y}px`,
-        transform: 'translateX(-50%)',
+        transform: 'translateX(-100%) translateY(-100%)',
       }}
     >
       {/* Tooltip Arrow */}
@@ -112,7 +112,7 @@ export const Tooltip: React.FC<TooltipProps> = ({
         <div className="space-y-1.5 sm:space-y-2">
           {/* Total Points */}
           <div className="flex items-center justify-between">
-            <span className="text-gray-300 text-xs sm:text-sm">Total Points:</span>
+            <span className="text-gray-300 text-xs sm:text-sm">Total de Pontos:</span>
             <span className="font-bold text-white text-sm sm:text-lg">
               {content.points.toLocaleString('en-US')}
             </span>
@@ -120,7 +120,7 @@ export const Tooltip: React.FC<TooltipProps> = ({
 
           {/* Points Gained Today */}
           <div className="flex items-center justify-between">
-            <span className="text-gray-300 text-xs sm:text-sm">Today's Change:</span>
+            <span className="text-gray-300 text-xs sm:text-sm">Alteração de Pontos:</span>
             <div className="flex items-center gap-1">
               <span className={`font-medium text-xs sm:text-sm ${gainColor}`}>
                 {pointsGainedToday > 0 ? '+' : ''}{pointsGainedToday.toLocaleString('en-US')}
@@ -136,19 +136,19 @@ export const Tooltip: React.FC<TooltipProps> = ({
             {content.rank === 1 && (
               <div className="flex items-center gap-1 text-yellow-400">
                 <span className="text-sm sm:text-lg">👑</span>
-                <span className="text-xs font-medium">Leader</span>
+                <span className="text-xs font-medium">Líder</span>
               </div>
             )}
             {content.rank <= 3 && content.rank > 1 && (
               <div className="flex items-center gap-1 text-orange-400">
                 <span className="text-sm sm:text-lg">🏆</span>
-                <span className="text-xs font-medium">Top 3</span>
+                <span className="text-xs font-medium">Top 3 Jogadores</span>
               </div>
             )}
             {pointsGainedToday > 0 && (
               <div className="flex items-center gap-1 text-green-400">
                 <span className="text-sm sm:text-lg">🔥</span>
-                <span className="text-xs font-medium">On Fire</span>
+                <span className="text-xs font-medium">Acelerando!</span>
               </div>
             )}
           </div>

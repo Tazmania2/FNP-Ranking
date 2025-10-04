@@ -88,41 +88,42 @@ function App() {
     },
     onAuthError: () => {
       console.warn('🔐 Authentication error detected, switching to demo mode');
-      setForceDemo(true);
+      setForceDemo(false);
     },
   });
 
   // Show demo if no API config is provided or auth error occurred
   if (showDemo || forceDemo || !apiConfig) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-green-400 via-blue-500 to-purple-600">
-        <div className="container mx-auto py-8">
-          {/* Demo Mode Banner */}
-          <div className="bg-yellow-500/90 backdrop-blur-sm border-b border-yellow-400/50 mb-6 rounded-lg mx-4">
-            <div className="px-4 py-3">
-              <div className="flex items-center justify-center text-center">
-                <div className="flex items-center space-x-2">
-                  <span className="text-yellow-900 text-lg">🎮</span>
-                  <span className="text-yellow-900 font-medium">
-                    Modo Demo: {!apiConfig ? 'Configuração da API não encontrada' : 'Falha na conexão com a API'}
-                  </span>
-                  {(forceDemo || !apiConfig) && (
-                    <button
-                      onClick={() => window.location.reload()}
-                      className="ml-4 px-3 py-1 bg-yellow-600 text-white text-xs rounded hover:bg-yellow-700 transition-colors"
-                    >
-                      Recarregar App
-                    </button>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
+    return "Demo Example";
+    // return (
+    //   <div className="min-h-screen bg-gradient-to-br from-green-400 via-blue-500 to-purple-600">
+    //     <div className="container mx-auto py-8">
+    //       {/* Demo Mode Banner */}
+    //       <div className="bg-yellow-500/90 backdrop-blur-sm border-b border-yellow-400/50 mb-6 rounded-lg mx-4">
+    //         <div className="px-4 py-3">
+    //           <div className="flex items-center justify-center text-center">
+    //             <div className="flex items-center space-x-2">
+    //               <span className="text-yellow-900 text-lg">🎮</span>
+    //               <span className="text-yellow-900 font-medium">
+    //                 Modo Demo: {!apiConfig ? 'Configuração da API não encontrada' : 'Falha na conexão com a API'}
+    //               </span>
+    //               {(forceDemo || !apiConfig) && (
+    //                 <button
+    //                   onClick={() => window.location.reload()}
+    //                   className="ml-4 px-3 py-1 bg-yellow-600 text-white text-xs rounded hover:bg-yellow-700 transition-colors"
+    //                 >
+    //                   Recarregar App
+    //                 </button>
+    //               )}
+    //             </div>
+    //           </div>
+    //         </div>
+    //       </div>
           
-          <ChickenRaceExample />
-        </div>
-      </div>
-    );
+    //       <ChickenRaceExample />
+    //     </div>
+    //   </div>
+    // );
   }
 
   return (
@@ -140,7 +141,7 @@ function App() {
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="flex items-center space-x-2 sm:space-x-4">
               <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-white">
-                🐔 Ranking da Corrida de Galinhas
+                🐔 Ranking do Game FNP
               </h1>
               {raceStatus.connectionStatus && (
                 <div className={`inline-flex items-center px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium ${
@@ -208,7 +209,7 @@ function App() {
           <div className="text-center py-20">
             <div className="text-white/80 text-8xl mb-8">🐔</div>
             <h2 className="text-4xl font-bold text-white mb-4">
-              Bem-vindo à Corrida de Galinhas!
+              Bem-vindo ao Game FNP!
             </h2>
             <p className="text-xl text-white/80 mb-8 max-w-2xl mx-auto">
               Transforme seus rankings em uma experiência envolvente e animada de corrida de galinhas. 
@@ -282,7 +283,7 @@ function App() {
               </div>
 
               {/* Sidebar - Mobile: Top, Desktop: Right */}
-              <div className="lg:col-span-1 order-1 lg:order-2">
+              <div className="lg:col-span-1 order-1 lg:order-2 flex">
                 <Sidebar
                   topPlayers={players.slice(0, 5)}
                   currentLeaderboard={currentLeaderboard}

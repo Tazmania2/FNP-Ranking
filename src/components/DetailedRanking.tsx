@@ -201,11 +201,11 @@ export const DetailedRanking: React.FC<DetailedRankingProps> = ({
       {/* Header */}
       <div className="mb-4 sm:mb-6">
         <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-800 mb-2 flex items-center">
-          📊 Complete Rankings
+          📊 Lista de Jogadores Completa
         </h2>
         {currentLeaderboard && (
           <p className="text-sm sm:text-base text-gray-600 mb-4">
-            {currentLeaderboard.title} - {sortedPlayers.length} players
+            {currentLeaderboard.title} - {sortedPlayers.length} jogadores
           </p>
         )}
 
@@ -213,10 +213,10 @@ export const DetailedRanking: React.FC<DetailedRankingProps> = ({
         <div className="relative">
           <input
             type="text"
-            placeholder="Search players..."
+            placeholder="Buscar jogadores..."
             value={searchTerm}
             onChange={(e) => handleSearch(e.target.value)}
-            className="w-full px-3 sm:px-4 py-2 pl-8 sm:pl-10 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="bg-white text-gray-800 w-full px-3 sm:px-4 py-2 pl-8 sm:pl-10 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent"
           />
           <div className="absolute inset-y-0 left-0 pl-2 sm:pl-3 flex items-center pointer-events-none">
             <span className="text-gray-400 text-sm sm:text-base">🔍</span>
@@ -280,45 +280,45 @@ export const DetailedRanking: React.FC<DetailedRankingProps> = ({
 
       {/* Desktop Table View */}
       <div className="hidden sm:block overflow-x-auto">
-        <table className="w-full">
+        <table className="w-full table-fixed">
           <thead>
             <tr className="border-b-2 border-gray-200">
               <th 
-                className="text-left py-3 px-2 lg:px-4 font-semibold text-gray-700 cursor-pointer hover:bg-gray-50 transition-colors text-sm lg:text-base"
+                className="w-20 text-center py-3 px-2 lg:px-4 font-semibold text-gray-700 cursor-pointer hover:bg-gray-50 transition-colors text-sm lg:text-base"
                 onClick={() => handleSort('position')}
               >
-                <div className="flex items-center space-x-1 lg:space-x-2">
-                  <span>Position</span>
+                <div className="flex items-center justify-center space-x-1 lg:space-x-2">
+                  <span>Pos.</span>
                   {getSortIcon('position')}
                 </div>
               </th>
-              <th className="text-left py-3 px-2 lg:px-4 font-semibold text-gray-700 text-sm lg:text-base">
-                Avatar
+              <th className="w-16 text-center py-3 px-2 lg:px-4 font-semibold text-gray-700 text-sm lg:text-base">
+                Ícone
               </th>
               <th 
-                className="text-left py-3 px-2 lg:px-4 font-semibold text-gray-700 cursor-pointer hover:bg-gray-50 transition-colors text-sm lg:text-base"
+                className="w-60 text-left py-3 px-2 lg:px-4 font-semibold text-gray-700 cursor-pointer hover:bg-gray-50 transition-colors text-sm lg:text-base"
                 onClick={() => handleSort('name')}
               >
-                <div className="flex items-center space-x-1 lg:space-x-2">
-                  <span>Player Name</span>
+                <div className="flex items-center space-x-1 lg:space-x-2 ">
+                  <span>Nome do Jogador</span>
                   {getSortIcon('name')}
                 </div>
               </th>
               <th 
-                className="text-right py-3 px-2 lg:px-4 font-semibold text-gray-700 cursor-pointer hover:bg-gray-50 transition-colors text-sm lg:text-base"
+                className="w-24 text-right py-3 px-2 lg:px-4 font-semibold text-gray-700 cursor-pointer hover:bg-gray-50 transition-colors text-sm lg:text-base"
                 onClick={() => handleSort('total')}
               >
                 <div className="flex items-center justify-end space-x-1 lg:space-x-2">
-                  <span>Points</span>
+                  <span>Pontos</span>
                   {getSortIcon('total')}
                 </div>
               </th>
               <th 
-                className="text-center py-3 px-2 lg:px-4 font-semibold text-gray-700 cursor-pointer hover:bg-gray-50 transition-colors text-sm lg:text-base"
+                className="w-24 text-center py-3 px-2 lg:px-4 font-semibold text-gray-700 cursor-pointer hover:bg-gray-50 transition-colors text-sm lg:text-base"
                 onClick={() => handleSort('move')}
               >
                 <div className="flex items-center justify-center space-x-1 lg:space-x-2">
-                  <span>Movement</span>
+                  <span>Movimento</span>
                   {getSortIcon('move')}
                 </div>
               </th>
@@ -330,14 +330,14 @@ export const DetailedRanking: React.FC<DetailedRankingProps> = ({
                 <td colSpan={5} className="text-center py-12 text-gray-500">
                   <div className="text-4xl lg:text-6xl mb-4">🐔</div>
                   <p className="text-base lg:text-lg">
-                    {searchTerm ? 'No players found matching your search' : 'No players available'}
+                    {searchTerm ? 'Nenhum jogador encontrado correspondente à sua busca' : 'Nenhum jogador disponível'}
                   </p>
                   {searchTerm && (
                     <button
                       onClick={() => handleSearch('')}
                       className="mt-2 text-blue-600 hover:text-blue-800 underline text-sm lg:text-base"
                     >
-                      Clear search
+                      Limpar busca
                     </button>
                   )}
                 </td>
@@ -348,28 +348,34 @@ export const DetailedRanking: React.FC<DetailedRankingProps> = ({
                   key={player._id}
                   className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
                 >
-                  <td className="py-3 lg:py-4 px-2 lg:px-4">
-                    <div className={getPositionBadge(player.position)}>
-                      {player.position}
+                  <td className="w-20 text-center py-3 lg:py-4 px-2 lg:px-4">
+                    <div className="flex justify-center">
+                      <div className={getPositionBadge(player.position)}>
+                        {player.position}
+                      </div>
+                    </div>
+                  </td>
+                  <td className="w-16 text-center py-3 lg:py-4 px-2 lg:px-4">
+                    <div className="flex justify-center">
+                      <div className="text-xl lg:text-2xl" title={`${player.name}'s chicken`}>
+                        {getChickenAvatar(player.position - 1)}
+                      </div>
                     </div>
                   </td>
                   <td className="py-3 lg:py-4 px-2 lg:px-4">
-                    <div className="text-xl lg:text-2xl" title={`${player.name}'s chicken`}>
-                      {getChickenAvatar(player.position - 1)}
-                    </div>
-                  </td>
-                  <td className="py-3 lg:py-4 px-2 lg:px-4">
-                    <div className="font-medium text-gray-800 text-sm lg:text-base">
+                    <div className="font-medium text-gray-800 text-sm lg:text-base truncate">
                       {player.name}
                     </div>
                   </td>
-                  <td className="py-3 lg:py-4 px-2 lg:px-4 text-right">
+                  <td className="w-24 text-right py-3 lg:py-4 px-2 lg:px-4">
                     <div className="font-bold text-blue-600 text-sm lg:text-base">
                       {formatPoints(player.total)}
                     </div>
                   </td>
-                  <td className="py-3 lg:py-4 px-2 lg:px-4 text-center">
-                    {getMoveIndicator(player)}
+                  <td className="w-24 text-center py-3 lg:py-4 px-2 lg:px-4">
+                    <div className="flex justify-center">
+                      {getMoveIndicator(player)}
+                    </div>
                   </td>
                 </tr>
               ))
@@ -382,7 +388,7 @@ export const DetailedRanking: React.FC<DetailedRankingProps> = ({
       {totalPages > 1 && (
         <div className="mt-4 sm:mt-6 flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-0">
           <div className="text-xs sm:text-sm text-gray-600 order-2 sm:order-1">
-            Showing {startItem}-{endItem} of {sortedPlayers.length} players
+            Mostrando {startItem}-{endItem} de {sortedPlayers.length} jogadores
           </div>
           
           <div className="flex items-center space-x-1 sm:space-x-2 order-1 sm:order-2">
@@ -392,7 +398,7 @@ export const DetailedRanking: React.FC<DetailedRankingProps> = ({
               className="px-2 sm:px-3 py-1 border border-gray-300 rounded-md text-xs sm:text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <span className="sm:hidden">‹</span>
-              <span className="hidden sm:inline">Previous</span>
+              <span className="hidden sm:inline">Anterior</span>
             </button>
             
             {/* Page numbers */}
@@ -432,7 +438,7 @@ export const DetailedRanking: React.FC<DetailedRankingProps> = ({
               className="px-2 sm:px-3 py-1 border border-gray-300 rounded-md text-xs sm:text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <span className="sm:hidden">›</span>
-              <span className="hidden sm:inline">Next</span>
+              <span className="hidden sm:inline">Próximo</span>
             </button>
           </div>
         </div>

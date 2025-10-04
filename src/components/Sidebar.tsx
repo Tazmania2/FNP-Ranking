@@ -76,11 +76,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-lg w-full lg:w-80">
+    <div className="bg-white rounded-lg shadow-lg w-full lg:w-80 h-full flex flex-col">
       {/* Mobile Header with Collapse Toggle */}
       <div className="lg:hidden flex items-center justify-between p-4 border-b border-gray-200">
         <h2 className="text-lg font-bold text-gray-800">
-          🏆 Melhores Jogadores
+          🏆 Destaques
         </h2>
         <button
           onClick={() => setIsCollapsed(!isCollapsed)}
@@ -99,11 +99,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </div>
 
       {/* Sidebar Content */}
-      <div className={`${isCollapsed ? 'hidden' : 'block'} lg:block p-4 sm:p-6`}>
+      <div className={`${isCollapsed ? 'hidden' : 'flex'} lg:flex flex-col flex-1 p-4 sm:p-6`}>
         {/* Header - Desktop Only */}
         <div className="hidden lg:block mb-6">
           <h2 className="text-xl font-bold text-gray-800 mb-2">
-            🏆 Melhores Jogadores
+            🏆 Destaques
           </h2>
           {currentLeaderboard && (
             <p className="text-sm text-gray-600">
@@ -128,7 +128,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
 
         {/* Players List */}
-        <div className="space-y-2 lg:space-y-3">
+        <div className="space-y-2 lg:space-y-3 flex-1">
           {displayPlayers.length === 0 ? (
             <div className="text-center py-6 lg:py-8 text-gray-500">
               <div className="text-3xl lg:text-4xl mb-2">🐔</div>
@@ -188,7 +188,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
 
         {/* Footer with last updated info */}
-        <div className="mt-4 lg:mt-6 pt-3 lg:pt-4 border-t border-gray-200">
+        <div className="mt-auto pt-3 lg:pt-4 border-t border-gray-200">
           <p className="text-xs text-gray-500 text-center">
             Atualiza automaticamente com os dados da corrida
           </p>
