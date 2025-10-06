@@ -37,7 +37,7 @@ export const DetailedRanking: React.FC<DetailedRankingProps> = ({
 
   // Format points display with proper number formatting
   const formatPoints = (points: number): string => {
-    return points.toLocaleString();
+    return points.toFixed(1);
   };
 
   // Get movement indicator
@@ -80,9 +80,13 @@ export const DetailedRanking: React.FC<DetailedRankingProps> = ({
     );
   }, [players, searchTerm]);
 
-  // Sort players based on current sort configuration
+  // Sort players based on current sort configuration and assign correct positions for ties
   const sortedPlayers = useMemo(() => {
-    const sorted = [...filteredPlayers].sort((a, b) => {
+    // Players data is already processed with correct positions, no need to recalculate
+    const playersWithCorrectPositions = [...filteredPlayers];
+
+    // Then sort based on configuration
+    const sorted = playersWithCorrectPositions.sort((a, b) => {
       let aValue: string | number;
       let bValue: string | number;
 

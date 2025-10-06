@@ -44,25 +44,25 @@ const Chicken: React.FC<ChickenProps> = React.memo(({ player, position, onHover,
       if (currentTime - lastTimeRef.current >= 16.67) { // ~60fps
         const time = currentTime * 0.001; // Convert to seconds
         const seed = playerIdSeed.current!;
-        
+
         // Optimized calculations with reduced complexity
         const x = Math.sin(time * 0.5 + seed) * 2; // Horizontal sway (±2px)
         const y = Math.cos(time * 0.7 + seed) * 1.5; // Vertical bob (±1.5px)
         const rotate = Math.sin(time * 0.3 + seed) * 1; // Slight rotation (±1deg)
         const scale = 1 + Math.sin(time * 0.8 + seed) * 0.02; // Subtle scale (±2%)
-        
+
         setAnimationOffset({ x, y, rotate, scale });
         lastTimeRef.current = currentTime;
       }
-      
+
       animationFrameRef.current = requestAnimationFrame(animateChicken);
     };
 
     // Check for reduced motion preference
-    const prefersReducedMotion = typeof window !== 'undefined' && window.matchMedia 
-      ? window.matchMedia('(prefers-reduced-motion: reduce)').matches 
+    const prefersReducedMotion = typeof window !== 'undefined' && window.matchMedia
+      ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
       : false;
-    
+
     if (!prefersReducedMotion) {
       animationFrameRef.current = requestAnimationFrame(animateChicken);
     }
@@ -85,7 +85,7 @@ const Chicken: React.FC<ChickenProps> = React.memo(({ player, position, onHover,
                 scale(${animationOffset.scale})`,
     transition: 'left 0.8s cubic-bezier(0.4, 0, 0.2, 1), top 0.8s cubic-bezier(0.4, 0, 0.2, 1)',
     cursor: 'pointer',
-    zIndex: 10,
+    zIndex: 1, // Very low z-index to stay behind all UI elements
     willChange: 'transform',
     backfaceVisibility: 'hidden',
   }), [position.x, position.y, animationOffset]);
@@ -124,30 +124,27 @@ const Chicken: React.FC<ChickenProps> = React.memo(({ player, position, onHover,
     >
       {/* Chicken Avatar */}
       <div className="flex flex-col items-center">
-        <div className={`chicken-sprite mb-1 flex items-center justify-center hover:scale-110 transition-transform will-change-transform ${
-          isFullscreen 
-            ? 'w-16 h-16 text-2xl' 
-            : 'w-12 h-12 text-lg'
-        }`}>
+        <div className={`chicken-sprite mb-1 flex items-center justify-center hover:scale-110 transition-transform will-change-transform ${isFullscreen
+          ? 'w-16 h-16 text-2xl'
+          : 'w-12 h-12 text-lg'
+          }`}>
           <div className="running-chicken">
             🐓
           </div>
         </div>
         {/* Player Name */}
-        <div className={`player-name-tag font-medium text-gray-800 bg-white/80 px-2 py-1 rounded shadow-sm truncate ${
-          isFullscreen 
-            ? 'text-sm max-w-24' 
-            : 'text-xs max-w-20'
-        }`}>
+        <div className={`player-name-tag font-medium text-gray-800 bg-white/80 px-2 py-1 rounded shadow-sm truncate ${isFullscreen
+          ? 'text-sm max-w-24'
+          : 'text-xs max-w-20'
+          }`}>
           {player.name}
         </div>
         {/* Position Badge */}
-        <div className={`position-badge font-bold text-white bg-blue-600 rounded-full flex items-center justify-center mt-1 ${
-          isFullscreen 
-            ? 'text-sm w-8 h-8' 
-            : 'text-xs w-6 h-6'
-        }`}>
-          {player.position}
+        <div className={`position-badge font-bold text-white bg-blue-600 rounded-full flex items-center justify-center mt-1 ${isFullscreen
+          ? 'text-sm w-8 h-8'
+          : 'text-xs w-6 h-6'
+          }`}>
+          {position.rank}
         </div>
       </div>
     </div>
@@ -197,13 +194,20 @@ export const ChickenRace: React.FC<ChickenRaceProps> = React.memo(({
     }
 
     // Fallback to calculating positions
-    // Sort players by position (ascending - position 1 is first place)
+    // Players are already processed and have correct positions, just need to calculate visual positions
     const sortedPlayers = [...players].sort((a, b) => a.position - b.position);
-    
-    // Group players by score to handle ties
+
+    // Debug: Log player data to verify processing (can be removed in production)
+    console.log('🐔 ChickenRace - Players data:', players.map(p => ({
+      name: p.name,
+      position: p.position,
+      total: p.total.toFixed(1)
+    })));
+
+    // Simplified positioning: group by score (since positions should already be correct)
     const scoreGroups = new Map<number, Player[]>();
     sortedPlayers.forEach(player => {
-      const score = player.total;
+      const score = Math.round(player.total * 10) / 10; // Round to 1 decimal
       if (!scoreGroups.has(score)) {
         scoreGroups.set(score, []);
       }
@@ -211,34 +215,111 @@ export const ChickenRace: React.FC<ChickenRaceProps> = React.memo(({
     });
 
     const positions: ChickenPosition[] = [];
-    let currentRankIndex = 0;
+    const maxDistance = 70; // Maximum distance from start to finish (85% - 15%)
+    const chickenSize = 8; // Approximate chicken size in percentage
+    
+    // Helper function to check if two chickens would overlap
+    const wouldOverlap = (pos1: { x: number; y: number }, pos2: { x: number; y: number }) => {
+      const xDiff = Math.abs(pos1.x - pos2.x);
+      const yDiff = Math.abs(pos1.y - pos2.y);
+      return xDiff < chickenSize && yDiff < chickenSize;
+    };
+    
+    // Helper function to find a non-overlapping position
+    const findNonOverlappingPosition = (baseX: number, baseY: number, existingPositions: { x: number; y: number }[]) => {
+      let x = baseX;
+      let y = baseY;
+      let attempts = 0;
+      const maxAttempts = 20;
+      
+      while (attempts < maxAttempts) {
+        const currentPos = { x, y };
+        const hasOverlap = existingPositions.some(pos => wouldOverlap(currentPos, pos));
+        const inSafeZone = isInSafeZone(x, y, safeZones);
+        
+        if (!hasOverlap && !inSafeZone) {
+          return { x, y };
+        }
+        
+        // Try different positions in a spiral pattern
+        const angle = (attempts * 0.5) * Math.PI;
+        const radius = Math.min(attempts * 2, 15);
+        x = Math.min(Math.max(baseX + Math.cos(angle) * radius, 15), 85);
+        y = Math.min(Math.max(baseY + Math.sin(angle) * radius, 35), 65);
+        
+        attempts++;
+      }
+      
+      // Fallback: return original position if no good position found
+      return { x: baseX, y: baseY };
+    };
 
-    // Process each score group
+    // Define safe zones to avoid UI overlaps
+    const safeZones = {
+      topLeft: { x: [0, 35], y: [0, 30] }, // Race info overlay
+      topRight: { x: [65, 100], y: [0, 30] }, // Fullscreen button
+      bottomLeft: { x: [0, 35], y: [70, 100] }, // Future UI
+      bottomRight: { x: [65, 100], y: [70, 100] }, // Position legend
+    };
+    
+    // Helper function to check if position is in a safe zone (UI overlay area)
+    const isInSafeZone = (x: number, y: number, zones: typeof safeZones) => {
+      return Object.values(zones).some((zone) => {
+        return x >= zone.x[0] && x <= zone.x[1] && y >= zone.y[0] && y <= zone.y[1];
+      });
+    };
+
+    // Calculate score range for positioning
+    const maxScore = Math.max(...players.map(p => p.total));
+    const minScore = Math.min(...players.map(p => p.total));
+    const scoreRange = maxScore - minScore || 1; // Avoid division by zero
+
+    // Process each score group (highest score first for positioning)
     Array.from(scoreGroups.entries())
       .sort(([a], [b]) => b - a) // Sort by score descending (highest first)
-      .forEach(([, groupPlayers]) => {
-        // Calculate horizontal position for this rank group
-        // First place (position 1) should be at ~85%, last place at ~15%
-        const totalPlayers = sortedPlayers.length;
-        const rankProgress = currentRankIndex / Math.max(totalPlayers - 1, 1);
-        const xPosition = 85 - (rankProgress * 70); // 85% to 15% range
-        
+      .forEach(([score, groupPlayers]) => {
+        // Calculate horizontal position based on score
+        const scoreProgress = scoreRange > 0 ? (score - minScore) / scoreRange : 1;
+        const xPosition = 15 + (scoreProgress * maxDistance); // 15% to 85% range
+
         // For tied players, arrange them vertically at the same horizontal position
+        // Calculate spacing to avoid overlaps
+        const chickenSize = 8; // Approximate chicken size in percentage
+        const minSpacing = chickenSize + 2; // Minimum spacing between chickens
+        const availableHeight = 65 - 35; // Safe area height (35% to 65%)
+        const maxPlayersInColumn = Math.floor(availableHeight / minSpacing);
+        
         groupPlayers.forEach((player, indexInGroup) => {
-          // Randomize vertical position with some clustering for ties
-          const baseY = 30 + (Math.random() * 40); // 30% to 70% range
-          const tieOffset = indexInGroup * 8; // Spread tied players vertically
-          const yPosition = Math.min(Math.max(baseY + tieOffset, 20), 80);
+          let yPosition;
+          let xOffset = 0;
           
+          // If too many players for one column, create multiple columns
+          if (groupPlayers.length > maxPlayersInColumn) {
+            const column = Math.floor(indexInGroup / maxPlayersInColumn);
+            const rowInColumn = indexInGroup % maxPlayersInColumn;
+            xOffset = column * 3; // 3% offset for each additional column
+            yPosition = 35 + (rowInColumn * minSpacing);
+          } else {
+            // Single column - evenly distribute players
+            const spacing = Math.min(minSpacing, availableHeight / Math.max(groupPlayers.length - 1, 1));
+            yPosition = 35 + (indexInGroup * spacing);
+          }
+          
+          // Ensure position is within safe bounds and not in UI zones
+          yPosition = Math.min(Math.max(yPosition, 35), 65);
+          const finalXPosition = Math.min(Math.max(xPosition + xOffset, 15), 85);
+          
+          // Use collision detection to find final position
+          const existingPositions = positions.map(p => ({ x: p.x, y: p.y }));
+          const finalPosition = findNonOverlappingPosition(finalXPosition, yPosition, existingPositions);
+
           positions.push({
             playerId: player._id,
-            x: xPosition,
-            y: yPosition,
-            rank: player.position,
+            x: finalPosition.x, // Non-overlapping X coordinate
+            y: finalPosition.y, // Non-overlapping Y coordinate
+            rank: player.position, // Use the player's already corrected position
           });
         });
-        
-        currentRankIndex += groupPlayers.length;
       });
 
     return positions;
@@ -295,18 +376,17 @@ export const ChickenRace: React.FC<ChickenRaceProps> = React.memo(({
       </div>
 
       {/* Race Track */}
-      <div className={`chicken-race-container relative w-full bg-gradient-to-b from-sky-200 via-sky-100 to-green-200 rounded-lg border-2 sm:border-4 border-brown-600 overflow-hidden ${
-        isFullscreen 
-          ? 'h-[70vh] sm:h-[75vh] lg:h-[80vh]' 
-          : 'h-64 sm:h-80 lg:h-96'
-      }`}>
+      <div className={`chicken-race-container relative w-full bg-gradient-to-b from-sky-200 via-sky-100 to-green-200 rounded-lg border-2 sm:border-4 border-brown-600 overflow-hidden ${isFullscreen
+        ? 'h-[70vh] sm:h-[75vh] lg:h-[80vh]'
+        : 'h-64 sm:h-80 lg:h-96'
+        }`}>
         {/* Track decorations */}
         <div className="absolute inset-0">
           {/* Finish line */}
           <div className="absolute right-4 top-0 bottom-0 w-2 bg-black opacity-20">
             <div className="finish-line h-full" />
           </div>
-          
+
           {/* Start line */}
           <div className="absolute left-4 top-0 bottom-0 w-2 bg-black opacity-20">
             <div className="start-line h-full" />
@@ -325,27 +405,32 @@ export const ChickenRace: React.FC<ChickenRaceProps> = React.memo(({
         {/* Chickens */}
         {chickenComponents}
 
+        {/* Tooltip System - Inside race container */}
+        <Tooltip
+          isVisible={tooltips.isVisible}
+          position={tooltips.position}
+          content={tooltips.content}
+          onClose={hidePlayerTooltip}
+        />
+
         {/* Race Info Overlay */}
-        <div className={`race-info-overlay absolute bg-white/90 rounded-lg shadow-lg ${
-          isFullscreen 
-            ? 'top-4 sm:top-6 left-4 sm:left-6 p-3 sm:p-4' 
-            : 'top-2 sm:top-4 left-2 sm:left-4 p-2 sm:p-3'
-        }`}>
-          <div className={`font-medium text-gray-800 ${
-            isFullscreen ? 'text-sm sm:text-base' : 'text-xs sm:text-sm'
+        <div className={`race-info-overlay absolute bg-white/90 rounded-lg shadow-lg z-30 ${isFullscreen
+          ? 'top-4 sm:top-6 left-4 sm:left-6 p-3 sm:p-4'
+          : 'top-2 sm:top-4 left-2 sm:left-4 p-2 sm:p-3'
           }`}>
+          <div className={`font-medium text-gray-800 ${isFullscreen ? 'text-sm sm:text-base' : 'text-xs sm:text-sm'
+            }`}>
             🏆 {players.length} Jogadores
           </div>
-          <div className={`text-gray-600 hidden sm:block ${
-            isFullscreen ? 'text-sm' : 'text-xs'
-          }`}>
+          <div className={`text-gray-600 hidden sm:block ${isFullscreen ? 'text-sm' : 'text-xs'
+            }`}>
             Líder: {players.find(p => p.position === 1)?.name || 'N/A'}
           </div>
         </div>
 
         {/* Fullscreen Button - Only show when not in fullscreen */}
         {!isFullscreen && (
-          <div className="absolute top-2 sm:top-4 right-2 sm:right-4">
+          <div className="absolute top-2 sm:top-4 right-2 sm:right-4 z-40">
             <button
               onClick={() => setIsFullscreenOpen(true)}
               className="flex items-center gap-1 sm:gap-2 bg-white/90 hover:bg-white rounded-lg p-2 sm:p-3 shadow-lg transition-colors backdrop-blur-sm"
@@ -373,19 +458,16 @@ export const ChickenRace: React.FC<ChickenRaceProps> = React.memo(({
         )}
 
         {/* Position Legend */}
-        <div className={`absolute bg-white/90 rounded-lg shadow-lg ${
-          isFullscreen 
-            ? 'bottom-4 sm:bottom-6 right-4 sm:right-6 p-3 sm:p-4' 
-            : 'bottom-2 sm:bottom-4 right-2 sm:right-4 p-2 sm:p-3'
-        }`}>
-          <div className={`font-medium text-gray-800 mb-1 hidden sm:block ${
-            isFullscreen ? 'text-sm' : 'text-xs'
+        <div className={`absolute bg-white/90 rounded-lg shadow-lg z-30 ${isFullscreen
+          ? 'bottom-4 sm:bottom-6 right-4 sm:right-6 p-3 sm:p-4'
+          : 'bottom-2 sm:bottom-4 right-2 sm:right-4 p-2 sm:p-3'
           }`}>
+          <div className={`font-medium text-gray-800 mb-1 hidden sm:block ${isFullscreen ? 'text-sm' : 'text-xs'
+            }`}>
             Colocação
           </div>
-          <div className={`flex items-center gap-1 sm:gap-2 text-gray-600 ${
-            isFullscreen ? 'text-sm' : 'text-xs'
-          }`}>
+          <div className={`flex items-center gap-1 sm:gap-2 text-gray-600 ${isFullscreen ? 'text-sm' : 'text-xs'
+            }`}>
             <span>🥇 1º</span>
             <span className="hidden sm:inline">→</span>
             <span>🏁 Chegada</span>
@@ -394,52 +476,36 @@ export const ChickenRace: React.FC<ChickenRaceProps> = React.memo(({
       </div>
 
       {/* Race Stats */}
-      <div className={`grid grid-cols-2 gap-2 sm:gap-4 text-center ${
-        isFullscreen ? 'mt-4 sm:mt-6' : 'mt-3 lg:mt-4'
-      }`}>
-        <div className={`stats-card bg-white rounded-lg shadow-sm ${
-          isFullscreen ? 'p-3 sm:p-5' : 'p-2 sm:p-4'
+      <div className={`grid grid-cols-2 gap-2 sm:gap-4 text-center ${isFullscreen ? 'mt-4 sm:mt-6' : 'mt-3 lg:mt-4'
         }`}>
-          <div className={`font-bold text-blue-600 ${
-            isFullscreen ? 'text-xl sm:text-2xl lg:text-3xl' : 'text-lg sm:text-xl lg:text-2xl'
+        <div className={`stats-card bg-white rounded-lg shadow-sm ${isFullscreen ? 'p-3 sm:p-5' : 'p-2 sm:p-4'
           }`}>
+          <div className={`font-bold text-blue-600 ${isFullscreen ? 'text-xl sm:text-2xl lg:text-3xl' : 'text-lg sm:text-xl lg:text-2xl'
+            }`}>
             {players.length}
           </div>
-          <div className={`text-gray-600 ${
-            isFullscreen ? 'text-sm sm:text-base' : 'text-xs sm:text-sm'
-          }`}>
+          <div className={`text-gray-600 ${isFullscreen ? 'text-sm sm:text-base' : 'text-xs sm:text-sm'
+            }`}>
             Jogadores
           </div>
         </div>
-        <div className={`stats-card bg-white rounded-lg shadow-sm ${
-          isFullscreen ? 'p-3 sm:p-5' : 'p-2 sm:p-4'
-        }`}>
-          <div className={`font-bold text-yellow-600 ${
-            isFullscreen ? 'text-xl sm:text-2xl lg:text-3xl' : 'text-lg sm:text-xl lg:text-2xl'
+        <div className={`stats-card bg-white rounded-lg shadow-sm ${isFullscreen ? 'p-3 sm:p-5' : 'p-2 sm:p-4'
           }`}>
-            {Math.round(players.find(p => p.position === 1)?.total || 0)}
+          <div className={`font-bold text-yellow-600 ${isFullscreen ? 'text-xl sm:text-2xl lg:text-3xl' : 'text-lg sm:text-xl lg:text-2xl'
+            }`}>
+            {(players.find(p => p.position === 1)?.total || 0).toFixed(1)}
           </div>
-          <div className={`text-gray-600 ${
-            isFullscreen ? 'text-sm sm:text-base' : 'text-xs sm:text-sm'
-          }`}>
+          <div className={`text-gray-600 ${isFullscreen ? 'text-sm sm:text-base' : 'text-xs sm:text-sm'
+            }`}>
             Pontos do Líder
           </div>
         </div>
-        {/* <div className="stats-card bg-white rounded-lg p-2 sm:p-4 shadow-sm">
-          <div className="text-lg sm:text-xl lg:text-2xl font-bold text-green-600">
-            {Math.round(Math.max(...players.map(p => p.total)) - Math.min(...players.map(p => p.total)))}
-          </div>
-          <div className="text-xs sm:text-sm text-gray-600">Diferença de Pontos</div>
-        </div> */}
       </div>
 
-      {/* Tooltip System - Outside overflow container */}
-      <Tooltip
-        isVisible={tooltips.isVisible}
-        position={tooltips.position}
-        content={tooltips.content}
-        onClose={hidePlayerTooltip}
-      />
+      {/* Daily Goal Progress - Only show when not in fullscreen */}
+
+
+
 
       {/* Fullscreen Modal */}
       <ChickenRaceFullscreen
@@ -459,7 +525,7 @@ export const ChickenRace: React.FC<ChickenRaceProps> = React.memo(({
     // prevProps.leaderboardTitle === nextProps.leaderboardTitle &&
     prevProps.players.length === nextProps.players.length &&
     prevProps.isFullscreen === nextProps.isFullscreen &&
-    prevProps.players.every((player, index) => 
+    prevProps.players.every((player, index) =>
       player._id === nextProps.players[index]?._id &&
       player.position === nextProps.players[index]?.position &&
       player.total === nextProps.players[index]?.total

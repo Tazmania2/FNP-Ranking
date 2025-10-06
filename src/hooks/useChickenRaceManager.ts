@@ -117,6 +117,63 @@ export const useChickenRaceManager = (config: ChickenRaceManagerConfig = {}) => 
 
   const MAX_RETRY_ATTEMPTS = 3; // Reduced to prevent immediate fallback
 
+  /**
+   * Process and reorganize players data to fix position inconsistencies
+   * Players with the same points should have the same position number
+   */
+  const processPlayersData = useCallback((rawPlayers: any[]) => {
+    if (!rawPlayers || rawPlayers.length === 0) return [];
+
+    // Sort players by total score (descending - highest score first)
+    const sortedPlayers = [...rawPlayers].sort((a, b) => b.total - a.total);
+    
+    // Group players by score (rounded to 1 decimal place)
+    const scoreGroups = new Map<number, any[]>();
+    sortedPlayers.forEach(player => {
+      const score = Math.round(player.total * 10) / 10;
+      if (!scoreGroups.has(score)) {
+        scoreGroups.set(score, []);
+      }
+      scoreGroups.get(score)!.push(player);
+    });
+
+    // Reassign positions based on score groups
+    const processedPlayers: any[] = [];
+    let currentPosition = 1;
+
+    // Process each score group (highest score first)
+    Array.from(scoreGroups.entries())
+      .sort(([a], [b]) => b - a) // Sort by score descending
+      .forEach(([score, groupPlayers]) => {
+        // All players in this group get the same position number
+        groupPlayers.forEach(player => {
+          processedPlayers.push({
+            ...player,
+            position: currentPosition, // Assign corrected position
+            total: score, // Ensure consistent score formatting
+          });
+        });
+        
+        // Move to next position (skip positions for tied players)
+        // e.g., if 3 players tied for 1st, next position is 4th
+        currentPosition += groupPlayers.length;
+      });
+
+    console.log('🔧 Processed players data:', {
+      original: rawPlayers.length,
+      processed: processedPlayers.length,
+      scoreGroups: scoreGroups.size,
+      sampleData: processedPlayers.slice(0, 3).map(p => ({
+        name: p.name,
+        originalPos: rawPlayers.find(rp => rp._id === p._id)?.position,
+        newPos: p.position,
+        score: p.total.toFixed(1)
+      }))
+    });
+
+    return processedPlayers;
+  }, []);
+
   // Create API service instance
   const apiService = useMemo(() => {
     if (!apiConfig) {
@@ -217,7 +274,7 @@ export const useChickenRaceManager = (config: ChickenRaceManagerConfig = {}) => 
     leaderboardStore.setLeaderboards([mockLeaderboard]);
     leaderboardStore.setCurrentLeaderboard(mockLeaderboard);
     leaderboardStore.setCurrentLeaderboardId(mockLeaderboard._id);
-    updatePlayers(MOCK_LEADERBOARD_DATA);
+    updatePlayers(processPlayersData(MOCK_LEADERBOARD_DATA));
     
     // Clear any errors and loading states
     console.log('🐔 Clearing all loading states and errors...');
@@ -231,7 +288,7 @@ export const useChickenRaceManager = (config: ChickenRaceManagerConfig = {}) => 
     retryCountRef.current = 0;
     
     console.log('🐔 Mock data setup complete!');
-  }, [updatePlayers, clearError, setLoadingState, MOCK_LEADERBOARD_DATA]);
+  }, [updatePlayers, clearError, setLoadingState, MOCK_LEADERBOARD_DATA, processPlayersData]);
 
   /**
    * Initialize the chicken race with leaderboards
@@ -295,7 +352,8 @@ export const useChickenRaceManager = (config: ChickenRaceManagerConfig = {}) => 
       });
       
       console.log('✅ Initial leaderboard data loaded:', response.leaders.length, 'players');
-      updatePlayers(response.leaders);
+      const processedPlayers = processPlayersData(response.leaders);
+      updatePlayers(processedPlayers);
 
       // Reset retry count on success
       retryCountRef.current = 0;
@@ -351,7 +409,8 @@ export const useChickenRaceManager = (config: ChickenRaceManagerConfig = {}) => 
       });
 
       console.log('✅ Leaderboard data refreshed:', response.leaders.length, 'players');
-      updatePlayers(response.leaders);
+      const processedPlayers = processPlayersData(response.leaders);
+      updatePlayers(processedPlayers);
 
     } catch (error) {
       console.error('Failed to refresh leaderboard data:', error);
@@ -369,7 +428,7 @@ export const useChickenRaceManager = (config: ChickenRaceManagerConfig = {}) => 
     } finally {
       setLoadingState('currentLeaderboard', false);
     }
-  }, [currentLeaderboardId, apiService, setLoadingState, clearError, setError, updatePlayers, onAuthError]);
+  }, [currentLeaderboardId, apiService, setLoadingState, clearError, setError, updatePlayers, onAuthError, processPlayersData]);
 
   /**
    * Switch to a different leaderboard
@@ -395,7 +454,8 @@ export const useChickenRaceManager = (config: ChickenRaceManagerConfig = {}) => 
       });
 
       console.log('✅ Leaderboard switched, loaded', response.leaders.length, 'players');
-      updatePlayers(response.leaders);
+      const processedPlayers = processPlayersData(response.leaders);
+      updatePlayers(processedPlayers);
 
     } catch (error) {
       console.error('Failed to switch leaderboard:', error);
@@ -413,7 +473,7 @@ export const useChickenRaceManager = (config: ChickenRaceManagerConfig = {}) => 
     } finally {
       setLoadingState('switchingLeaderboard', false);
     }
-  }, [apiService, setLoadingState, clearError, setError, switchToLeaderboard, updatePlayers, onAuthError]);
+  }, [apiService, setLoadingState, clearError, setError, switchToLeaderboard, updatePlayers, onAuthError, processPlayersData]);
 
   /**
    * Handle retry for failed operations

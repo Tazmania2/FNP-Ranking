@@ -91,7 +91,7 @@ export const LeaderboardSelector: React.FC<LeaderboardSelectorProps> = ({
           aria-expanded={isDropdownOpen}
         >
           <span className="text-xs sm:text-sm font-medium text-gray-700 truncate max-w-32 sm:max-w-48">
-            {currentLeaderboard?.title || 'Select Leaderboard'}
+            {currentLeaderboard?.title || 'Selecionar Ranking'}
           </span>
           <ChevronDownIcon 
             className={`w-4 h-4 text-gray-500 transition-transform flex-shrink-0 ${
@@ -102,7 +102,7 @@ export const LeaderboardSelector: React.FC<LeaderboardSelectorProps> = ({
 
         {/* Dropdown Menu */}
         {isDropdownOpen && (
-          <div className="absolute top-full left-0 right-0 sm:left-0 sm:right-auto mt-1 w-full sm:min-w-64 bg-white border border-gray-300 rounded-lg shadow-lg z-50">
+          <div className="absolute top-full left-0 right-0 sm:left-0 sm:right-auto mt-1 w-full sm:min-w-64 bg-white border border-gray-300 rounded-lg shadow-lg z-[9999]">
             <div className="py-1 max-h-60 overflow-y-auto">
               {leaderboards.map((leaderboard) => (
                 <button
@@ -139,14 +139,14 @@ export const LeaderboardSelector: React.FC<LeaderboardSelectorProps> = ({
                 ? 'bg-green-100 text-green-700 hover:bg-green-200 focus:ring-green-500'
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200 focus:ring-gray-500'
             }`}
-            title={autoCycle.isEnabled ? 'Disable auto-cycle' : 'Enable auto-cycle'}
+            title={autoCycle.isEnabled ? 'Parar rotação automática' : 'Iniciar rotação automática'}
           >
             {autoCycle.isEnabled ? (
               <PauseIcon className="w-3 sm:w-4 h-3 sm:h-4" />
             ) : (
               <PlayIcon className="w-3 sm:w-4 h-3 sm:h-4" />
             )}
-            <span className="hidden sm:inline">Auto Cycle</span>
+            <span className="hidden sm:inline">Rotação Auto</span>
             <span className="sm:hidden">Auto</span>
           </button>
 
@@ -163,7 +163,7 @@ export const LeaderboardSelector: React.FC<LeaderboardSelectorProps> = ({
             <div className="flex items-center gap-1 text-xs text-gray-500">
               <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
               <span className="hidden sm:inline">
-                {autoCycle.currentIndex + 1} of {leaderboards.length}
+                {autoCycle.currentIndex + 1} de {leaderboards.length}
               </span>
               <span className="sm:hidden">
                 {autoCycle.currentIndex + 1}/{leaderboards.length}
