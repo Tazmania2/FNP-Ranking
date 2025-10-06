@@ -204,13 +204,7 @@ export const ChickenRace: React.FC<ChickenRaceProps> = React.memo(({
       total: p.total.toFixed(1)
     })));
 
-    // Debug: Log positioning results
-    console.log('🐔 ChickenRace - Final positions:', positions.map(p => ({
-      playerId: p.playerId.slice(-4),
-      x: p.x.toFixed(1),
-      y: p.y.toFixed(1),
-      rank: p.rank
-    })));
+
 
     // Simplified positioning: group by score (since positions should already be correct)
     const scoreGroups = new Map<number, Player[]>();
@@ -225,6 +219,21 @@ export const ChickenRace: React.FC<ChickenRaceProps> = React.memo(({
     const positions: ChickenPosition[] = [];
     const maxDistance = 70; // Maximum distance from start to finish (85% - 15%)
     const chickenSize = 8; // Approximate chicken size in percentage
+
+    // Define safe zones to avoid UI overlaps
+    const safeZones = {
+      topLeft: { x: [0, 35], y: [0, 30] }, // Race info overlay
+      topRight: { x: [65, 100], y: [0, 30] }, // Fullscreen button
+      bottomLeft: { x: [0, 35], y: [70, 100] }, // Future UI
+      bottomRight: { x: [65, 100], y: [70, 100] }, // Position legend
+    };
+
+    // Helper function to check if position is in a safe zone (UI overlay area)
+    const isInSafeZone = (x: number, y: number, zones: typeof safeZones) => {
+      return Object.values(zones).some((zone) => {
+        return x >= zone.x[0] && x <= zone.x[1] && y >= zone.y[0] && y <= zone.y[1];
+      });
+    };
 
     // Helper function to check if two chickens would overlap
     const wouldOverlap = (pos1: { x: number; y: number }, pos2: { x: number; y: number }) => {
@@ -260,21 +269,6 @@ export const ChickenRace: React.FC<ChickenRaceProps> = React.memo(({
 
       // Fallback: return original position if no good position found
       return { x: baseX, y: baseY };
-    };
-
-    // Define safe zones to avoid UI overlaps
-    const safeZones = {
-      topLeft: { x: [0, 35], y: [0, 30] }, // Race info overlay
-      topRight: { x: [65, 100], y: [0, 30] }, // Fullscreen button
-      bottomLeft: { x: [0, 35], y: [70, 100] }, // Future UI
-      bottomRight: { x: [65, 100], y: [70, 100] }, // Position legend
-    };
-
-    // Helper function to check if position is in a safe zone (UI overlay area)
-    const isInSafeZone = (x: number, y: number, zones: typeof safeZones) => {
-      return Object.values(zones).some((zone) => {
-        return x >= zone.x[0] && x <= zone.x[1] && y >= zone.y[0] && y <= zone.y[1];
-      });
     };
 
     // Calculate score range for positioning
@@ -329,6 +323,14 @@ export const ChickenRace: React.FC<ChickenRaceProps> = React.memo(({
           });
         });
       });
+
+    // Debug: Log positioning results
+    console.log('🐔 ChickenRace - Final positions:', positions.map(p => ({
+      playerId: p.playerId.slice(-4),
+      x: p.x.toFixed(1),
+      y: p.y.toFixed(1),
+      rank: p.rank
+    })));
 
     return positions;
   }, [players, playerPositions]);
