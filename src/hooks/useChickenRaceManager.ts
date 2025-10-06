@@ -21,7 +21,7 @@ interface ChickenRaceManagerConfig {
     retryDelay?: number;
     pauseOnHidden?: boolean;
   };
-  /** Position transition configuration */
+  /** Position transitio configuration */
   transitionConfig?: {
     transitionDuration?: number;
     easing?: 'linear' | 'ease-in' | 'ease-out' | 'ease-in-out';
