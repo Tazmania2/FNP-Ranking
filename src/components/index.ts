@@ -13,3 +13,4 @@ export { ChickenRace, default as ChickenRaceDefault } from './ChickenRace';
 export { ChickenRaceFullscreen, default as ChickenRaceFullscreenDefault } from './ChickenRaceFullscreen';
 export { Sidebar, default as SidebarDefault } from './Sidebar';
 export { DetailedRanking, default as DetailedRankingDefault } from './DetailedRanking';
+export { DailyGoalProgress, default as DailyGoalProgressDefault } from './DailyGoalProgress';
