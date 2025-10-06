@@ -32,26 +32,7 @@ function App() {
     };
   });
 
-  // Debug API config
-  console.log('🔧 App.tsx - Environment variables:', {
-    VITE_FUNIFIER_SERVER_URL: import.meta.env.VITE_FUNIFIER_SERVER_URL,
-    VITE_FUNIFIER_API_KEY: import.meta.env.VITE_FUNIFIER_API_KEY,
-    VITE_FUNIFIER_AUTH_TOKEN: import.meta.env.VITE_FUNIFIER_AUTH_TOKEN,
-  });
-  
-  console.log('🔧 App.tsx - API Config:', {
-    hasConfig: !!apiConfig,
-    serverUrl: apiConfig?.serverUrl,
-    hasApiKey: !!apiConfig?.apiKey,
-    hasAuthToken: !!apiConfig?.authToken,
-  });
-  
-  console.log('🔧 App.tsx - Show demo decision:', {
-    showDemo,
-    forceDemo,
-    hasApiConfig: !!apiConfig,
-    willShowDemo: showDemo || forceDemo || !apiConfig,
-  });
+  // API configuration loaded (debug logging removed for security)
 
   const {
     // State

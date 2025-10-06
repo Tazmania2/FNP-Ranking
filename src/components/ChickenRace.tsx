@@ -2,6 +2,7 @@ import React, { useMemo, useEffect, useState, useCallback, useRef } from 'react'
 import type { Player, ChickenPosition } from '../types';
 import { useTooltipManager } from '../hooks/useTooltipManager';
 import Tooltip from './Tooltip';
+import HoverTooltip from './HoverTooltip';
 import ChickenRaceFullscreen from './ChickenRaceFullscreen';
 import './ChickenRace.css';
 
@@ -21,7 +22,7 @@ interface ChickenRaceProps {
 interface ChickenProps {
   player: Player;
   position: ChickenPosition;
-  onHover?: (_playerId: string | null, _element?: HTMLElement, _mouseEvent?: React.MouseEvent<HTMLDivElement>) => void;
+  onHover?: (_playerId: string | null, _element?: HTMLElement) => void;
   isFullscreen?: boolean;
 }
 
@@ -92,7 +93,7 @@ const Chicken: React.FC<ChickenProps> = React.memo(({ player, position, onHover,
 
   // Memoize event handlers to prevent unnecessary re-renders
   const handleMouseEnter = useCallback((event: React.MouseEvent<HTMLDivElement>) => {
-    onHover?.(player._id, event.currentTarget, event);
+    onHover?.(player._id, event.currentTarget);
   }, [onHover, player._id]);
 
   const handleMouseLeave = useCallback(() => {
@@ -174,7 +175,8 @@ export const ChickenRace: React.FC<ChickenRaceProps> = React.memo(({
 
   // Initialize tooltip manager
   const {
-    tooltips,
+    tooltips, // Fixed position cycling tooltip
+    hoverTooltip, // Hover overlay tooltip
     handleChickenHover,
     hidePlayerTooltip,
   } = useTooltipManager({ players, isEnabled: !isLoading });
@@ -197,12 +199,7 @@ export const ChickenRace: React.FC<ChickenRaceProps> = React.memo(({
     // Players are already processed and have correct positions, just need to calculate visual positions
     const sortedPlayers = [...players].sort((a, b) => a.position - b.position);
 
-    // Debug: Log player data to verify processing (can be removed in production)
-    console.log('🐔 ChickenRace - Players data:', players.map(p => ({
-      name: p.name,
-      position: p.position,
-      total: p.total.toFixed(1)
-    })));
+    // Players data processed and ready for positioning
 
 
 
@@ -324,13 +321,7 @@ export const ChickenRace: React.FC<ChickenRaceProps> = React.memo(({
         });
       });
 
-    // Debug: Log positioning results
-    console.log('🐔 ChickenRace - Final positions:', positions.map(p => ({
-      playerId: p.playerId.slice(-4),
-      x: p.x.toFixed(1),
-      y: p.y.toFixed(1),
-      rank: p.rank
-    })));
+    // Chicken positions calculated successfully
 
     return positions;
   }, [players, playerPositions]);
@@ -415,12 +406,19 @@ export const ChickenRace: React.FC<ChickenRaceProps> = React.memo(({
         {/* Chickens */}
         {chickenComponents}
 
-        {/* Tooltip System - Inside race container */}
+        {/* Fixed Position Cycling Tooltip - Bottom Left */}
         <Tooltip
           isVisible={tooltips.isVisible}
           position={tooltips.position}
           content={tooltips.content}
           onClose={hidePlayerTooltip}
+          isFixed={true}
+        />
+
+        {/* Hover Overlay Tooltip - Centered */}
+        <HoverTooltip
+          isVisible={hoverTooltip.isVisible}
+          content={hoverTooltip.content}
         />
 
         {/* Race Info Overlay */}

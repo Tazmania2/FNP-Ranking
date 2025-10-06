@@ -227,7 +227,7 @@ describe('useTooltipManager Hook', () => {
     expect(mockShowTooltip).not.toHaveBeenCalled();
   });
 
-  it('sets up auto-display timer every minute', () => {
+  it('sets up cycling timer automatically', () => {
     renderHook(() =>
       useTooltipManager({ players: mockPlayers })
     );
@@ -241,13 +241,13 @@ describe('useTooltipManager Hook', () => {
     expect(mockShowTooltip).toHaveBeenCalled();
   });
 
-  it('displays tooltips sequentially during auto-display', () => {
+  it('displays tooltips sequentially during cycling', () => {
     const { result } = renderHook(() =>
       useTooltipManager({ players: mockPlayers })
     );
 
     act(() => {
-      result.current.startAutoDisplay();
+      result.current.startCycling();
     });
 
     // Should show first tooltip immediately
@@ -294,19 +294,19 @@ describe('useTooltipManager Hook', () => {
     expect(content.pointsGainedToday).toBe(-100); // 1200 - 1300
   });
 
-  it('does not start auto-display when no players', () => {
+  it('does not start cycling when no players', () => {
     const { result } = renderHook(() =>
       useTooltipManager({ players: [] })
     );
 
     act(() => {
-      result.current.startAutoDisplay();
+      result.current.startCycling();
     });
 
     expect(mockShowTooltip).not.toHaveBeenCalled();
   });
 
-  it('limits auto-display to 5 seconds maximum', () => {
+  it('cycles through players every 3 seconds', () => {
     // Create many players to test the 5-second limit
     const manyPlayers: Player[] = Array.from({ length: 10 }, (_, i) => ({
       _id: `player${i}`,
@@ -321,12 +321,12 @@ describe('useTooltipManager Hook', () => {
     );
 
     act(() => {
-      result.current.startAutoDisplay();
+      result.current.startCycling();
     });
 
-    // Fast-forward 5 seconds (should show 5 tooltips, 1 per second)
+    // Fast-forward 9 seconds (should show 3 tooltips, 1 every 3 seconds)
     act(() => {
-      vi.advanceTimersByTime(5000);
+      vi.advanceTimersByTime(9000);
     });
 
     // Should have shown tooltips for first 5 players (1 second each) plus initial call

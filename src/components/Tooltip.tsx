@@ -6,6 +6,7 @@ interface TooltipProps {
   position: { x: number; y: number };
   content: TooltipContent | null;
   onClose?: () => void;
+  isFixed?: boolean; // New prop to indicate fixed positioning
 }
 
 export const Tooltip: React.FC<TooltipProps> = ({
@@ -13,28 +14,40 @@ export const Tooltip: React.FC<TooltipProps> = ({
   position,
   content,
   onClose,
+  isFixed = false,
 }) => {
   const tooltipRef = useRef<HTMLDivElement>(null);
 
-  // Auto-hide tooltip after 5 seconds
+  // Auto-hide tooltip after 5 seconds (only for non-fixed tooltips)
   useEffect(() => {
-    if (isVisible && content) {
+    if (isVisible && content && !isFixed) {
       const timer = setTimeout(() => {
         onClose?.();
       }, 5000);
 
       return () => clearTimeout(timer);
     }
-  }, [isVisible, content, onClose]);
+  }, [isVisible, content, onClose, isFixed]);
 
-  // Adjust tooltip position to stay within the race container
-  const getAdjustedPosition = () => {
-    if (!tooltipRef.current) return position;
+  // Get tooltip position based on type (fixed or hover)
+  const getTooltipPosition = () => {
+    if (isFixed) {
+      // Fixed position: bottom left corner
+      return {
+        x: 16, // 16px from left
+        y: 16, // 16px from bottom
+        isAbove: false,
+        isFixed: true
+      };
+    }
+
+    // Hover tooltip positioning (existing logic)
+    if (!tooltipRef.current) return { ...position, isAbove: false };
 
     const tooltip = tooltipRef.current;
     const rect = tooltip.getBoundingClientRect();
     const container = tooltipRef.current.parentElement;
-    if (!container) return position;
+    if (!container) return { ...position, isAbove: false };
 
     const containerRect = container.getBoundingClientRect();
     const containerWidth = containerRect.width;
@@ -71,15 +84,6 @@ export const Tooltip: React.FC<TooltipProps> = ({
       isAbove = false;
     }
 
-    // Debug logging
-    console.log('🎯 Tooltip positioning:', {
-      original: { x: position.x, y: position.y },
-      pixels: { x: pixelX, y: pixelY },
-      adjusted: { x: adjustedX, y: adjustedY },
-      isAbove,
-      containerSize: { width: containerWidth, height: containerHeight }
-    });
-
     return { x: adjustedX, y: adjustedY, isAbove };
   };
 
@@ -87,49 +91,67 @@ export const Tooltip: React.FC<TooltipProps> = ({
     return null;
   }
 
-  const adjustedPosition = getAdjustedPosition();
-  const isAbove = (adjustedPosition as any).isAbove || false;
+  const tooltipPosition = getTooltipPosition();
+  const isAbove = tooltipPosition.isAbove || false;
 
   // Calculate points gained today (difference between current and previous total)
   const pointsGainedToday = content.pointsGainedToday || 0;
-  const gainColor = pointsGainedToday > 0 ? 'text-green-600' : 
-                   pointsGainedToday < 0 ? 'text-red-600' : 'text-gray-600';
-  const gainIcon = pointsGainedToday > 0 ? '↗️' : 
-                  pointsGainedToday < 0 ? '↘️' : '➡️';
+
+  const containerStyle = isFixed ? {
+    // Fixed position: bottom left corner of the race container
+    left: `${tooltipPosition.x}px`,
+    bottom: `${tooltipPosition.y}px`,
+  } : {
+    // Hover position: relative to chicken
+    left: `${tooltipPosition.x}px`,
+    top: `${tooltipPosition.y}px`,
+    transform: 'translateX(-50%)', // Center horizontally on the position
+  };
 
   return (
     <div
       ref={tooltipRef}
-      className="tooltip-container absolute z-50 pointer-events-none"
-      style={{
-        left: `${adjustedPosition.x}px`,
-        top: `${adjustedPosition.y}px`,
-        transform: 'translateX(-50%)', // Center horizontally on the position
-      }}
+      className={`tooltip-container absolute pointer-events-none ${isFixed ? 'z-40' : 'z-50'}`}
+      style={containerStyle}
     >
-      {/* Tooltip Arrow - dynamic based on position */}
-      {isAbove ? (
-        // Arrow pointing down when tooltip is above chicken
-        <div className="tooltip-arrow absolute -bottom-1 left-1/2 transform -translate-x-1/2">
-          <div className="w-0 h-0 border-l-2 border-r-2 border-t-2 border-transparent border-t-gray-900"></div>
-        </div>
-      ) : (
-        // Arrow pointing up when tooltip is below chicken
-        <div className="tooltip-arrow absolute -top-1 left-1/2 transform -translate-x-1/2">
-          <div className="w-0 h-0 border-l-2 border-r-2 border-b-2 border-transparent border-b-gray-900"></div>
-        </div>
+      {/* Tooltip Arrow - only for hover tooltips */}
+      {!isFixed && (
+        <>
+          {isAbove ? (
+            // Arrow pointing down when tooltip is above chicken
+            <div className="tooltip-arrow absolute -bottom-1 left-1/2 transform -translate-x-1/2">
+              <div className="w-0 h-0 border-l-2 border-r-2 border-t-2 border-transparent border-t-gray-900"></div>
+            </div>
+          ) : (
+            // Arrow pointing up when tooltip is below chicken
+            <div className="tooltip-arrow absolute -top-1 left-1/2 transform -translate-x-1/2">
+              <div className="w-0 h-0 border-l-2 border-r-2 border-b-2 border-transparent border-b-gray-900"></div>
+            </div>
+          )}
+        </>
       )}
 
-      {/* Tooltip Content - Very discrete version */}
-      <div className="tooltip-content bg-gray-900/90 text-white rounded px-1.5 py-1 shadow-sm text-xs min-w-24 max-w-32 mx-1 backdrop-blur-sm border border-gray-700/50">
-        {/* Very compact info */}
-        <div className="text-center">
-          <div className="text-yellow-300 font-medium text-xs truncate">
+      {/* Tooltip Content */}
+      <div className={`tooltip-content bg-gray-900/90 text-white rounded shadow-sm backdrop-blur-sm border border-gray-700/50 ${
+        isFixed 
+          ? 'px-3 py-2 text-sm min-w-32 max-w-40' // Larger for fixed tooltip
+          : 'px-1.5 py-1 text-xs min-w-24 max-w-32 mx-1' // Smaller for hover tooltip
+      }`}>
+        {/* Tooltip content */}
+        <div className={isFixed ? 'text-left' : 'text-center'}>
+          <div className="text-yellow-300 font-medium truncate">
             {content.playerName}
           </div>
-          <div className="text-white text-xs">
+          <div className="text-white">
             #{content.rank} • {content.points.toFixed(1)}pts
           </div>
+          {isFixed && pointsGainedToday !== 0 && (
+            <div className={`text-xs mt-1 ${
+              pointsGainedToday > 0 ? 'text-green-400' : 'text-red-400'
+            }`}>
+              {pointsGainedToday > 0 ? '+' : ''}{pointsGainedToday.toFixed(1)} hoje
+            </div>
+          )}
         </div>
       </div>
     </div>

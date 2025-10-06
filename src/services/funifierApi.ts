@@ -175,17 +175,10 @@ export class FunifierApiService {
    * Fetch list of available leaderboards
    */
   public async getLeaderboards(): Promise<Leaderboard[]> {
-    console.log('🚀 getLeaderboards() called');
-    console.log('🚀 API Config:', {
-      serverUrl: this.config.serverUrl,
-      hasApiKey: !!this.config.apiKey,
-      hasAuthToken: !!this.config.authToken
-    });
+    // Fetching leaderboards from API
     
     return this.retryRequest(async () => {
-      console.log('🌐 Making HTTP request to:', `${this.config.serverUrl}/leaderboard`);
       const response = await this.axiosInstance.get('/leaderboard');
-      console.log('✅ Leaderboards response received:', response.data);
 
       if (!Array.isArray(response.data)) {
         throw new Error('Invalid leaderboards response format');
@@ -201,7 +194,7 @@ export class FunifierApiService {
         period: leaderboard.period || 'all',
       }));
 
-      console.log('🧹 Sanitized leaderboards:', sanitizedLeaderboards);
+
       return sanitizedLeaderboards as Leaderboard[];
     });
   }
@@ -232,7 +225,7 @@ export class FunifierApiService {
         `${this.config.serverUrl}${url}`
       );
       const response = await this.axiosInstance.post(url, []);
-      console.log('Leaderboard data response:', response.data);
+
 
       // The API returns an array of players directly
       if (!Array.isArray(response.data)) {

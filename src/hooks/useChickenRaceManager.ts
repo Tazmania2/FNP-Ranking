@@ -159,17 +159,7 @@ export const useChickenRaceManager = (config: ChickenRaceManagerConfig = {}) => 
         currentPosition += groupPlayers.length;
       });
 
-    console.log('🔧 Processed players data:', {
-      original: rawPlayers.length,
-      processed: processedPlayers.length,
-      scoreGroups: scoreGroups.size,
-      sampleData: processedPlayers.slice(0, 3).map(p => ({
-        name: p.name,
-        originalPos: rawPlayers.find(rp => rp._id === p._id)?.position,
-        newPos: p.position,
-        score: p.total.toFixed(1)
-      }))
-    });
+    // Players data processed successfully
 
     return processedPlayers;
   }, []);
@@ -585,12 +575,7 @@ export const useChickenRaceManager = (config: ChickenRaceManagerConfig = {}) => 
     }
 
     if (apiConfig && apiService && !initializationAttempted && !isInitializingRef.current) {
-      console.log('🐔 Starting chicken race initialization...');
-      console.log('🐔 API Config:', {
-        serverUrl: apiConfig.serverUrl,
-        hasApiKey: !!apiConfig.apiKey,
-        hasAuthToken: !!apiConfig.authToken
-      });
+      // Starting chicken race initialization
       initializeRace();
     }
 
