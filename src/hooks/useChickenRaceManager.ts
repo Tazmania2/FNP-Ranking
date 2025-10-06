@@ -21,7 +21,7 @@ interface ChickenRaceManagerConfig {
     retryDelay?: number;
     pauseOnHidden?: boolean;
   };
-  /** Position transitio configuration */
+  /** Position transition configuration */
   transitionConfig?: {
     transitionDuration?: number;
     easing?: 'linear' | 'ease-in' | 'ease-out' | 'ease-in-out';
@@ -574,8 +574,9 @@ export const useChickenRaceManager = (config: ChickenRaceManagerConfig = {}) => 
       return;
     }
 
+    // Only initialize once when we have both API config and service, and haven't attempted yet
     if (apiConfig && apiService && !initializationAttempted && !isInitializingRef.current) {
-      // Starting chicken race initialization
+      console.log('🐔 Starting chicken race initialization');
       initializeRace();
     }
 
@@ -585,7 +586,7 @@ export const useChickenRaceManager = (config: ChickenRaceManagerConfig = {}) => 
       console.log('🐔 Initialization effect cleanup');
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [apiConfig, apiService, initializationAttempted, onAuthError]); // Intentionally excluding initializeRace to prevent infinite loop
+  }, [apiConfig, apiService, onAuthError]); // Removed initializationAttempted to prevent infinite loop
 
   return {
     // State
