@@ -3,7 +3,6 @@ import type { Player, ChickenPosition } from '../types';
 import { useTooltipManager } from '../hooks/useTooltipManager';
 import Tooltip from './Tooltip';
 import ChickenRaceFullscreen from './ChickenRaceFullscreen';
-import DailyGoalProgress from './DailyGoalProgress';
 import './ChickenRace.css';
 
 interface ChickenRaceProps {
@@ -195,40 +194,36 @@ export const ChickenRace: React.FC<ChickenRaceProps> = React.memo(({
     }
 
     // Fallback to calculating positions
-    // Sort players by total score (descending - highest score first)
-    const sortedPlayers = [...players].sort((a, b) => b.total - a.total);
+    // Players are already processed and have correct positions, just need to calculate visual positions
+    const sortedPlayers = [...players].sort((a, b) => a.position - b.position);
 
-    // Group players by score to handle ties
-    const scoreGroups = new Map<number, Player[]>();
+    // Group players by position to handle ties (players with same position number)
+    const positionGroups = new Map<number, Player[]>();
     sortedPlayers.forEach(player => {
-      const score = Math.round(player.total * 10) / 10; // Round to 1 decimal for grouping
-      if (!scoreGroups.has(score)) {
-        scoreGroups.set(score, []);
+      const position = player.position;
+      if (!positionGroups.has(position)) {
+        positionGroups.set(position, []);
       }
-      scoreGroups.get(score)!.push(player);
+      positionGroups.get(position)!.push(player);
     });
 
     const positions: ChickenPosition[] = [];
-    let currentRankIndex = 0;
-
-    // Calculate responsive positioning based on screen size and player count
-    const maxDistance = 70; // Maximum distance from finish line (85% - 15%)
+    const maxDistance = 70; // Maximum distance from start to finish (85% - 15%)
 
     // Calculate score range for positioning
     const maxScore = Math.max(...players.map(p => p.total));
     const minScore = Math.min(...players.map(p => p.total));
     const scoreRange = maxScore - minScore || 1; // Avoid division by zero
 
-    // Process each score group (highest score first)
-    Array.from(scoreGroups.entries())
-      .sort(([a], [b]) => b - a) // Sort by score descending (highest first)
-      .forEach(([score, groupPlayers]) => {
-        // Calculate horizontal position based on score relative to range
-        // Higher scores should be closer to the finish line (right side)
+    // Process each position group
+    Array.from(positionGroups.entries())
+      .sort(([a], [b]) => a - b) // Sort by position ascending (1st, 2nd, 3rd...)
+      .forEach(([positionNumber, groupPlayers]) => {
+        // Calculate horizontal position based on the first player's score in the group
+        // (all players in the group have the same score anyway)
+        const score = groupPlayers[0].total;
         const scoreProgress = scoreRange > 0 ? (score - minScore) / scoreRange : 1;
         const xPosition = 15 + (scoreProgress * maxDistance); // 15% to 85% range
-
-        // All players with the same score get the same X position and position number
 
         // For tied players, arrange them vertically at the same horizontal position
         groupPlayers.forEach((player, indexInGroup) => {
@@ -239,20 +234,13 @@ export const ChickenRace: React.FC<ChickenRaceProps> = React.memo(({
           const tieOffset = indexInGroup * 12; // 12% spacing between tied players
           const yPosition = Math.min(Math.max(baseY + tieOffset, 15), 85);
 
-          // All players with the same score get the same position number
-          const positionNumber = currentRankIndex + 1;
-
           positions.push({
             playerId: player._id,
-            x: xPosition, // Same X coordinate for all players with same score
+            x: xPosition, // Same X coordinate for all players with same position
             y: yPosition, // Different Y coordinates for tied players
-            rank: positionNumber, // Same position number for tied players
+            rank: positionNumber, // Use the already corrected position number
           });
         });
-
-        // Move to next position number (skip positions for tied players)
-        // e.g., if 3 players tied for 1st, next position is 4th
-        currentRankIndex += groupPlayers.length;
       });
 
     return positions;
@@ -428,11 +416,7 @@ export const ChickenRace: React.FC<ChickenRaceProps> = React.memo(({
       </div>
 
       {/* Daily Goal Progress - Only show when not in fullscreen */}
-      {!isFullscreen && (
-        <div className="mt-4 lg:mt-6">
-          <DailyGoalProgress />
-        </div>
-      )}
+
 
       {/* Tooltip System - Outside overflow container */}
       <Tooltip
