@@ -197,48 +197,75 @@ export const ChickenRace: React.FC<ChickenRaceProps> = React.memo(({
     // Players are already processed and have correct positions, just need to calculate visual positions
     const sortedPlayers = [...players].sort((a, b) => a.position - b.position);
 
-    // Group players by position to handle ties (players with same position number)
-    const positionGroups = new Map<number, Player[]>();
+    // Debug: Log player data to verify processing (can be removed in production)
+    console.log('🐔 ChickenRace - Players data:', players.map(p => ({
+      name: p.name,
+      position: p.position,
+      total: p.total.toFixed(1)
+    })));
+
+    // Simplified positioning: group by score (since positions should already be correct)
+    const scoreGroups = new Map<number, Player[]>();
     sortedPlayers.forEach(player => {
-      const position = player.position;
-      if (!positionGroups.has(position)) {
-        positionGroups.set(position, []);
+      const score = Math.round(player.total * 10) / 10; // Round to 1 decimal
+      if (!scoreGroups.has(score)) {
+        scoreGroups.set(score, []);
       }
-      positionGroups.get(position)!.push(player);
+      scoreGroups.get(score)!.push(player);
     });
 
     const positions: ChickenPosition[] = [];
     const maxDistance = 70; // Maximum distance from start to finish (85% - 15%)
+
+    // Helper function to check if position is in a safe zone (UI overlay area)
+    const isInSafeZone = (x: number, y: number, safeZones: any) => {
+      return Object.values(safeZones).some((zone: any) => {
+        return x >= zone.x[0] && x <= zone.x[1] && y >= zone.y[0] && y <= zone.y[1];
+      });
+    };
+
+    // Define safe zones to avoid UI overlaps
+    const safeZones = {
+      topLeft: { x: [0, 35], y: [0, 30] }, // Race info overlay
+      topRight: { x: [65, 100], y: [0, 30] }, // Fullscreen button
+      bottomLeft: { x: [0, 35], y: [70, 100] }, // Future UI
+      bottomRight: { x: [65, 100], y: [70, 100] }, // Position legend
+    };
 
     // Calculate score range for positioning
     const maxScore = Math.max(...players.map(p => p.total));
     const minScore = Math.min(...players.map(p => p.total));
     const scoreRange = maxScore - minScore || 1; // Avoid division by zero
 
-    // Process each position group
-    Array.from(positionGroups.entries())
-      .sort(([a], [b]) => a - b) // Sort by position ascending (1st, 2nd, 3rd...)
-      .forEach(([positionNumber, groupPlayers]) => {
-        // Calculate horizontal position based on the first player's score in the group
-        // (all players in the group have the same score anyway)
-        const score = groupPlayers[0].total;
+    // Process each score group (highest score first for positioning)
+    Array.from(scoreGroups.entries())
+      .sort(([a], [b]) => b - a) // Sort by score descending (highest first)
+      .forEach(([score, groupPlayers]) => {
+        // Calculate horizontal position based on score
         const scoreProgress = scoreRange > 0 ? (score - minScore) / scoreRange : 1;
         const xPosition = 15 + (scoreProgress * maxDistance); // 15% to 85% range
 
         // For tied players, arrange them vertically at the same horizontal position
         groupPlayers.forEach((player, indexInGroup) => {
-          // Calculate vertical position for tied players
-          // Use deterministic positioning based on player ID to avoid randomness
-          const playerSeed = parseInt(player._id.slice(-4), 16) || 1;
-          const baseY = 25 + (playerSeed % 30); // 25% to 55% range based on player ID
-          const tieOffset = indexInGroup * 12; // 12% spacing between tied players
-          const yPosition = Math.min(Math.max(baseY + tieOffset, 15), 85);
+          // Calculate vertical position for tied players with safe zone avoidance
+          let yPosition;
+          let attempts = 0;
+          const maxAttempts = 10;
+
+          do {
+            // Use deterministic positioning based on player ID to avoid randomness
+            const playerSeed = parseInt(player._id.slice(-4), 16) || 1;
+            const baseY = 35 + ((playerSeed + attempts * 7) % 30); // 35% to 65% range (safe middle area)
+            const tieOffset = indexInGroup * 12; // 12% spacing between tied players
+            yPosition = Math.min(Math.max(baseY + tieOffset, 35), 65); // Keep in safe middle area
+            attempts++;
+          } while (attempts < maxAttempts && isInSafeZone(xPosition, yPosition, safeZones));
 
           positions.push({
             playerId: player._id,
-            x: xPosition, // Same X coordinate for all players with same position
+            x: xPosition, // Same X coordinate for all players with same score
             y: yPosition, // Different Y coordinates for tied players
-            rank: positionNumber, // Use the already corrected position number
+            rank: player.position, // Use the player's already corrected position
           });
         });
       });

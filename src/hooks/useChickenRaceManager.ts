@@ -163,6 +163,12 @@ export const useChickenRaceManager = (config: ChickenRaceManagerConfig = {}) => 
       original: rawPlayers.length,
       processed: processedPlayers.length,
       scoreGroups: scoreGroups.size,
+      sampleData: processedPlayers.slice(0, 3).map(p => ({
+        name: p.name,
+        originalPos: rawPlayers.find(rp => rp._id === p._id)?.position,
+        newPos: p.position,
+        score: p.total.toFixed(1)
+      }))
     });
 
     return processedPlayers;
