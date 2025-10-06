@@ -60,13 +60,25 @@ export const useTooltipManager = ({ players, isEnabled = true }: UseTooltipManag
     updateTooltipPosition(position);
   }, [updateTooltipPosition]);
 
-  // Get screen position from element
-  const getElementScreenPosition = useCallback((element: HTMLElement): { x: number; y: number } => {
+  // Get position relative to the race container from element
+  const getElementRelativePosition = useCallback((element: HTMLElement): { x: number; y: number } => {
     const rect = element.getBoundingClientRect();
-    return {
-      x: rect.left + rect.width / 2,
-      y: rect.top - 10, // Position above the element
-    };
+    const raceContainer = element.closest('.chicken-race-container');
+    
+    if (raceContainer) {
+      const containerRect = raceContainer.getBoundingClientRect();
+      // Return percentage-based position relative to container
+      const relativeX = ((rect.left + rect.width / 2 - containerRect.left) / containerRect.width) * 100;
+      const relativeY = ((rect.top - containerRect.top) / containerRect.height) * 100;
+      
+      return {
+        x: Math.max(0, Math.min(100, relativeX)),
+        y: Math.max(0, Math.min(100, relativeY)),
+      };
+    }
+    
+    // Fallback to center if container not found
+    return { x: 50, y: 50 };
   }, []);
 
   // Handle hover events on chicken elements
@@ -83,16 +95,8 @@ export const useTooltipManager = ({ players, isEnabled = true }: UseTooltipManag
     if (playerId && element) {
       let position;
       
-      if (mouseEvent && !isMobile) {
-        // Use mouse position for desktop hover
-        position = {
-          x: mouseEvent.clientX,
-          y: mouseEvent.clientY - 5, // Position very close to mouse
-        };
-      } else {
-        // Fallback to element position for mobile or when mouse event not available
-        position = getElementScreenPosition(element);
-      }
+      // Always use element position relative to race container
+      position = getElementRelativePosition(element);
       
       if (isMobile) {
         // On mobile, toggle tooltip - if same player is already shown, hide it
@@ -109,65 +113,18 @@ export const useTooltipManager = ({ players, isEnabled = true }: UseTooltipManag
       // On desktop, hide tooltip when not hovering
       hidePlayerTooltip();
     }
-  }, [isEnabled, getElementScreenPosition, showPlayerTooltip, hidePlayerTooltip, tooltips.isVisible, tooltips.content, players]);
+  }, [isEnabled, getElementRelativePosition, showPlayerTooltip, hidePlayerTooltip, tooltips.isVisible, tooltips.content, players]);
 
-  // Auto-display tooltips for all players every minute
+  // Auto-display tooltips for all players (disabled for now to avoid interference)
   const startAutoDisplay = useCallback(() => {
-    if (!isEnabled || players.length === 0) return;
+    // Disabled auto-display to prevent interference with manual hover
+    // This was causing positioning issues and unwanted tooltip cycling
+    console.log('Auto-display disabled to prevent tooltip cycling issues');
+  }, []);
 
-    // Clear any existing auto display
-    if (currentAutoDisplayRef.current) {
-      clearTimeout(currentAutoDisplayRef.current);
-    }
-
-    let currentPlayerIndex = 0;
-    const displayInterval = 1000; // 1 second between each tooltip
-    // const totalDisplayTime = Math.min(players.length * displayInterval, 5000); // Max 5 seconds total
-
-    const showNextTooltip = () => {
-      if (currentPlayerIndex >= players.length) {
-        // All tooltips shown, hide the last one after a brief delay
-        currentAutoDisplayRef.current = setTimeout(() => {
-          hidePlayerTooltip();
-        }, 1000);
-        return;
-      }
-
-      const player = players[currentPlayerIndex];
-      if (player) {
-        // Calculate a position for auto-display (center-ish of screen)
-        const position = {
-          x: window.innerWidth / 2 + (currentPlayerIndex - players.length / 2) * 100,
-          y: window.innerHeight / 3,
-        };
-
-        showPlayerTooltip(player._id, position);
-
-        // Schedule next tooltip
-        currentPlayerIndex++;
-        currentAutoDisplayRef.current = setTimeout(showNextTooltip, displayInterval);
-      }
-    };
-
-    // Start the sequence
-    showNextTooltip();
-  }, [isEnabled, players, showPlayerTooltip, hidePlayerTooltip]);
-
-  // Set up automatic tooltip display every minute
+  // Disabled automatic tooltip display to prevent cycling issues
   useEffect(() => {
-    if (!isEnabled) return;
-
-    // Clear existing timer
-    if (autoDisplayTimerRef.current) {
-      clearInterval(autoDisplayTimerRef.current);
-    }
-
-    // Set up new timer for every minute (60 seconds)
-    autoDisplayTimerRef.current = setInterval(() => {
-      startAutoDisplay();
-    }, 60000); // 60 seconds
-
-    // Cleanup on unmount or dependency change
+    // Auto-display is disabled to prevent interference with manual hover tooltips
     return () => {
       if (autoDisplayTimerRef.current) {
         clearInterval(autoDisplayTimerRef.current);
@@ -176,7 +133,7 @@ export const useTooltipManager = ({ players, isEnabled = true }: UseTooltipManag
         clearTimeout(currentAutoDisplayRef.current);
       }
     };
-  }, [isEnabled, startAutoDisplay]);
+  }, []);
 
   // Cleanup on unmount
   useEffect(() => {

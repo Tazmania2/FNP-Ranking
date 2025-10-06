@@ -326,6 +326,14 @@ export const ChickenRace: React.FC<ChickenRaceProps> = React.memo(({
         {/* Chickens */}
         {chickenComponents}
 
+        {/* Tooltip System - Inside race container */}
+        <Tooltip
+          isVisible={tooltips.isVisible}
+          position={tooltips.position}
+          content={tooltips.content}
+          onClose={hidePlayerTooltip}
+        />
+
         {/* Race Info Overlay */}
         <div className={`race-info-overlay absolute bg-white/90 rounded-lg shadow-lg z-30 ${isFullscreen
           ? 'top-4 sm:top-6 left-4 sm:left-6 p-3 sm:p-4'
@@ -418,13 +426,7 @@ export const ChickenRace: React.FC<ChickenRaceProps> = React.memo(({
       {/* Daily Goal Progress - Only show when not in fullscreen */}
 
 
-      {/* Tooltip System - Outside overflow container */}
-      <Tooltip
-        isVisible={tooltips.isVisible}
-        position={tooltips.position}
-        content={tooltips.content}
-        onClose={hidePlayerTooltip}
-      />
+
 
       {/* Fullscreen Modal */}
       <ChickenRaceFullscreen

@@ -27,34 +27,44 @@ export const Tooltip: React.FC<TooltipProps> = ({
     }
   }, [isVisible, content, onClose]);
 
-  // Adjust tooltip position to stay within viewport
+  // Adjust tooltip position to stay within the race container
   const getAdjustedPosition = () => {
     if (!tooltipRef.current) return position;
 
     const tooltip = tooltipRef.current;
     const rect = tooltip.getBoundingClientRect();
-    const viewportWidth = window.innerWidth;
-    const viewportHeight = window.innerHeight;
+    const container = tooltipRef.current.parentElement;
+    if (!container) return position;
+
+    const containerRect = container.getBoundingClientRect();
+    const containerWidth = containerRect.width;
+    const containerHeight = containerRect.height;
 
     let { x, y } = position;
 
-    // Adjust horizontal position if tooltip would overflow
-    if (x + rect.width > viewportWidth) {
-      x = viewportWidth - rect.width - 10;
+    // Convert percentage positions to pixels within the container
+    const pixelX = (x / 100) * containerWidth;
+    const pixelY = (y / 100) * containerHeight;
+
+    // Adjust horizontal position if tooltip would overflow container
+    let adjustedX = pixelX;
+    if (pixelX + rect.width > containerWidth) {
+      adjustedX = containerWidth - rect.width - 10;
     }
-    if (x < 10) {
-      x = 10;
+    if (adjustedX < 10) {
+      adjustedX = 10;
     }
 
-    // Adjust vertical position if tooltip would overflow
-    if (y + rect.height > viewportHeight) {
-      y = position.y - rect.height - 20; // Position above instead of below
+    // Adjust vertical position if tooltip would overflow container
+    let adjustedY = pixelY - rect.height - 10; // Position above the chicken by default
+    if (adjustedY < 10) {
+      adjustedY = pixelY + 30; // Position below if not enough space above
     }
-    if (y < 10) {
-      y = 10;
+    if (adjustedY + rect.height > containerHeight) {
+      adjustedY = containerHeight - rect.height - 10;
     }
 
-    return { x, y };
+    return { x: adjustedX, y: adjustedY };
   };
 
   if (!isVisible || !content) {
@@ -73,16 +83,16 @@ export const Tooltip: React.FC<TooltipProps> = ({
   return (
     <div
       ref={tooltipRef}
-      className="tooltip-container fixed z-[9999] pointer-events-auto sm:pointer-events-none"
+      className="tooltip-container absolute z-50 pointer-events-none"
       style={{
         left: `${adjustedPosition.x}px`,
         top: `${adjustedPosition.y}px`,
-        transform: 'translateX(-100%) translateY(-100%)',
+        transform: 'translateX(-50%)', // Center horizontally on the position
       }}
     >
       {/* Tooltip Arrow */}
-      <div className="tooltip-arrow absolute -bottom-2 left-1/2 transform -translate-x-1/2">
-        <div className="w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-800"></div>
+      <div className="tooltip-arrow absolute -bottom-1 left-1/2 transform -translate-x-1/2">
+        <div className="w-0 h-0 border-l-2 border-r-2 border-t-2 border-transparent border-t-gray-900"></div>
       </div>
 
       {/* Tooltip Content - Very discrete version */}
