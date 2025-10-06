@@ -216,12 +216,42 @@ export const ChickenRace: React.FC<ChickenRaceProps> = React.memo(({
 
     const positions: ChickenPosition[] = [];
     const maxDistance = 70; // Maximum distance from start to finish (85% - 15%)
-
-    // Helper function to check if position is in a safe zone (UI overlay area)
-    const isInSafeZone = (x: number, y: number, safeZones: any) => {
-      return Object.values(safeZones).some((zone: any) => {
-        return x >= zone.x[0] && x <= zone.x[1] && y >= zone.y[0] && y <= zone.y[1];
-      });
+    const chickenSize = 8; // Approximate chicken size in percentage
+    
+    // Helper function to check if two chickens would overlap
+    const wouldOverlap = (pos1: { x: number; y: number }, pos2: { x: number; y: number }) => {
+      const xDiff = Math.abs(pos1.x - pos2.x);
+      const yDiff = Math.abs(pos1.y - pos2.y);
+      return xDiff < chickenSize && yDiff < chickenSize;
+    };
+    
+    // Helper function to find a non-overlapping position
+    const findNonOverlappingPosition = (baseX: number, baseY: number, existingPositions: { x: number; y: number }[]) => {
+      let x = baseX;
+      let y = baseY;
+      let attempts = 0;
+      const maxAttempts = 20;
+      
+      while (attempts < maxAttempts) {
+        const currentPos = { x, y };
+        const hasOverlap = existingPositions.some(pos => wouldOverlap(currentPos, pos));
+        const inSafeZone = isInSafeZone(x, y, safeZones);
+        
+        if (!hasOverlap && !inSafeZone) {
+          return { x, y };
+        }
+        
+        // Try different positions in a spiral pattern
+        const angle = (attempts * 0.5) * Math.PI;
+        const radius = Math.min(attempts * 2, 15);
+        x = Math.min(Math.max(baseX + Math.cos(angle) * radius, 15), 85);
+        y = Math.min(Math.max(baseY + Math.sin(angle) * radius, 35), 65);
+        
+        attempts++;
+      }
+      
+      // Fallback: return original position if no good position found
+      return { x: baseX, y: baseY };
     };
 
     // Define safe zones to avoid UI overlaps
@@ -230,6 +260,13 @@ export const ChickenRace: React.FC<ChickenRaceProps> = React.memo(({
       topRight: { x: [65, 100], y: [0, 30] }, // Fullscreen button
       bottomLeft: { x: [0, 35], y: [70, 100] }, // Future UI
       bottomRight: { x: [65, 100], y: [70, 100] }, // Position legend
+    };
+    
+    // Helper function to check if position is in a safe zone (UI overlay area)
+    const isInSafeZone = (x: number, y: number, zones: typeof safeZones) => {
+      return Object.values(zones).some((zone) => {
+        return x >= zone.x[0] && x <= zone.x[1] && y >= zone.y[0] && y <= zone.y[1];
+      });
     };
 
     // Calculate score range for positioning
@@ -246,25 +283,40 @@ export const ChickenRace: React.FC<ChickenRaceProps> = React.memo(({
         const xPosition = 15 + (scoreProgress * maxDistance); // 15% to 85% range
 
         // For tied players, arrange them vertically at the same horizontal position
+        // Calculate spacing to avoid overlaps
+        const chickenSize = 8; // Approximate chicken size in percentage
+        const minSpacing = chickenSize + 2; // Minimum spacing between chickens
+        const availableHeight = 65 - 35; // Safe area height (35% to 65%)
+        const maxPlayersInColumn = Math.floor(availableHeight / minSpacing);
+        
         groupPlayers.forEach((player, indexInGroup) => {
-          // Calculate vertical position for tied players with safe zone avoidance
           let yPosition;
-          let attempts = 0;
-          const maxAttempts = 10;
-
-          do {
-            // Use deterministic positioning based on player ID to avoid randomness
-            const playerSeed = parseInt(player._id.slice(-4), 16) || 1;
-            const baseY = 35 + ((playerSeed + attempts * 7) % 30); // 35% to 65% range (safe middle area)
-            const tieOffset = indexInGroup * 12; // 12% spacing between tied players
-            yPosition = Math.min(Math.max(baseY + tieOffset, 35), 65); // Keep in safe middle area
-            attempts++;
-          } while (attempts < maxAttempts && isInSafeZone(xPosition, yPosition, safeZones));
+          let xOffset = 0;
+          
+          // If too many players for one column, create multiple columns
+          if (groupPlayers.length > maxPlayersInColumn) {
+            const column = Math.floor(indexInGroup / maxPlayersInColumn);
+            const rowInColumn = indexInGroup % maxPlayersInColumn;
+            xOffset = column * 3; // 3% offset for each additional column
+            yPosition = 35 + (rowInColumn * minSpacing);
+          } else {
+            // Single column - evenly distribute players
+            const spacing = Math.min(minSpacing, availableHeight / Math.max(groupPlayers.length - 1, 1));
+            yPosition = 35 + (indexInGroup * spacing);
+          }
+          
+          // Ensure position is within safe bounds and not in UI zones
+          yPosition = Math.min(Math.max(yPosition, 35), 65);
+          const finalXPosition = Math.min(Math.max(xPosition + xOffset, 15), 85);
+          
+          // Use collision detection to find final position
+          const existingPositions = positions.map(p => ({ x: p.x, y: p.y }));
+          const finalPosition = findNonOverlappingPosition(finalXPosition, yPosition, existingPositions);
 
           positions.push({
             playerId: player._id,
-            x: xPosition, // Same X coordinate for all players with same score
-            y: yPosition, // Different Y coordinates for tied players
+            x: finalPosition.x, // Non-overlapping X coordinate
+            y: finalPosition.y, // Non-overlapping Y coordinate
             rank: player.position, // Use the player's already corrected position
           });
         });
