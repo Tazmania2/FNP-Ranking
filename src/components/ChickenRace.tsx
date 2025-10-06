@@ -236,7 +236,8 @@ export const ChickenRace: React.FC<ChickenRaceProps> = React.memo(({
     const wouldOverlap = (pos1: { x: number; y: number }, pos2: { x: number; y: number }) => {
       const xDiff = Math.abs(pos1.x - pos2.x);
       const yDiff = Math.abs(pos1.y - pos2.y);
-      return xDiff < chickenSize && yDiff < chickenSize;
+      // More lenient Y-axis collision detection to allow closer vertical positioning
+      return xDiff < chickenSize && yDiff < (chickenSize * 0.7); // 30% more lenient on Y-axis
     };
 
     // Helper function to find a non-overlapping position
@@ -255,11 +256,19 @@ export const ChickenRace: React.FC<ChickenRaceProps> = React.memo(({
           return { x, y };
         }
 
-        // Try different positions in a spiral pattern
-        const angle = (attempts * 0.5) * Math.PI;
-        const radius = Math.min(attempts * 2, 15);
-        x = Math.min(Math.max(baseX + Math.cos(angle) * radius, 15), 85);
-        y = Math.min(Math.max(baseY + Math.sin(angle) * radius, 35), 65);
+        // Prefer Y-axis adjustments to maintain ranking (X-axis) positions
+        if (attempts < 10) {
+          // First, try moving vertically (preserve horizontal ranking position)
+          const yOffset = (attempts % 2 === 0 ? 1 : -1) * Math.ceil(attempts / 2) * 3;
+          y = Math.min(Math.max(baseY + yOffset, 35), 65);
+          x = baseX; // Keep original X position
+        } else {
+          // If vertical adjustments don't work, use spiral pattern
+          const angle = ((attempts - 10) * 0.5) * Math.PI;
+          const radius = Math.min((attempts - 10) * 2, 8);
+          x = Math.min(Math.max(baseX + Math.cos(angle) * radius, 15), 85);
+          y = Math.min(Math.max(baseY + Math.sin(angle) * radius, 35), 65);
+        }
 
         attempts++;
       }
@@ -289,22 +298,32 @@ export const ChickenRace: React.FC<ChickenRaceProps> = React.memo(({
         const maxPlayersInColumn = Math.floor(availableHeight / minSpacing);
 
         groupPlayers.forEach((player, indexInGroup) => {
-          let yPosition;
-          let xOffset = 0;
+          // Create a deterministic but "random" seed based on player ID
+          // This ensures the same player gets the same Y position across renders
+          const playerSeed = parseInt(player._id.slice(-4), 16) || 1;
+          const randomFactor = (playerSeed % 1000) / 1000; // 0 to 1
+          
+          // Add some horizontal variation for tied players (small random offset)
+          const horizontalVariation = ((playerSeed % 100) / 100 - 0.5) * 4; // ±2% variation
+          let xOffset = horizontalVariation;
 
-          // If too many players for one column, create multiple columns
-          if (groupPlayers.length > maxPlayersInColumn) {
-            const column = Math.floor(indexInGroup / maxPlayersInColumn);
-            const rowInColumn = indexInGroup % maxPlayersInColumn;
-            xOffset = column * 3; // 3% offset for each additional column
-            yPosition = 35 + (rowInColumn * minSpacing);
-          } else {
-            // Single column - evenly distribute players
-            const spacing = Math.min(minSpacing, availableHeight / Math.max(groupPlayers.length - 1, 1));
-            yPosition = 35 + (indexInGroup * spacing);
+          // For multiple tied players, add systematic spacing to prevent total overlap
+          if (groupPlayers.length > 1) {
+            const systematicOffset = (indexInGroup - (groupPlayers.length - 1) / 2) * 1.5; // Spread tied players
+            xOffset += systematicOffset;
           }
 
-          // Ensure position is within safe bounds and not in UI zones
+          // Random Y position within safe area (35% to 65% of container height)
+          // Use the random factor to distribute players across the vertical space
+          const safeAreaHeight = 65 - 35; // 30% of container height
+          const randomYOffset = randomFactor * safeAreaHeight;
+          let yPosition = 35 + randomYOffset;
+
+          // Add some additional randomness for visual variety
+          const additionalRandomness = ((playerSeed % 50) / 50 - 0.5) * 8; // ±4% additional variation
+          yPosition += additionalRandomness;
+
+          // Ensure position is within safe bounds
           yPosition = Math.min(Math.max(yPosition, 35), 65);
           const finalXPosition = Math.min(Math.max(xPosition + xOffset, 15), 85);
 
@@ -314,8 +333,8 @@ export const ChickenRace: React.FC<ChickenRaceProps> = React.memo(({
 
           positions.push({
             playerId: player._id,
-            x: finalPosition.x, // Non-overlapping X coordinate
-            y: finalPosition.y, // Non-overlapping Y coordinate
+            x: finalPosition.x, // Ranking-based X with small variation
+            y: finalPosition.y, // Random Y position (messy race effect!)
             rank: player.position, // Use the player's already corrected position
           });
         });
