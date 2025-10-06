@@ -85,39 +85,16 @@ export const Tooltip: React.FC<TooltipProps> = ({
         <div className="w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-800"></div>
       </div>
 
-      {/* Tooltip Content - Discrete version */}
-      <div className="tooltip-content bg-gray-800/95 text-white rounded-md px-2 py-1.5 shadow-md min-w-32 max-w-48 mx-2 backdrop-blur-sm">
-        {/* Close button for mobile */}
-        <button
-          onClick={onClose}
-          className="absolute top-0.5 right-0.5 sm:hidden w-4 h-4 flex items-center justify-center text-gray-400 hover:text-white text-xs"
-          aria-label="Close tooltip"
-        >
-          ×
-        </button>
-        
-        {/* Compact Player Info */}
-        <div className="flex items-center justify-between gap-2 pr-4 sm:pr-0">
-          <div className="flex items-center gap-1">
-            <span className="bg-blue-600 text-white text-xs font-bold px-1 py-0.5 rounded">
-              #{content.rank}
-            </span>
-            <span className="font-medium text-xs text-yellow-400 truncate max-w-20">
-              {content.playerName}
-            </span>
+      {/* Tooltip Content - Very discrete version */}
+      <div className="tooltip-content bg-gray-900/90 text-white rounded px-1.5 py-1 shadow-sm text-xs min-w-24 max-w-32 mx-1 backdrop-blur-sm border border-gray-700/50">
+        {/* Very compact info */}
+        <div className="text-center">
+          <div className="text-yellow-300 font-medium text-xs truncate">
+            {content.playerName}
           </div>
-        </div>
-
-        {/* Compact Points Display */}
-        <div className="mt-1 text-center">
-          <div className="text-white text-xs font-bold">
-            {content.points.toFixed(1)} pts
+          <div className="text-white text-xs">
+            #{content.rank} • {content.points.toFixed(1)}pts
           </div>
-          {pointsGainedToday !== 0 && (
-            <div className={`text-xs ${gainColor}`}>
-              {pointsGainedToday > 0 ? '+' : ''}{pointsGainedToday.toFixed(1)} {gainIcon}
-            </div>
-          )}
         </div>
       </div>
     </div>

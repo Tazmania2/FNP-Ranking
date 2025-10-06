@@ -6,6 +6,7 @@ import { LazyDetailedRanking } from './components/LazyDetailedRanking';
 import { LeaderboardSelector } from './components/LeaderboardSelector';
 import { FloatingErrorDisplay } from './components/ErrorDisplay';
 import { LoadingDisplay, OverlayLoading } from './components/LoadingDisplay';
+import { DailyGoalProgress } from './components/DailyGoalProgress';
 import ChickenRaceExample from './components/examples/ChickenRaceExample';
 import type { FunifierConfig } from './types';
 
@@ -291,6 +292,14 @@ function App() {
                   isLoading={loading.currentLeaderboard}
                 />
               </div>
+            </div>
+
+            {/* Daily Goal Progress */}
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 sm:p-6 border border-white/20">
+              <DailyGoalProgress 
+                current={39000}
+                target={50000}
+              />
             </div>
 
             {/* Detailed Ranking - Lazy Loaded */}

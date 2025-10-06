@@ -83,19 +83,46 @@ export const DetailedRanking: React.FC<DetailedRankingProps> = ({
   // Sort players based on current sort configuration and assign correct positions for ties
   const sortedPlayers = useMemo(() => {
     // First, create players with corrected positions for ties
-    const playersWithCorrectPositions = [...filteredPlayers].map(player => {
-      // Find all players with the same score
-      const sameScorePlayers = filteredPlayers.filter(p => 
+    // Sort by score first to assign proper positions
+    const sortedByScore = [...filteredPlayers].sort((a, b) => b.total - a.total);
+    
+    // Assign correct positions based on score
+    const playersWithCorrectPositions = sortedByScore.map((player, index, array) => {
+      // Find the position number for this player
+      let positionNumber = 1;
+      
+      // Count how many players have higher scores
+      for (let i = 0; i < index; i++) {
+        const currentScore = Math.round(array[i].total * 10) / 10;
+        const playerScore = Math.round(player.total * 10) / 10;
+        
+        if (currentScore > playerScore) {
+          positionNumber++;
+        }
+      }
+      
+      // Find all players with the same score to assign the same position
+      const sameScorePlayers = array.filter(p => 
         Math.abs(p.total - player.total) < 0.01 // Handle floating point precision
       );
       
-      // If there are ties, find the best position among tied players
       if (sameScorePlayers.length > 1) {
-        const bestPosition = Math.min(...sameScorePlayers.map(p => p.position));
-        return { ...player, position: bestPosition };
+        // All tied players get the same position number (the best position among them)
+        const tiedPositions = sameScorePlayers.map(p => {
+          let pos = 1;
+          for (let i = 0; i < array.indexOf(p); i++) {
+            const currentScore = Math.round(array[i].total * 10) / 10;
+            const pScore = Math.round(p.total * 10) / 10;
+            if (currentScore > pScore) {
+              pos++;
+            }
+          }
+          return pos;
+        });
+        positionNumber = Math.min(...tiedPositions);
       }
       
-      return player;
+      return { ...player, position: positionNumber };
     });
 
     // Then sort based on configuration
