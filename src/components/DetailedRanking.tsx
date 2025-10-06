@@ -37,7 +37,7 @@ export const DetailedRanking: React.FC<DetailedRankingProps> = ({
 
   // Format points display with proper number formatting
   const formatPoints = (points: number): string => {
-    return points.toLocaleString();
+    return points.toFixed(1);
   };
 
   // Get movement indicator
@@ -80,9 +80,26 @@ export const DetailedRanking: React.FC<DetailedRankingProps> = ({
     );
   }, [players, searchTerm]);
 
-  // Sort players based on current sort configuration
+  // Sort players based on current sort configuration and assign correct positions for ties
   const sortedPlayers = useMemo(() => {
-    const sorted = [...filteredPlayers].sort((a, b) => {
+    // First, create players with corrected positions for ties
+    const playersWithCorrectPositions = [...filteredPlayers].map(player => {
+      // Find all players with the same score
+      const sameScorePlayers = filteredPlayers.filter(p => 
+        Math.abs(p.total - player.total) < 0.01 // Handle floating point precision
+      );
+      
+      // If there are ties, find the best position among tied players
+      if (sameScorePlayers.length > 1) {
+        const bestPosition = Math.min(...sameScorePlayers.map(p => p.position));
+        return { ...player, position: bestPosition };
+      }
+      
+      return player;
+    });
+
+    // Then sort based on configuration
+    const sorted = playersWithCorrectPositions.sort((a, b) => {
       let aValue: string | number;
       let bValue: string | number;
 

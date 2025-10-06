@@ -102,7 +102,7 @@ export const LeaderboardSelector: React.FC<LeaderboardSelectorProps> = ({
 
         {/* Dropdown Menu */}
         {isDropdownOpen && (
-          <div className="absolute top-full left-0 right-0 sm:left-0 sm:right-auto mt-1 w-full sm:min-w-64 bg-white border border-gray-300 rounded-lg shadow-lg z-50">
+          <div className="absolute top-full left-0 right-0 sm:left-0 sm:right-auto mt-1 w-full sm:min-w-64 bg-white border border-gray-300 rounded-lg shadow-lg z-[9999]">
             <div className="py-1 max-h-60 overflow-y-auto">
               {leaderboards.map((leaderboard) => (
                 <button
