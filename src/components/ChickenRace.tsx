@@ -204,6 +204,14 @@ export const ChickenRace: React.FC<ChickenRaceProps> = React.memo(({
       total: p.total.toFixed(1)
     })));
 
+    // Debug: Log positioning results
+    console.log('🐔 ChickenRace - Final positions:', positions.map(p => ({
+      playerId: p.playerId.slice(-4),
+      x: p.x.toFixed(1),
+      y: p.y.toFixed(1),
+      rank: p.rank
+    })));
+
     // Simplified positioning: group by score (since positions should already be correct)
     const scoreGroups = new Map<number, Player[]>();
     sortedPlayers.forEach(player => {
@@ -217,39 +225,39 @@ export const ChickenRace: React.FC<ChickenRaceProps> = React.memo(({
     const positions: ChickenPosition[] = [];
     const maxDistance = 70; // Maximum distance from start to finish (85% - 15%)
     const chickenSize = 8; // Approximate chicken size in percentage
-    
+
     // Helper function to check if two chickens would overlap
     const wouldOverlap = (pos1: { x: number; y: number }, pos2: { x: number; y: number }) => {
       const xDiff = Math.abs(pos1.x - pos2.x);
       const yDiff = Math.abs(pos1.y - pos2.y);
       return xDiff < chickenSize && yDiff < chickenSize;
     };
-    
+
     // Helper function to find a non-overlapping position
     const findNonOverlappingPosition = (baseX: number, baseY: number, existingPositions: { x: number; y: number }[]) => {
       let x = baseX;
       let y = baseY;
       let attempts = 0;
       const maxAttempts = 20;
-      
+
       while (attempts < maxAttempts) {
         const currentPos = { x, y };
         const hasOverlap = existingPositions.some(pos => wouldOverlap(currentPos, pos));
         const inSafeZone = isInSafeZone(x, y, safeZones);
-        
+
         if (!hasOverlap && !inSafeZone) {
           return { x, y };
         }
-        
+
         // Try different positions in a spiral pattern
         const angle = (attempts * 0.5) * Math.PI;
         const radius = Math.min(attempts * 2, 15);
         x = Math.min(Math.max(baseX + Math.cos(angle) * radius, 15), 85);
         y = Math.min(Math.max(baseY + Math.sin(angle) * radius, 35), 65);
-        
+
         attempts++;
       }
-      
+
       // Fallback: return original position if no good position found
       return { x: baseX, y: baseY };
     };
@@ -261,7 +269,7 @@ export const ChickenRace: React.FC<ChickenRaceProps> = React.memo(({
       bottomLeft: { x: [0, 35], y: [70, 100] }, // Future UI
       bottomRight: { x: [65, 100], y: [70, 100] }, // Position legend
     };
-    
+
     // Helper function to check if position is in a safe zone (UI overlay area)
     const isInSafeZone = (x: number, y: number, zones: typeof safeZones) => {
       return Object.values(zones).some((zone) => {
@@ -288,11 +296,11 @@ export const ChickenRace: React.FC<ChickenRaceProps> = React.memo(({
         const minSpacing = chickenSize + 2; // Minimum spacing between chickens
         const availableHeight = 65 - 35; // Safe area height (35% to 65%)
         const maxPlayersInColumn = Math.floor(availableHeight / minSpacing);
-        
+
         groupPlayers.forEach((player, indexInGroup) => {
           let yPosition;
           let xOffset = 0;
-          
+
           // If too many players for one column, create multiple columns
           if (groupPlayers.length > maxPlayersInColumn) {
             const column = Math.floor(indexInGroup / maxPlayersInColumn);
@@ -304,11 +312,11 @@ export const ChickenRace: React.FC<ChickenRaceProps> = React.memo(({
             const spacing = Math.min(minSpacing, availableHeight / Math.max(groupPlayers.length - 1, 1));
             yPosition = 35 + (indexInGroup * spacing);
           }
-          
+
           // Ensure position is within safe bounds and not in UI zones
           yPosition = Math.min(Math.max(yPosition, 35), 65);
           const finalXPosition = Math.min(Math.max(xPosition + xOffset, 15), 85);
-          
+
           // Use collision detection to find final position
           const existingPositions = positions.map(p => ({ x: p.x, y: p.y }));
           const finalPosition = findNonOverlappingPosition(finalXPosition, yPosition, existingPositions);

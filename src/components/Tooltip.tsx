@@ -55,16 +55,32 @@ export const Tooltip: React.FC<TooltipProps> = ({
       adjustedX = 10;
     }
 
-    // Adjust vertical position if tooltip would overflow container
-    let adjustedY = pixelY - rect.height - 10; // Position above the chicken by default
-    if (adjustedY < 10) {
-      adjustedY = pixelY + 30; // Position below if not enough space above
+    // Adjust vertical position - position below the chicken by default
+    let adjustedY = pixelY + 40; // Position below the chicken by default (40px below)
+    let isAbove = false;
+    
+    // If tooltip would overflow bottom, position above instead
+    if (adjustedY + rect.height > containerHeight - 10) {
+      adjustedY = pixelY - rect.height - 10; // Position above
+      isAbove = true;
     }
-    if (adjustedY + rect.height > containerHeight) {
-      adjustedY = containerHeight - rect.height - 10;
+    
+    // Ensure tooltip stays within container bounds
+    if (adjustedY < 10) {
+      adjustedY = 10;
+      isAbove = false;
     }
 
-    return { x: adjustedX, y: adjustedY };
+    // Debug logging
+    console.log('🎯 Tooltip positioning:', {
+      original: { x: position.x, y: position.y },
+      pixels: { x: pixelX, y: pixelY },
+      adjusted: { x: adjustedX, y: adjustedY },
+      isAbove,
+      containerSize: { width: containerWidth, height: containerHeight }
+    });
+
+    return { x: adjustedX, y: adjustedY, isAbove };
   };
 
   if (!isVisible || !content) {
@@ -72,6 +88,7 @@ export const Tooltip: React.FC<TooltipProps> = ({
   }
 
   const adjustedPosition = getAdjustedPosition();
+  const isAbove = (adjustedPosition as any).isAbove || false;
 
   // Calculate points gained today (difference between current and previous total)
   const pointsGainedToday = content.pointsGainedToday || 0;
@@ -90,10 +107,18 @@ export const Tooltip: React.FC<TooltipProps> = ({
         transform: 'translateX(-50%)', // Center horizontally on the position
       }}
     >
-      {/* Tooltip Arrow */}
-      <div className="tooltip-arrow absolute -bottom-1 left-1/2 transform -translate-x-1/2">
-        <div className="w-0 h-0 border-l-2 border-r-2 border-t-2 border-transparent border-t-gray-900"></div>
-      </div>
+      {/* Tooltip Arrow - dynamic based on position */}
+      {isAbove ? (
+        // Arrow pointing down when tooltip is above chicken
+        <div className="tooltip-arrow absolute -bottom-1 left-1/2 transform -translate-x-1/2">
+          <div className="w-0 h-0 border-l-2 border-r-2 border-t-2 border-transparent border-t-gray-900"></div>
+        </div>
+      ) : (
+        // Arrow pointing up when tooltip is below chicken
+        <div className="tooltip-arrow absolute -top-1 left-1/2 transform -translate-x-1/2">
+          <div className="w-0 h-0 border-l-2 border-r-2 border-b-2 border-transparent border-b-gray-900"></div>
+        </div>
+      )}
 
       {/* Tooltip Content - Very discrete version */}
       <div className="tooltip-content bg-gray-900/90 text-white rounded px-1.5 py-1 shadow-sm text-xs min-w-24 max-w-32 mx-1 backdrop-blur-sm border border-gray-700/50">

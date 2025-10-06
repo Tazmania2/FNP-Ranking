@@ -1,7 +1,7 @@
 import { useEffect, useCallback, useMemo, useState, useRef } from 'react';
 import { FunifierApiService } from '../services/funifierApi';
 // import { useRealTimeUpdatesWithLoading } from './useRealTimeUpdates'; // Temporarily disabled
-import { usePositionTransitions } from './usePositionTransitions';
+// import { usePositionTransitions } from './usePositionTransitions'; // Disabled to use custom positioning
 import { useLeaderboardData } from './useAppState';
 import { useLeaderboardStore } from '../store/leaderboardStore';
 import { appStoreActions } from '../store/appStore';
@@ -231,15 +231,20 @@ export const useChickenRaceManager = (config: ChickenRaceManagerConfig = {}) => 
     },
   };
 
-  // Set up position transitions
-  const positionTransitions = usePositionTransitions(players, {
-    transitionDuration: 1000,
-    easing: 'ease-out',
-    staggered: true,
-    staggerDelay: 100,
-    celebrateImprovements: true,
-    ...transitionConfig,
-  });
+  // Disabled position transitions to use our custom positioning logic
+  const positionTransitions = {
+    playerPositions: [], // Empty array so ChickenRace uses its own positioning
+    getPlayerPosition: () => ({ x: 50, y: 50 }),
+    isAnimating: false,
+    config: {
+      transitionDuration: 1000,
+      easing: 'ease-out',
+      staggered: true,
+      staggerDelay: 100,
+      celebrateImprovements: true,
+    },
+    setImmediatePositions: () => {},
+  };
 
   /**
    * Fallback to mock data when API fails repeatedly

@@ -71,6 +71,14 @@ export const useTooltipManager = ({ players, isEnabled = true }: UseTooltipManag
       const relativeX = ((rect.left + rect.width / 2 - containerRect.left) / containerRect.width) * 100;
       const relativeY = ((rect.top - containerRect.top) / containerRect.height) * 100;
       
+      // Debug logging
+      console.log('🐔 Chicken hover position:', {
+        elementRect: { left: rect.left, top: rect.top, width: rect.width, height: rect.height },
+        containerRect: { left: containerRect.left, top: containerRect.top, width: containerRect.width, height: containerRect.height },
+        calculated: { relativeX, relativeY },
+        final: { x: Math.max(0, Math.min(100, relativeX)), y: Math.max(0, Math.min(100, relativeY)) }
+      });
+      
       return {
         x: Math.max(0, Math.min(100, relativeX)),
         y: Math.max(0, Math.min(100, relativeY)),
