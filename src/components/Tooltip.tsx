@@ -7,6 +7,7 @@ interface TooltipProps {
   content: TooltipContent | null;
   onClose?: () => void;
   isFixed?: boolean; // New prop to indicate fixed positioning
+  autoHideDelay?: number | null;
 }
 
 export const Tooltip: React.FC<TooltipProps> = ({
@@ -15,97 +16,190 @@ export const Tooltip: React.FC<TooltipProps> = ({
   content,
   onClose,
   isFixed = false,
+  autoHideDelay,
 }) => {
   const tooltipRef = useRef<HTMLDivElement>(null);
 
-  // Auto-hide tooltip after 5 seconds (only for non-fixed tooltips)
+  const effectiveHideDelay = autoHideDelay !== undefined
+    ? autoHideDelay
+    : (isFixed ? null : 5000);
+
+  // Auto-hide tooltip when applicable
   useEffect(() => {
-    if (isVisible && content && !isFixed) {
-      const timer = setTimeout(() => {
-        onClose?.();
-      }, 5000);
+    if (!isVisible || !content) return;
+    if (effectiveHideDelay === null) return;
 
-      return () => clearTimeout(timer);
-    }
-  }, [isVisible, content, onClose, isFixed]);
+    const timer = setTimeout(() => {
+      onClose?.();
+    }, effectiveHideDelay);
 
-  // Get tooltip position based on type (fixed or hover)
-  const getTooltipPosition = () => {
-    if (isFixed) {
-      // Fixed position: bottom left corner
+    return () => clearTimeout(timer);
+  }, [isVisible, content, onClose, effectiveHideDelay]);
+
+  type TooltipPlacement = 'below' | 'above' | 'left' | 'right';
+
+  interface TooltipGeometry {
+    placement: TooltipPlacement;
+    top: number;
+    centerX?: number;
+    left?: number;
+    arrowOffset: number;
+    isFallback?: boolean;
+  }
+
+  const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(max, value));
+
+  const getTooltipGeometry = (): TooltipGeometry => {
+    const tooltipEl = tooltipRef.current;
+    const container = tooltipEl?.parentElement;
+
+    if (!tooltipEl || !container) {
       return {
-        x: 16, // 16px from left
-        y: 16, // 16px from bottom
-        isAbove: false,
-        isFixed: true
+        placement: 'below',
+        top: position.y,
+        centerX: position.x,
+        arrowOffset: 0,
+        isFallback: true,
       };
     }
 
-    // Hover tooltip positioning (existing logic)
-    if (!tooltipRef.current) return { ...position, isAbove: false };
+    const { width: containerWidth, height: containerHeight } = container.getBoundingClientRect();
+    const { width: tooltipWidth, height: tooltipHeight } = tooltipEl.getBoundingClientRect();
 
-    const tooltip = tooltipRef.current;
-    const rect = tooltip.getBoundingClientRect();
-    const container = tooltipRef.current.parentElement;
-    if (!container) return { ...position, isAbove: false };
+    const margin = 12;
+    const anchorX = (position.x / 100) * containerWidth;
+    const anchorY = (position.y / 100) * containerHeight;
 
-    const containerRect = container.getBoundingClientRect();
-    const containerWidth = containerRect.width;
-    const containerHeight = containerRect.height;
+    let placement: TooltipPlacement = 'below';
+    let top = anchorY + 36; // Prefer below with subtle offset
+    let centerX = clamp(
+      anchorX,
+      margin + tooltipWidth / 2,
+      Math.max(margin + tooltipWidth / 2, containerWidth - margin - tooltipWidth / 2)
+    );
 
-    let { x, y } = position;
-
-    // Convert percentage positions to pixels within the container
-    const pixelX = (x / 100) * containerWidth;
-    const pixelY = (y / 100) * containerHeight;
-
-    // Adjust horizontal position if tooltip would overflow container
-    let adjustedX = pixelX;
-    if (pixelX + rect.width > containerWidth) {
-      adjustedX = containerWidth - rect.width - 10;
-    }
-    if (adjustedX < 10) {
-      adjustedX = 10;
+    const maxVertical = containerHeight - margin - tooltipHeight;
+    if (maxVertical < margin) {
+      top = clamp(anchorY, 0, containerHeight - tooltipHeight);
     }
 
-    // Adjust vertical position - position below the chicken by default
-    let adjustedY = pixelY + 40; // Position below the chicken by default (40px below)
-    let isAbove = false;
-    
-    // If tooltip would overflow bottom, position above instead
-    if (adjustedY + rect.height > containerHeight - 10) {
-      adjustedY = pixelY - rect.height - 10; // Position above
-      isAbove = true;
-    }
-    
-    // Ensure tooltip stays within container bounds
-    if (adjustedY < 10) {
-      adjustedY = 10;
-      isAbove = false;
+    if (top + tooltipHeight > containerHeight - margin) {
+      const aboveTop = anchorY - tooltipHeight - 16;
+      if (aboveTop >= margin) {
+        top = aboveTop;
+        placement = 'above';
+      } else {
+        const sideTop = clamp(anchorY - tooltipHeight / 2, margin, maxVertical);
+        const spaceRight = containerWidth - anchorX;
+        const spaceLeft = anchorX;
+
+        if (spaceRight >= tooltipWidth + 32) {
+          placement = 'right';
+          top = sideTop;
+        } else if (spaceLeft >= tooltipWidth + 32) {
+          placement = 'left';
+          top = sideTop;
+        } else {
+          top = clamp(containerHeight - margin - tooltipHeight, margin, maxVertical);
+        }
+      }
     }
 
-    return { x: adjustedX, y: adjustedY, isAbove };
+    top = clamp(top, margin, maxVertical);
+
+    if (placement === 'left') {
+      const leftEdge = clamp(anchorX - tooltipWidth - 20, margin, containerWidth - margin - tooltipWidth);
+      const arrowOffset = clamp(anchorY - top, 8, Math.max(8, tooltipHeight - 8));
+      return { placement, top, left: leftEdge, arrowOffset };
+    }
+
+    if (placement === 'right') {
+      const leftEdge = clamp(anchorX + 20, margin, containerWidth - margin - tooltipWidth);
+      const arrowOffset = clamp(anchorY - top, 8, Math.max(8, tooltipHeight - 8));
+      return { placement, top, left: leftEdge, arrowOffset };
+    }
+
+    const halfWidth = tooltipWidth / 2;
+    const leftEdge = centerX - halfWidth;
+    const arrowOffset = clamp(anchorX - leftEdge, 8, Math.max(8, tooltipWidth - 8));
+
+    return { placement, top, centerX, arrowOffset };
   };
 
   if (!isVisible || !content) {
     return null;
   }
 
-  const tooltipPosition = getTooltipPosition();
-  const isAbove = tooltipPosition.isAbove || false;
+  const geometry = getTooltipGeometry();
 
   // Calculate points gained today (difference between current and previous total)
   const pointsGainedToday = content.pointsGainedToday || 0;
 
-  const containerStyle = isFixed ? {
-    // Fixed position: bottom left corner of the race container
-    left: `${tooltipPosition.x}px`,
-    bottom: `${tooltipPosition.y}px`,
-  } : {
-    // Hover position: relative to chicken
-    left: `${tooltipPosition.x}px`,
-    top: `${tooltipPosition.y}px`,
-    transform: 'translateX(-50%)', // Center horizontally on the position
+  let containerStyle: React.CSSProperties;
+  if (geometry.isFallback) {
+    containerStyle = {
+      left: `${position.x}%`,
+      top: `${position.y}%`,
+      transform: 'translate(-50%, -50%)',
+    };
+  } else if (geometry.placement === 'left' || geometry.placement === 'right') {
+    containerStyle = {
+      left: `${geometry.left}px`,
+      top: `${geometry.top}px`,
+    };
+  } else {
+    containerStyle = {
+      left: `${geometry.centerX}px`,
+      top: `${geometry.top}px`,
+      transform: 'translateX(-50%)',
+    };
+  }
+
+  const renderArrow = () => {
+    if (geometry.isFallback) {
+      return null;
+    }
+
+    switch (geometry.placement) {
+      case 'above':
+        return (
+          <div
+            className="tooltip-arrow absolute -bottom-1"
+            style={{ left: `${geometry.arrowOffset}px`, transform: 'translateX(-50%)' }}
+          >
+            <div className="w-0 h-0 border-l-[6px] border-r-[6px] border-t-[6px] border-l-transparent border-r-transparent border-t-gray-900" />
+          </div>
+        );
+      case 'below':
+        return (
+          <div
+            className="tooltip-arrow absolute -top-1"
+            style={{ left: `${geometry.arrowOffset}px`, transform: 'translateX(-50%)' }}
+          >
+            <div className="w-0 h-0 border-l-[6px] border-r-[6px] border-b-[6px] border-l-transparent border-r-transparent border-b-gray-900" />
+          </div>
+        );
+      case 'left':
+        return (
+          <div
+            className="tooltip-arrow absolute -right-1"
+            style={{ top: `${geometry.arrowOffset}px`, transform: 'translateY(-50%)' }}
+          >
+            <div className="w-0 h-0 border-t-[6px] border-b-[6px] border-l-[6px] border-t-transparent border-b-transparent border-l-gray-900" />
+          </div>
+        );
+      case 'right':
+        return (
+          <div
+            className="tooltip-arrow absolute -left-1"
+            style={{ top: `${geometry.arrowOffset}px`, transform: 'translateY(-50%)' }}
+          >
+            <div className="w-0 h-0 border-t-[6px] border-b-[6px] border-r-[6px] border-t-transparent border-b-transparent border-r-gray-900" />
+          </div>
+        );
+      default:
+        return null;
+    }
   };
 
   return (
@@ -114,31 +208,16 @@ export const Tooltip: React.FC<TooltipProps> = ({
       className={`tooltip-container absolute pointer-events-none ${isFixed ? 'z-40' : 'z-50'}`}
       style={containerStyle}
     >
-      {/* Tooltip Arrow - only for hover tooltips */}
-      {!isFixed && (
-        <>
-          {isAbove ? (
-            // Arrow pointing down when tooltip is above chicken
-            <div className="tooltip-arrow absolute -bottom-1 left-1/2 transform -translate-x-1/2">
-              <div className="w-0 h-0 border-l-2 border-r-2 border-t-2 border-transparent border-t-gray-900"></div>
-            </div>
-          ) : (
-            // Arrow pointing up when tooltip is below chicken
-            <div className="tooltip-arrow absolute -top-1 left-1/2 transform -translate-x-1/2">
-              <div className="w-0 h-0 border-l-2 border-r-2 border-b-2 border-transparent border-b-gray-900"></div>
-            </div>
-          )}
-        </>
-      )}
+      {renderArrow()}
 
       {/* Tooltip Content */}
       <div className={`tooltip-content bg-gray-900/90 text-white rounded shadow-sm backdrop-blur-sm border border-gray-700/50 ${
-        isFixed 
-          ? 'px-3 py-2 text-sm min-w-32 max-w-40' // Larger for fixed tooltip
-          : 'px-1.5 py-1 text-xs min-w-24 max-w-32 mx-1' // Smaller for hover tooltip
+        isFixed
+          ? 'px-2.5 py-2 text-xs sm:text-sm min-w-28 max-w-40'
+          : 'px-1.5 py-1 text-xs min-w-24 max-w-32 mx-1'
       }`}>
         {/* Tooltip content */}
-        <div className={isFixed ? 'text-left' : 'text-center'}>
+        <div className={isFixed ? 'text-left space-y-0.5' : 'text-center'}>
           <div className="text-yellow-300 font-medium truncate">
             {content.playerName}
           </div>
