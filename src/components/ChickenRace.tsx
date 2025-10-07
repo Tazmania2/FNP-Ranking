@@ -2,7 +2,6 @@ import React, { useMemo, useEffect, useState, useCallback, useRef } from 'react'
 import type { Player, ChickenPosition } from '../types';
 import { useTooltipManager } from '../hooks/useTooltipManager';
 import Tooltip from './Tooltip';
-import HoverTooltip from './HoverTooltip';
 import ChickenRaceFullscreen from './ChickenRaceFullscreen';
 import './ChickenRace.css';
 
@@ -163,7 +162,7 @@ const Chicken: React.FC<ChickenProps> = React.memo(({ player, position, onHover,
   );
 });
 
-export const ChickenRace: React.FC<ChickenRaceProps> = React.memo(({
+export const ChickenRace: React.FC<ChickenRaceProps> = React.memo(({ 
   players,
   leaderboardTitle,
   isLoading,
@@ -172,14 +171,6 @@ export const ChickenRace: React.FC<ChickenRaceProps> = React.memo(({
 }) => {
   // State for fullscreen modal
   const [isFullscreenOpen, setIsFullscreenOpen] = useState(false);
-
-  // Initialize tooltip manager
-  const {
-    tooltips, // Fixed position cycling tooltip
-    hoverTooltip, // Hover overlay tooltip
-    handleChickenHover,
-    hidePlayerTooltip,
-  } = useTooltipManager({ players, isEnabled: !isLoading });
 
   // Calculate chicken positions based on rankings or use provided positions
   const chickenPositions = useMemo((): ChickenPosition[] => {
@@ -360,6 +351,40 @@ export const ChickenRace: React.FC<ChickenRaceProps> = React.memo(({
     return positions;
   }, [players, playerPositions]);
 
+  const chickenPositionMap = useMemo(() => {
+    const map = new Map<string, { x: number; y: number }>();
+    chickenPositions.forEach(position => {
+      map.set(position.playerId, { x: position.x, y: position.y });
+    });
+    return map;
+  }, [chickenPositions]);
+
+  const getPlayerTooltipPosition = useCallback((playerId: string) => {
+    const coords = chickenPositionMap.get(playerId);
+    if (!coords) return null;
+
+    // Keep tooltip slightly within the race boundaries to avoid clipping
+    const marginX = 4;
+    const marginY = 12;
+
+    return {
+      x: Math.min(100 - marginX, Math.max(marginX, coords.x)),
+      y: Math.min(100 - marginY, Math.max(marginY, coords.y)),
+    };
+  }, [chickenPositionMap]);
+
+  // Initialize tooltip manager
+  const {
+    tooltips, // Cycling tooltip following players
+    isHovering,
+    handleChickenHover,
+    hidePlayerTooltip,
+  } = useTooltipManager({
+    players,
+    isEnabled: !isLoading,
+    getPlayerPosition: getPlayerTooltipPosition,
+  });
+
   // Memoize chicken components to prevent unnecessary re-renders
   const chickenComponents = useMemo(() => {
     return chickenPositions.map((position) => {
@@ -440,19 +465,14 @@ export const ChickenRace: React.FC<ChickenRaceProps> = React.memo(({
         {/* Chickens */}
         {chickenComponents}
 
-        {/* Fixed Position Cycling Tooltip - Bottom Left */}
+        {/* Cycling Tooltip */}
         <Tooltip
           isVisible={tooltips.isVisible}
           position={tooltips.position}
           content={tooltips.content}
           onClose={hidePlayerTooltip}
-          isFixed={true}
-        />
-
-        {/* Hover Overlay Tooltip - Centered */}
-        <HoverTooltip
-          isVisible={hoverTooltip.isVisible}
-          content={hoverTooltip.content}
+          isFixed={!isHovering}
+          autoHideDelay={isHovering ? null : undefined}
         />
 
         {/* Race Info Overlay */}
