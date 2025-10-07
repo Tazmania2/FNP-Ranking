@@ -312,13 +312,11 @@ export const ChickenRace: React.FC<ChickenRaceProps> = React.memo(({
         const maxPlayersInColumn = Math.floor(availableHeight / minSpacing);
 
         groupPlayers.forEach((player, indexInGroup) => {
-          // Create a deterministic but "random" seed based on player ID
-          // This ensures the same player gets the same Y position across renders
-          const playerSeed = parseInt(player._id.slice(-4), 16) || 1;
-          const randomFactor = (playerSeed % 1000) / 1000; // 0 to 1
+          // Truly random Y position that changes every load/refresh
+          const randomFactor = Math.random(); // 0 to 1 - changes every time!
           
           // Add some horizontal variation for tied players (small random offset)
-          const horizontalVariation = ((playerSeed % 100) / 100 - 0.5) * 4; // ±2% variation
+          const horizontalVariation = (Math.random() - 0.5) * 4; // ±2% variation
           let xOffset = horizontalVariation;
 
           // For multiple tied players, add systematic spacing to prevent total overlap
@@ -328,17 +326,17 @@ export const ChickenRace: React.FC<ChickenRaceProps> = React.memo(({
           }
 
           // Random Y position within safe area (35% to 65% of container height)
-          // Use the random factor to distribute players across the vertical space
+          // Use truly random factor to distribute players across the vertical space
           const safeAreaHeight = 65 - 35; // 30% of container height
           const randomYOffset = randomFactor * safeAreaHeight;
           let yPosition = 35 + randomYOffset;
 
           // Add some additional randomness for visual variety
-          const additionalRandomness = ((playerSeed % 50) / 50 - 0.5) * 8; // ±4% additional variation
+          const additionalRandomness = (Math.random() - 0.5) * 8; // ±4% additional variation
           yPosition += additionalRandomness;
 
-          // Debug: Random positioning calculation
-          // console.log(`🐓 ${player.name}: seed=${playerSeed}, randomFactor=${randomFactor.toFixed(3)}, yPosition=${yPosition.toFixed(1)}%`);
+          // Debug: Truly random positioning calculation
+          // console.log(`🐓 ${player.name}: randomFactor=${randomFactor.toFixed(3)}, yPosition=${yPosition.toFixed(1)}%`);
 
           // Ensure position is within safe bounds
           yPosition = Math.min(Math.max(yPosition, 35), 65);
