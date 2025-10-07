@@ -20,6 +20,7 @@ export const useTooltipManager = ({
     updateTooltipPosition,
   } = useUIStore();
 
+  // Fixed tooltip cycling state - MUST be declared before useEffect
   const [currentCycleIndex, setCurrentCycleIndex] = useState(0);
   const [isHovering, setIsHovering] = useState(false);
   const [isCycling, setIsCycling] = useState(false);
@@ -41,6 +42,15 @@ export const useTooltipManager = ({
     }
   }, [players]);
 
+  // Keep players ref updated
+  useEffect(() => {
+    playersRef.current = players;
+    console.log('📝 Players ref updated:', players.length, 'players');
+  }, [players]);
+
+
+
+  // Calculate points gained today for a player
   const calculatePointsGainedToday = useCallback((player: Player): number => {
     if (player.previous_total !== undefined) {
       return player.total - player.previous_total;
@@ -185,6 +195,9 @@ export const useTooltipManager = ({
     }
   }, [getElementRelativePosition, hidePlayerTooltip, isEnabled, showPlayerTooltip, stopCycling]);
 
+
+
+  // Start cycling when component mounts or when enabled/disabled
   useEffect(() => {
     if (isEnabled && playersRef.current.length > 0 && !isHovering && !isCycling) {
       startCycling();
@@ -233,6 +246,23 @@ export const useTooltipManager = ({
       const timer = setTimeout(() => {
         startCycling();
       }, 200);
+  // Handle players change - only restart if already cycling
+  useEffect(() => {
+    console.log('🔄 Players change effect:', {
+      playersLength: players.length,
+      isEnabled,
+      isHovering,
+      isCycling,
+      shouldRestart: isEnabled && players.length > 0 && !isHovering && isCycling
+    });
+
+    // Only restart if we're already cycling and players changed
+    if (isEnabled && players.length > 0 && !isHovering && isCycling) {
+      console.log('🔄 Restarting cycling due to players change');
+      stopCycling();
+      const timer = setTimeout(() => {
+        startCycling();
+      }, 100);
       return () => clearTimeout(timer);
     }
   }, [players, isEnabled, isHovering, isCycling, startCycling, stopCycling]);
