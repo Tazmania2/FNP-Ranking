@@ -15,25 +15,7 @@ export const useTooltipManager = ({ players, isEnabled = true }: UseTooltipManag
     updateTooltipPosition,
   } = useUIStore();
 
-  // Keep players ref updated
-  useEffect(() => {
-    playersRef.current = players;
-    console.log('📝 Players ref updated:', players.length, 'players');
-  }, [players]);
-
-  // Simple effect to ensure cycling starts when everything is ready
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (isEnabled && players.length > 0 && !isHovering && !isCycling) {
-        console.log('⏰ Delayed start attempt for tooltip cycling');
-        startCycling();
-      }
-    }, 1000); // 1 second delay to ensure everything is loaded
-
-    return () => clearTimeout(timer);
-  }, [players.length, isEnabled, isHovering, isCycling, startCycling]);
-
-  // Fixed tooltip cycling state
+  // Fixed tooltip cycling state - MUST be declared before useEffect
   const [currentCycleIndex, setCurrentCycleIndex] = useState(0);
   const [isHovering, setIsHovering] = useState(false);
   const [isCycling, setIsCycling] = useState(false);
@@ -46,6 +28,14 @@ export const useTooltipManager = ({ players, isEnabled = true }: UseTooltipManag
   const autoDisplayTimerRef = useRef<NodeJS.Timeout | null>(null);
   const currentAutoDisplayRef = useRef<NodeJS.Timeout | null>(null);
   const playersRef = useRef<Player[]>(players);
+
+  // Keep players ref updated
+  useEffect(() => {
+    playersRef.current = players;
+    console.log('📝 Players ref updated:', players.length, 'players');
+  }, [players]);
+
+
 
   // Calculate points gained today for a player
   const calculatePointsGainedToday = useCallback((player: Player): number => {
@@ -212,6 +202,18 @@ export const useTooltipManager = ({ players, isEnabled = true }: UseTooltipManag
       hideHoverTooltip();
     }
   }, [isEnabled, showHoverTooltip, hideHoverTooltip]);
+
+  // Simple effect to ensure cycling starts when everything is ready
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (isEnabled && players.length > 0 && !isHovering && !isCycling) {
+        console.log('⏰ Delayed start attempt for tooltip cycling');
+        startCycling();
+      }
+    }, 1000); // 1 second delay to ensure everything is loaded
+
+    return () => clearTimeout(timer);
+  }, [players.length, isEnabled, isHovering, isCycling, startCycling]);
 
   // Start cycling when component mounts or when enabled/disabled
   useEffect(() => {
