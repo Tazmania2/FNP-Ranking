@@ -217,12 +217,12 @@ export const ChickenRace: React.FC<ChickenRaceProps> = React.memo(({
     const maxDistance = 70; // Maximum distance from start to finish (85% - 15%)
     const chickenSize = 8; // Approximate chicken size in percentage
 
-    // Define safe zones to avoid UI overlaps
+    // Define safe zones to avoid UI overlaps (made smaller to allow more random positioning)
     const safeZones = {
-      topLeft: { x: [0, 35], y: [0, 30] }, // Race info overlay
-      topRight: { x: [65, 100], y: [0, 30] }, // Fullscreen button
-      bottomLeft: { x: [0, 35], y: [70, 100] }, // Future UI
-      bottomRight: { x: [65, 100], y: [70, 100] }, // Position legend
+      topLeft: { x: [0, 30], y: [0, 25] }, // Race info overlay (smaller)
+      topRight: { x: [70, 100], y: [0, 25] }, // Fullscreen button (smaller)
+      bottomLeft: { x: [0, 30], y: [75, 100] }, // Future UI (smaller)
+      bottomRight: { x: [70, 100], y: [75, 100] }, // Position legend (smaller)
     };
 
     // Helper function to check if position is in a safe zone (UI overlay area)
@@ -236,16 +236,28 @@ export const ChickenRace: React.FC<ChickenRaceProps> = React.memo(({
     const wouldOverlap = (pos1: { x: number; y: number }, pos2: { x: number; y: number }) => {
       const xDiff = Math.abs(pos1.x - pos2.x);
       const yDiff = Math.abs(pos1.y - pos2.y);
-      // More lenient Y-axis collision detection to allow closer vertical positioning
-      return xDiff < chickenSize && yDiff < (chickenSize * 0.7); // 30% more lenient on Y-axis
+      // Much more lenient collision detection to allow messy race positioning
+      return xDiff < (chickenSize * 0.8) && yDiff < (chickenSize * 0.5); // 50% more lenient on Y-axis, 20% on X-axis
     };
 
     // Helper function to find a non-overlapping position
-    const findNonOverlappingPosition = (baseX: number, baseY: number, existingPositions: { x: number; y: number }[]) => {
+    const findNonOverlappingPosition = (baseX: number, baseY: number, existingPositions: { x: number; y: number }[], playerName: string) => {
       let x = baseX;
       let y = baseY;
       let attempts = 0;
-      const maxAttempts = 20;
+      const maxAttempts = 15; // Reduced attempts to be less aggressive
+
+      // Check initial position
+      const initialPos = { x, y };
+      const initialOverlap = existingPositions.some(pos => wouldOverlap(initialPos, pos));
+      const initialSafeZone = isInSafeZone(x, y, safeZones);
+      
+      // console.log(`🔍 ${playerName}: Initial pos (${x.toFixed(1)}, ${y.toFixed(1)}) - overlap: ${initialOverlap}, safeZone: ${initialSafeZone}`);
+
+      if (!initialOverlap && !initialSafeZone) {
+        // console.log(`✅ ${playerName}: Using original random position`);
+        return { x, y };
+      }
 
       while (attempts < maxAttempts) {
         const currentPos = { x, y };
@@ -253,19 +265,20 @@ export const ChickenRace: React.FC<ChickenRaceProps> = React.memo(({
         const inSafeZone = isInSafeZone(x, y, safeZones);
 
         if (!hasOverlap && !inSafeZone) {
+          // console.log(`✅ ${playerName}: Found position after ${attempts} attempts: (${x.toFixed(1)}, ${y.toFixed(1)})`);
           return { x, y };
         }
 
         // Prefer Y-axis adjustments to maintain ranking (X-axis) positions
-        if (attempts < 10) {
+        if (attempts < 8) {
           // First, try moving vertically (preserve horizontal ranking position)
-          const yOffset = (attempts % 2 === 0 ? 1 : -1) * Math.ceil(attempts / 2) * 3;
+          const yOffset = (attempts % 2 === 0 ? 1 : -1) * Math.ceil(attempts / 2) * 2; // Smaller steps
           y = Math.min(Math.max(baseY + yOffset, 35), 65);
           x = baseX; // Keep original X position
         } else {
           // If vertical adjustments don't work, use spiral pattern
-          const angle = ((attempts - 10) * 0.5) * Math.PI;
-          const radius = Math.min((attempts - 10) * 2, 8);
+          const angle = ((attempts - 8) * 0.7) * Math.PI;
+          const radius = Math.min((attempts - 8) * 1.5, 6); // Smaller radius
           x = Math.min(Math.max(baseX + Math.cos(angle) * radius, 15), 85);
           y = Math.min(Math.max(baseY + Math.sin(angle) * radius, 35), 65);
         }
@@ -274,6 +287,7 @@ export const ChickenRace: React.FC<ChickenRaceProps> = React.memo(({
       }
 
       // Fallback: return original position if no good position found
+      // console.log(`⚠️ ${playerName}: Using fallback position after ${maxAttempts} attempts`);
       return { x: baseX, y: baseY };
     };
 
@@ -323,13 +337,16 @@ export const ChickenRace: React.FC<ChickenRaceProps> = React.memo(({
           const additionalRandomness = ((playerSeed % 50) / 50 - 0.5) * 8; // ±4% additional variation
           yPosition += additionalRandomness;
 
+          // Debug: Random positioning calculation
+          // console.log(`🐓 ${player.name}: seed=${playerSeed}, randomFactor=${randomFactor.toFixed(3)}, yPosition=${yPosition.toFixed(1)}%`);
+
           // Ensure position is within safe bounds
           yPosition = Math.min(Math.max(yPosition, 35), 65);
           const finalXPosition = Math.min(Math.max(xPosition + xOffset, 15), 85);
 
           // Use collision detection to find final position
           const existingPositions = positions.map(p => ({ x: p.x, y: p.y }));
-          const finalPosition = findNonOverlappingPosition(finalXPosition, yPosition, existingPositions);
+          const finalPosition = findNonOverlappingPosition(finalXPosition, yPosition, existingPositions, player.name);
 
           positions.push({
             playerId: player._id,

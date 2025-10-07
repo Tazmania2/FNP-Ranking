@@ -15,6 +15,11 @@ export const useTooltipManager = ({ players, isEnabled = true }: UseTooltipManag
     updateTooltipPosition,
   } = useUIStore();
 
+  // Keep players ref updated
+  useEffect(() => {
+    playersRef.current = players;
+  }, [players]);
+
   // Fixed tooltip cycling state
   const [currentCycleIndex, setCurrentCycleIndex] = useState(0);
   const [isHovering, setIsHovering] = useState(false);
@@ -27,6 +32,7 @@ export const useTooltipManager = ({ players, isEnabled = true }: UseTooltipManag
   const cycleTimerRef = useRef<NodeJS.Timeout | null>(null);
   const autoDisplayTimerRef = useRef<NodeJS.Timeout | null>(null);
   const currentAutoDisplayRef = useRef<NodeJS.Timeout | null>(null);
+  const playersRef = useRef<Player[]>(players);
 
   // Calculate points gained today for a player
   const calculatePointsGainedToday = useCallback((player: Player): number => {
@@ -117,7 +123,8 @@ export const useTooltipManager = ({ players, isEnabled = true }: UseTooltipManag
 
   // Fixed position tooltip cycling
   const startCycling = useCallback(() => {
-    if (!isEnabled || players.length === 0 || isHovering || isCycling) return;
+    const currentPlayers = playersRef.current;
+    if (!isEnabled || currentPlayers.length === 0 || isHovering || isCycling) return;
 
     // Clear any existing timer
     if (cycleTimerRef.current) {
@@ -130,8 +137,13 @@ export const useTooltipManager = ({ players, isEnabled = true }: UseTooltipManag
       if (isHovering) return; // Don't cycle while hovering
 
       setCurrentCycleIndex((prevIndex) => {
-        const nextIndex = (prevIndex + 1) % players.length;
-        const currentPlayer = players[nextIndex];
+        const latestPlayers = playersRef.current;
+        if (latestPlayers.length === 0) return prevIndex;
+        
+        const nextIndex = (prevIndex + 1) % latestPlayers.length;
+        const currentPlayer = latestPlayers[nextIndex];
+        
+        console.log(`🔄 Cycling tooltip: ${prevIndex} → ${nextIndex} (${currentPlayer?.name || 'N/A'})`);
         
         if (currentPlayer) {
           const content = createTooltipContent(currentPlayer);
@@ -144,16 +156,18 @@ export const useTooltipManager = ({ players, isEnabled = true }: UseTooltipManag
     };
 
     // Show first player immediately
-    if (players.length > 0) {
-      const firstPlayer = players[0];
+    if (currentPlayers.length > 0) {
+      const firstPlayer = currentPlayers[0];
       const content = createTooltipContent(firstPlayer);
       showTooltip(firstPlayer._id, { x: 10, y: 85 }, content);
       setCurrentCycleIndex(0);
+      console.log(`🎯 Starting tooltip cycling with ${currentPlayers.length} players, showing: ${firstPlayer.name}`);
     }
 
     // Set up interval for cycling (7 seconds per player)
     cycleTimerRef.current = setInterval(cycleToNextPlayer, 7000);
-  }, [isEnabled, players, isHovering, isCycling, createTooltipContent, showTooltip]);
+    console.log('⏰ Tooltip cycling interval set for 7 seconds');
+  }, [isEnabled, isHovering, isCycling, createTooltipContent, showTooltip]);
 
   // Handle hover events on chicken elements
   const handleChickenHover = useCallback((
@@ -163,29 +177,31 @@ export const useTooltipManager = ({ players, isEnabled = true }: UseTooltipManag
     if (!isEnabled) return;
 
     if (playerId) {
-      const player = players.find(p => p._id === playerId);
+      const player = playersRef.current.find(p => p._id === playerId);
       if (player) {
         showHoverTooltip(player);
       }
     } else {
       hideHoverTooltip();
     }
-  }, [isEnabled, players, showHoverTooltip, hideHoverTooltip]);
+  }, [isEnabled, showHoverTooltip, hideHoverTooltip]);
 
-  // Start cycling when component mounts or players change
+  // Start cycling when component mounts or when enabled/disabled
   useEffect(() => {
-    if (isEnabled && players.length > 0 && !isHovering) {
+    if (isEnabled && playersRef.current.length > 0 && !isHovering && !isCycling) {
       startCycling();
+    } else if (!isEnabled || playersRef.current.length === 0) {
+      stopCycling();
     }
 
     return () => {
       stopCycling();
     };
-  }, [isEnabled, players.length, startCycling, stopCycling]);
+  }, [isEnabled, startCycling, stopCycling]);
 
   // Resume cycling when hover ends
   useEffect(() => {
-    if (!isHovering && isEnabled && players.length > 0) {
+    if (!isHovering && isEnabled && playersRef.current.length > 0) {
       const timer = setTimeout(() => {
         startCycling();
       }, 1000); // Wait 1 second before resuming
@@ -193,7 +209,19 @@ export const useTooltipManager = ({ players, isEnabled = true }: UseTooltipManag
     } else if (isHovering) {
       stopCycling(); // Stop cycling when hovering starts
     }
-  }, [isHovering, isEnabled, players.length, startCycling, stopCycling]);
+  }, [isHovering, isEnabled, startCycling, stopCycling]);
+
+  // Handle players change - restart cycling if needed
+  useEffect(() => {
+    if (isEnabled && players.length > 0 && !isHovering && isCycling) {
+      // Players changed while cycling, restart to ensure we have valid data
+      stopCycling();
+      const timer = setTimeout(() => {
+        startCycling();
+      }, 100); // Short delay to avoid rapid restarts
+      return () => clearTimeout(timer);
+    }
+  }, [players.length, isEnabled, isHovering, isCycling, startCycling, stopCycling]);
 
   // Cleanup on unmount
   useEffect(() => {
