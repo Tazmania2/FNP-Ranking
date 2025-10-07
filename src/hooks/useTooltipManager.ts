@@ -18,7 +18,20 @@ export const useTooltipManager = ({ players, isEnabled = true }: UseTooltipManag
   // Keep players ref updated
   useEffect(() => {
     playersRef.current = players;
+    console.log('📝 Players ref updated:', players.length, 'players');
   }, [players]);
+
+  // Simple effect to ensure cycling starts when everything is ready
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (isEnabled && players.length > 0 && !isHovering && !isCycling) {
+        console.log('⏰ Delayed start attempt for tooltip cycling');
+        startCycling();
+      }
+    }, 1000); // 1 second delay to ensure everything is loaded
+
+    return () => clearTimeout(timer);
+  }, [players.length, isEnabled, isHovering, isCycling, startCycling]);
 
   // Fixed tooltip cycling state
   const [currentCycleIndex, setCurrentCycleIndex] = useState(0);
@@ -101,11 +114,14 @@ export const useTooltipManager = ({ players, isEnabled = true }: UseTooltipManag
 
   // Stop cycling
   const stopCycling = useCallback(() => {
+    console.log('🛑 stopCycling called');
     if (cycleTimerRef.current) {
       clearInterval(cycleTimerRef.current);
       cycleTimerRef.current = null;
+      console.log('🛑 Cleared cycling interval');
     }
     setIsCycling(false);
+    console.log('🛑 Set isCycling to false');
   }, []);
 
   // Handle hover tooltip (overlay)
@@ -124,7 +140,18 @@ export const useTooltipManager = ({ players, isEnabled = true }: UseTooltipManag
   // Fixed position tooltip cycling
   const startCycling = useCallback(() => {
     const currentPlayers = playersRef.current;
-    if (!isEnabled || currentPlayers.length === 0 || isHovering || isCycling) return;
+    console.log('🎯 startCycling called:', {
+      isEnabled,
+      playersCount: currentPlayers.length,
+      isHovering,
+      isCycling,
+      canStart: isEnabled && currentPlayers.length > 0 && !isHovering && !isCycling
+    });
+
+    if (!isEnabled || currentPlayers.length === 0 || isHovering || isCycling) {
+      console.log('❌ Cannot start cycling - conditions not met');
+      return;
+    }
 
     // Clear any existing timer
     if (cycleTimerRef.current) {
@@ -188,9 +215,19 @@ export const useTooltipManager = ({ players, isEnabled = true }: UseTooltipManag
 
   // Start cycling when component mounts or when enabled/disabled
   useEffect(() => {
+    console.log('🎯 Tooltip mount effect:', {
+      isEnabled,
+      playersCount: playersRef.current.length,
+      isHovering,
+      isCycling,
+      shouldStart: isEnabled && playersRef.current.length > 0 && !isHovering && !isCycling
+    });
+
     if (isEnabled && playersRef.current.length > 0 && !isHovering && !isCycling) {
+      console.log('🚀 Starting tooltip cycling from mount effect');
       startCycling();
     } else if (!isEnabled || playersRef.current.length === 0) {
+      console.log('🛑 Stopping tooltip cycling from mount effect');
       stopCycling();
     }
 
@@ -211,15 +248,33 @@ export const useTooltipManager = ({ players, isEnabled = true }: UseTooltipManag
     }
   }, [isHovering, isEnabled, startCycling, stopCycling]);
 
-  // Handle players change - restart cycling if needed
+  // Handle players change - start or restart cycling when players become available
   useEffect(() => {
-    if (isEnabled && players.length > 0 && !isHovering && isCycling) {
-      // Players changed while cycling, restart to ensure we have valid data
-      stopCycling();
-      const timer = setTimeout(() => {
-        startCycling();
-      }, 100); // Short delay to avoid rapid restarts
-      return () => clearTimeout(timer);
+    console.log('🔄 Players change effect:', {
+      playersLength: players.length,
+      isEnabled,
+      isHovering,
+      isCycling,
+      shouldStart: isEnabled && players.length > 0 && !isHovering
+    });
+
+    if (isEnabled && players.length > 0 && !isHovering) {
+      if (isCycling) {
+        // Players changed while cycling, restart to ensure we have valid data
+        console.log('🔄 Restarting cycling due to players change');
+        stopCycling();
+        const timer = setTimeout(() => {
+          startCycling();
+        }, 100);
+        return () => clearTimeout(timer);
+      } else {
+        // Start cycling if not already cycling
+        console.log('🚀 Starting cycling due to players becoming available');
+        const timer = setTimeout(() => {
+          startCycling();
+        }, 200); // Small delay to ensure everything is ready
+        return () => clearTimeout(timer);
+      }
     }
   }, [players.length, isEnabled, isHovering, isCycling, startCycling, stopCycling]);
 
