@@ -45,10 +45,19 @@ body {
 }
 
 /* Tooltip styles */
-.tooltip {
-  @apply absolute z-50 px-3 py-2 text-sm font-medium text-white bg-gray-900 rounded-lg shadow-sm opacity-0 transition-opacity duration-300;
+.tooltip-container {
+  z-index: 1000 !important;
+  pointer-events: none;
 }
 
-.tooltip.visible {
-  @apply opacity-100;
+.tooltip-content {
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Ensure tooltips are always visible above everything */
+.chicken-race-container .tooltip-container {
+  position: absolute !important;
+  z-index: 1000 !important;
 }

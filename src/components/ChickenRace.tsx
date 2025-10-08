@@ -99,18 +99,10 @@ const Chicken: React.FC<ChickenProps> = React.memo(({ player, position, onHover,
     onHover?.(null);
   }, [onHover]);
 
-  const handleTouchStart = useCallback((event: React.TouchEvent<HTMLDivElement>) => {
-    // Prevent default to avoid triggering mouse events
+  const handleClick = useCallback((event: React.MouseEvent<HTMLDivElement>) => {
+    // Show tooltip on click for both desktop and mobile
     event.preventDefault();
     onHover?.(player._id, event.currentTarget);
-  }, [onHover, player._id]);
-
-  const handleClick = useCallback((event: React.MouseEvent<HTMLDivElement>) => {
-    // For mobile devices, toggle tooltip on click/tap
-    if ('ontouchstart' in window) {
-      event.preventDefault();
-      onHover?.(player._id, event.currentTarget);
-    }
   }, [onHover, player._id]);
 
   return (
@@ -118,9 +110,8 @@ const Chicken: React.FC<ChickenProps> = React.memo(({ player, position, onHover,
       style={chickenStyle}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
-      onTouchStart={handleTouchStart}
       onClick={handleClick}
-      className="chicken-container cursor-pointer touch-manipulation"
+      className="chicken-container cursor-pointer touch-manipulation select-none"
     >
       {/* Chicken Avatar */}
       <div className="flex flex-col items-center">
@@ -375,7 +366,7 @@ export const ChickenRace: React.FC<ChickenRaceProps> = React.memo(({
 
   // Initialize tooltip manager
   const {
-    tooltips, // Cycling tooltip following players
+    tooltips,
     isHovering,
     handleChickenHover,
     hidePlayerTooltip,
@@ -401,7 +392,7 @@ export const ChickenRace: React.FC<ChickenRaceProps> = React.memo(({
         />
       );
     }).filter(Boolean);
-  }, [chickenPositions, players, handleChickenHover]);
+  }, [chickenPositions, players, handleChickenHover, isFullscreen]);
 
   if (isLoading) {
     return (
@@ -465,14 +456,13 @@ export const ChickenRace: React.FC<ChickenRaceProps> = React.memo(({
         {/* Chickens */}
         {chickenComponents}
 
-        {/* Cycling Tooltip */}
+        {/* Player Tooltip */}
         <Tooltip
           isVisible={tooltips.isVisible}
           position={tooltips.position}
           content={tooltips.content}
           onClose={hidePlayerTooltip}
           isFixed={!isHovering}
-          autoHideDelay={isHovering ? null : undefined}
         />
 
         {/* Race Info Overlay */}
