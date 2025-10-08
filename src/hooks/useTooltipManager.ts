@@ -24,6 +24,7 @@ export const useTooltipManager = ({
   
   const cycleTimerRef = useRef<NodeJS.Timeout | null>(null);
   const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const isHoveringRef = useRef(false);
 
   // Calculate points gained today for a player
   const calculatePointsGainedToday = useCallback((player: Player): number => {
@@ -49,6 +50,7 @@ export const useTooltipManager = ({
     const player = players.find((p) => p._id === playerId);
     if (!player) return;
 
+    console.log('🎯 Showing tooltip for:', player.name, 'at position:', position);
     const content = createTooltipContent(player);
     const resolvedPosition = position ?? getPlayerPosition?.(playerId) ?? { x: 50, y: 50 };
 
@@ -56,6 +58,7 @@ export const useTooltipManager = ({
   }, [createTooltipContent, getPlayerPosition, isEnabled, showTooltip, players]);
 
   const hidePlayerTooltip = useCallback(() => {
+    console.log('🚫 Hiding tooltip');
     hideTooltip();
   }, [hideTooltip]);
 
@@ -73,28 +76,38 @@ export const useTooltipManager = ({
 
   // Start auto-cycling through players
   const startCycling = useCallback(() => {
-    if (!isEnabled || players.length === 0 || isHovering) return;
+    if (!isEnabled || players.length === 0 || isHoveringRef.current) {
+      console.log('🚫 Cannot start cycling:', { isEnabled, playersLength: players.length, isHovering: isHoveringRef.current });
+      return;
+    }
 
+    console.log('🔄 Starting tooltip cycling');
     clearTimers();
 
     // Show first player immediately
     if (players[currentCycleIndex]) {
+      console.log('🎯 Cycling: showing player', currentCycleIndex, players[currentCycleIndex].name);
       showPlayerTooltip(players[currentCycleIndex]._id);
     }
 
     // Set up cycling interval
     cycleTimerRef.current = setInterval(() => {
-      if (isHovering) return; // Don't cycle while hovering
+      // Check the ref instead of state to avoid stale closures
+      if (isHoveringRef.current) {
+        console.log('⏸️ Cycling paused - hovering');
+        return;
+      }
 
       setCurrentCycleIndex((prevIndex) => {
         const nextIndex = (prevIndex + 1) % players.length;
-        if (players[nextIndex]) {
+        if (players[nextIndex] && !isHoveringRef.current) {
+          console.log('🎯 Cycling: showing player', nextIndex, players[nextIndex].name);
           showPlayerTooltip(players[nextIndex]._id);
         }
         return nextIndex;
       });
     }, 3000); // Show each player for 3 seconds
-  }, [isEnabled, players, currentCycleIndex, isHovering, showPlayerTooltip, clearTimers]);
+  }, [isEnabled, players, currentCycleIndex, showPlayerTooltip, clearTimers]);
 
   // Stop cycling
   const stopCycling = useCallback(() => {
@@ -109,9 +122,11 @@ export const useTooltipManager = ({
     if (!isEnabled) return;
 
     if (playerId) {
-      // Stop cycling and show hovered player
+      console.log('🐭 Mouse entered chicken:', playerId);
+      // Immediately stop cycling and clear any timers
+      clearTimers();
       setIsHovering(true);
-      stopCycling();
+      isHoveringRef.current = true;
       
       // Get position from element if provided
       let position: { x: number; y: number } | undefined;
@@ -133,31 +148,34 @@ export const useTooltipManager = ({
 
       showPlayerTooltip(playerId, position);
 
-      // Clear any existing hover timeout
-      if (hoverTimeoutRef.current) {
-        clearTimeout(hoverTimeoutRef.current);
-      }
-
       // Set timeout to resume cycling after hover ends
       hoverTimeoutRef.current = setTimeout(() => {
+        console.log('⏰ Hover timeout - resuming cycling');
         setIsHovering(false);
+        isHoveringRef.current = false;
       }, 5000); // Keep tooltip visible for 5 seconds after hover
     } else {
-      // Mouse left - hide tooltip and resume cycling after delay
+      console.log('🐭 Mouse left chicken');
+      // Mouse left - clear timers and set up delayed restart
+      clearTimers();
       setIsHovering(false);
+      isHoveringRef.current = false;
       hidePlayerTooltip();
       
-      if (hoverTimeoutRef.current) {
-        clearTimeout(hoverTimeoutRef.current);
-      }
-      
+      // Resume cycling after a short delay
       hoverTimeoutRef.current = setTimeout(() => {
-        if (!isHovering) {
+        if (!isHoveringRef.current) {
+          console.log('🔄 Restarting cycling after mouse leave');
           startCycling();
         }
       }, 1000);
     }
-  }, [isEnabled, showPlayerTooltip, hidePlayerTooltip, stopCycling, startCycling, isHovering]);
+  }, [isEnabled, showPlayerTooltip, hidePlayerTooltip, clearTimers, startCycling]);
+
+  // Keep ref in sync with state
+  useEffect(() => {
+    isHoveringRef.current = isHovering;
+  }, [isHovering]);
 
   // Start cycling when enabled and players are available
   useEffect(() => {

@@ -140,9 +140,9 @@ export const useChickenRaceApp = () => {
 };
 
 /**
- * Hook for components that only need tooltip functionality
+ * Hook for components that only need tooltip functionality from app state
  */
-export const useTooltipManager = () => {
+export const useAppTooltipManager = () => {
   const { tooltips, showTooltip, hideTooltip } = useChickenRaceApp();
 
   return {
