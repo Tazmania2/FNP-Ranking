@@ -7,6 +7,70 @@ import { useLeaderboardStore } from '../store/leaderboardStore';
 import { appStoreActions } from '../store/appStore';
 import type { FunifierConfig } from '../types';
 
+// Mock data for fallback - defined outside component to prevent re-creation
+const MOCK_LEADERBOARD_DATA = [
+  {
+    "_id": "ana.silva@exemplo.com.br_DEMO1",
+    "total": 95,
+    "position": 1,
+    "move": "up" as const,
+    "player": "ana.silva@exemplo.com.br",
+    "name": "Ana Silva",
+    "extra": { "cache": "DEMO1" },
+    "boardId": "DEMO"
+  },
+  {
+    "_id": "bruno.costa@exemplo.com.br_DEMO2",
+    "total": 87,
+    "position": 2,
+    "move": "up" as const,
+    "player": "bruno.costa@exemplo.com.br",
+    "name": "Bruno Costa",
+    "extra": { "cache": "DEMO2" },
+    "boardId": "DEMO"
+  },
+  {
+    "_id": "carlos.mendes@exemplo.com.br_DEMO3",
+    "total": 82,
+    "position": 3,
+    "move": "down" as const,
+    "player": "carlos.mendes@exemplo.com.br",
+    "name": "Carlos Mendes",
+    "extra": { "cache": "DEMO3" },
+    "boardId": "DEMO"
+  },
+  {
+    "_id": "diana.santos@exemplo.com.br_DEMO4",
+    "total": 78,
+    "position": 4,
+    "move": "up" as const,
+    "player": "diana.santos@exemplo.com.br",
+    "name": "Diana Santos",
+    "extra": { "cache": "DEMO4" },
+    "boardId": "DEMO"
+  },
+  {
+    "_id": "eduardo.lima@exemplo.com.br_DEMO5",
+    "total": 75,
+    "position": 5,
+    "move": "same" as const,
+    "player": "eduardo.lima@exemplo.com.br",
+    "name": "Eduardo Lima",
+    "extra": { "cache": "DEMO5" },
+    "boardId": "DEMO"
+  },
+  {
+    "_id": "fernanda.rocha@exemplo.com.br_DEMO6",
+    "total": 71,
+    "position": 6,
+    "move": "up" as const,
+    "player": "fernanda.rocha@exemplo.com.br",
+    "name": "Fernanda Rocha",
+    "extra": { "cache": "DEMO6" },
+    "boardId": "DEMO"
+  }
+];
+
 /**
  * Configuration for the chicken race manager
  */
@@ -51,69 +115,7 @@ export const useChickenRaceManager = (config: ChickenRaceManagerConfig = {}) => 
   const isInitializingRef = useRef(false);
   const [usingMockData, setUsingMockData] = useState(false);
 
-  // Dados simulados para fallback
-  const MOCK_LEADERBOARD_DATA = [
-    {
-      "_id": "ana.silva@exemplo.com.br_DEMO1",
-      "total": 95,
-      "position": 1,
-      "move": "up" as const,
-      "player": "ana.silva@exemplo.com.br",
-      "name": "Ana Silva",
-      "extra": { "cache": "DEMO1" },
-      "boardId": "DEMO"
-    },
-    {
-      "_id": "bruno.costa@exemplo.com.br_DEMO2",
-      "total": 87,
-      "position": 2,
-      "move": "up" as const,
-      "player": "bruno.costa@exemplo.com.br",
-      "name": "Bruno Costa",
-      "extra": { "cache": "DEMO2" },
-      "boardId": "DEMO"
-    },
-    {
-      "_id": "carlos.mendes@exemplo.com.br_DEMO3",
-      "total": 82,
-      "position": 3,
-      "move": "down" as const,
-      "player": "carlos.mendes@exemplo.com.br",
-      "name": "Carlos Mendes",
-      "extra": { "cache": "DEMO3" },
-      "boardId": "DEMO"
-    },
-    {
-      "_id": "diana.santos@exemplo.com.br_DEMO4",
-      "total": 78,
-      "position": 4,
-      "move": "up" as const,
-      "player": "diana.santos@exemplo.com.br",
-      "name": "Diana Santos",
-      "extra": { "cache": "DEMO4" },
-      "boardId": "DEMO"
-    },
-    {
-      "_id": "eduardo.lima@exemplo.com.br_DEMO5",
-      "total": 75,
-      "position": 5,
-      "move": "same" as const,
-      "player": "eduardo.lima@exemplo.com.br",
-      "name": "Eduardo Lima",
-      "extra": { "cache": "DEMO5" },
-      "boardId": "DEMO"
-    },
-    {
-      "_id": "fernanda.rocha@exemplo.com.br_DEMO6",
-      "total": 71,
-      "position": 6,
-      "move": "up" as const,
-      "player": "fernanda.rocha@exemplo.com.br",
-      "name": "Fernanda Rocha",
-      "extra": { "cache": "DEMO6" },
-      "boardId": "DEMO"
-    }
-  ];
+
 
   const MAX_RETRY_ATTEMPTS = 3; // Reduced to prevent immediate fallback
 
@@ -285,7 +287,7 @@ export const useChickenRaceManager = (config: ChickenRaceManagerConfig = {}) => 
     retryCountRef.current = 0;
 
     console.log('🐔 Mock data setup complete!');
-  }, [updatePlayers, clearError, setLoadingState, MOCK_LEADERBOARD_DATA, processPlayersData]);
+  }, [updatePlayers, clearError, setLoadingState, processPlayersData]);
 
   /**
    * Initialize the chicken race with leaderboards

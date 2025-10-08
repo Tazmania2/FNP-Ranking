@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useChickenRaceManager } from './hooks/useChickenRaceManager';
 import { ChickenRace } from './components/ChickenRace';
 import { Sidebar } from './components/Sidebar';
@@ -33,6 +33,12 @@ function App() {
   });
 
   // API configuration loaded (debug logging removed for security)
+
+  // Stable callback to prevent infinite loops
+  const handleAuthError = useCallback(() => {
+    console.warn('🔐 Authentication error detected, switching to demo mode');
+    setForceDemo(true);
+  }, []);
 
   const {
     // State
@@ -71,10 +77,7 @@ function App() {
       staggerDelay: 100,
       celebrateImprovements: true,
     },
-    onAuthError: () => {
-      console.warn('🔐 Authentication error detected, switching to demo mode');
-      setForceDemo(false);
-    },
+    onAuthError: handleAuthError,
   });
 
   // Show demo if no API config is provided or auth error occurred
