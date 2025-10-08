@@ -246,6 +246,10 @@ export const useTooltipManager = ({
       const timer = setTimeout(() => {
         startCycling();
       }, 200);
+      return () => clearTimeout(timer);
+    }
+  }, [isEnabled, players.length, isHovering, isCycling, startCycling, stopCycling]);
+
   // Handle players change - only restart if already cycling
   useEffect(() => {
     console.log('🔄 Players change effect:', {

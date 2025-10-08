@@ -6,6 +6,7 @@ import type {
   LeaderboardResponse,
   LeaderboardOptions,
   ApiError,
+  PlayerStatus,
 } from '../types';
 import { apiConfig } from '../config/api';
 import {
@@ -299,6 +300,21 @@ export class FunifierApiService {
       console.error('API connection test failed:', error);
       return false;
     }
+  }
+
+  /**
+   * Get player status including challenge progress
+   */
+  public async getPlayerStatus(playerId: string): Promise<PlayerStatus> {
+    return this.retryRequest(async () => {
+      const response = await this.axiosInstance.get(`/player/${playerId}/status`);
+
+      if (!response.data) {
+        throw new Error('Invalid player status response format');
+      }
+
+      return response.data;
+    });
   }
 
   /**

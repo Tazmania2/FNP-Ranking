@@ -52,6 +52,9 @@ function App() {
     changeLeaderboard,
     retryFailedOperation,
     clearError,
+    
+    // API Service
+    apiService,
   } = useChickenRaceManager({
     apiConfig: apiConfig || undefined,
     realTimeConfig: {
@@ -278,6 +281,9 @@ function App() {
             {/* Daily Goal Progress */}
             <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 sm:p-6 border border-white/20">
               <DailyGoalProgress 
+                apiService={apiService}
+                playerId="dummy"
+                challengeId="E81QYFG"
                 current={39000}
                 target={50000}
               />
