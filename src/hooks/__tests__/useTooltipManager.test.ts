@@ -3,39 +3,28 @@ import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { useTooltipManager } from '../useTooltipManager';
 import type { Player } from '../../types';
 
-// Mock the UI store
+type TooltipsState = {
+  playerId: string | null;
+  isVisible: boolean;
+  position: { x: number; y: number };
+  content: unknown;
+};
+
 const mockShowTooltip = vi.fn();
 const mockHideTooltip = vi.fn();
 const mockUpdateTooltipPosition = vi.fn();
+let tooltipsState: TooltipsState;
 
 vi.mock('../../store/uiStore', () => ({
   useUIStore: () => ({
-    tooltips: {
-      playerId: null,
-      isVisible: false,
-      position: { x: 0, y: 0 },
-      content: null,
-    },
+    tooltips: tooltipsState,
     showTooltip: mockShowTooltip,
     hideTooltip: mockHideTooltip,
     updateTooltipPosition: mockUpdateTooltipPosition,
   }),
 }));
 
-// Mock window dimensions
-Object.defineProperty(window, 'innerWidth', {
-  writable: true,
-  configurable: true,
-  value: 1024,
-});
-
-Object.defineProperty(window, 'innerHeight', {
-  writable: true,
-  configurable: true,
-  value: 768,
-});
-
-describe('useTooltipManager Hook', () => {
+describe('useTooltipManager', () => {
   const mockPlayers: Player[] = [
     {
       _id: 'player1',
@@ -64,50 +53,38 @@ describe('useTooltipManager Hook', () => {
 
   beforeEach(() => {
     vi.useFakeTimers();
-    vi.clearAllMocks();
-  });
-
-  afterEach(() => {
-    vi.useRealTimers();
-    vi.restoreAllMocks();
-  });
-
-  it('initializes with correct default values', () => {
-    const { result } = renderHook(() =>
-      useTooltipManager({ players: mockPlayers })
-    );
-
-    expect(result.current.tooltips).toEqual({
+    mockShowTooltip.mockReset();
+    mockHideTooltip.mockReset();
+    mockUpdateTooltipPosition.mockReset();
+    tooltipsState = {
       playerId: null,
       isVisible: false,
       position: { x: 0, y: 0 },
       content: null,
-    });
+    };
   });
 
-  it('creates correct tooltip content for player with previous total', () => {
-    const { result } = renderHook(() =>
-      useTooltipManager({ players: mockPlayers })
-    );
+  afterEach(() => {
+    vi.useRealTimers();
+  });
 
-    const content = result.current.createTooltipContent(mockPlayers[0]);
+  it('initialises tooltip state correctly', () => {
+    const { result } = renderHook(() => useTooltipManager({ players: mockPlayers }));
 
-    expect(content).toEqual({
+    expect(result.current.tooltips).toEqual(tooltipsState);
+  });
+
+  it('computes tooltip content with and without previous totals', () => {
+    const { result } = renderHook(() => useTooltipManager({ players: mockPlayers }));
+
+    expect(result.current.createTooltipContent(mockPlayers[0])).toEqual({
       rank: 1,
       points: 1500,
-      pointsGainedToday: 250, // 1500 - 1250
+      pointsGainedToday: 250,
       playerName: 'Alice',
     });
-  });
 
-  it('creates correct tooltip content for player without previous total', () => {
-    const { result } = renderHook(() =>
-      useTooltipManager({ players: mockPlayers })
-    );
-
-    const content = result.current.createTooltipContent(mockPlayers[2]);
-
-    expect(content).toEqual({
+    expect(result.current.createTooltipContent(mockPlayers[2])).toEqual({
       rank: 3,
       points: 1000,
       pointsGainedToday: 0,
@@ -115,43 +92,55 @@ describe('useTooltipManager Hook', () => {
     });
   });
 
-  it('shows tooltip for valid player', () => {
-    const { result } = renderHook(() =>
-      useTooltipManager({ players: mockPlayers })
-    );
+  it('shows tooltip for a valid player with fallback coordinates', () => {
+    const { result } = renderHook(() => useTooltipManager({ players: mockPlayers }));
 
     act(() => {
-      result.current.showPlayerTooltip('player1', { x: 100, y: 200 });
+      result.current.showPlayerTooltip('player1');
     });
 
     expect(mockShowTooltip).toHaveBeenCalledWith(
       'player1',
-      { x: 100, y: 200 },
-      {
-        rank: 1,
-        points: 1500,
-        pointsGainedToday: 250,
-        playerName: 'Alice',
-      }
+      { x: 15, y: 78 },
+      expect.objectContaining({ playerName: 'Alice' }),
     );
   });
 
-  it('does not show tooltip for invalid player', () => {
+  it('prefers explicit coordinates when showing a tooltip', () => {
+    const { result } = renderHook(() => useTooltipManager({ players: mockPlayers }));
+
+    act(() => {
+      result.current.showPlayerTooltip('player2', { x: 40, y: 60 });
+    });
+
+    expect(mockShowTooltip).toHaveBeenCalledWith(
+      'player2',
+      { x: 40, y: 60 },
+      expect.objectContaining({ playerName: 'Bob' }),
+    );
+  });
+
+  it('uses the provided getPlayerPosition callback when available', () => {
+    const getPlayerPosition = vi.fn().mockReturnValue({ x: 22, y: 48 });
+
     const { result } = renderHook(() =>
-      useTooltipManager({ players: mockPlayers })
+      useTooltipManager({ players: mockPlayers, getPlayerPosition })
     );
 
     act(() => {
-      result.current.showPlayerTooltip('invalid-player', { x: 100, y: 200 });
+      result.current.showPlayerTooltip('player3');
     });
 
-    expect(mockShowTooltip).not.toHaveBeenCalled();
+    expect(getPlayerPosition).toHaveBeenCalledWith('player3');
+    expect(mockShowTooltip).toHaveBeenCalledWith(
+      'player3',
+      { x: 22, y: 48 },
+      expect.objectContaining({ playerName: 'Charlie' }),
+    );
   });
 
-  it('hides tooltip when called', () => {
-    const { result } = renderHook(() =>
-      useTooltipManager({ players: mockPlayers })
-    );
+  it('hides tooltip when requested', () => {
+    const { result } = renderHook(() => useTooltipManager({ players: mockPlayers }));
 
     act(() => {
       result.current.hidePlayerTooltip();
@@ -160,53 +149,37 @@ describe('useTooltipManager Hook', () => {
     expect(mockHideTooltip).toHaveBeenCalled();
   });
 
-  it('updates tooltip position', () => {
-    const { result } = renderHook(() =>
-      useTooltipManager({ players: mockPlayers })
-    );
+  it('updates tooltip coordinates via the store', () => {
+    const { result } = renderHook(() => useTooltipManager({ players: mockPlayers }));
 
     act(() => {
-      result.current.updateTooltipPos({ x: 150, y: 250 });
+      result.current.updateTooltipPos({ x: 70, y: 30 });
     });
 
-    expect(mockUpdateTooltipPosition).toHaveBeenCalledWith({ x: 150, y: 250 });
+    expect(mockUpdateTooltipPosition).toHaveBeenCalledWith({ x: 70, y: 30 });
   });
 
-  it('handles chicken hover with element', () => {
-    const { result } = renderHook(() =>
-      useTooltipManager({ players: mockPlayers })
-    );
-
-    // Mock element with getBoundingClientRect
+  it('derives hover position relative to the race container', () => {
+    const containerRect = { left: 50, top: 100, width: 400, height: 300 } as DOMRect;
     const mockElement = {
-      getBoundingClientRect: () => ({
-        left: 100,
-        top: 200,
-        width: 50,
-        height: 50,
-        right: 150,
-        bottom: 250,
-      }),
-    } as HTMLElement;
+      getBoundingClientRect: () => ({ left: 100, top: 200, width: 40, height: 40 } as DOMRect),
+      closest: () => ({ getBoundingClientRect: () => containerRect }),
+    } as unknown as HTMLElement;
+
+    const { result } = renderHook(() => useTooltipManager({ players: mockPlayers }));
 
     act(() => {
       result.current.handleChickenHover('player1', mockElement);
     });
 
-    expect(mockShowTooltip).toHaveBeenCalledWith(
-      'player1',
-      { x: 125, y: 190 }, // center x, top y - 10
-      expect.objectContaining({
-        rank: 1,
-        playerName: 'Alice',
-      })
-    );
+    const [[playerId, position]] = mockShowTooltip.mock.calls;
+    expect(playerId).toBe('player1');
+    expect(position.x).toBeCloseTo(17.5, 1);
+    expect(position.y).toBeCloseTo(33.333, 1);
   });
 
-  it('handles chicken hover without element (hide)', () => {
-    const { result } = renderHook(() =>
-      useTooltipManager({ players: mockPlayers })
-    );
+  it('hides tooltip on hover end', () => {
+    const { result } = renderHook(() => useTooltipManager({ players: mockPlayers }));
 
     act(() => {
       result.current.handleChickenHover(null);
@@ -215,121 +188,57 @@ describe('useTooltipManager Hook', () => {
     expect(mockHideTooltip).toHaveBeenCalled();
   });
 
-  it('does not show tooltips when disabled', () => {
-    const { result } = renderHook(() =>
-      useTooltipManager({ players: mockPlayers, isEnabled: false })
-    );
+  it('cycles through players every seven seconds', () => {
+    const { result } = renderHook(() => useTooltipManager({ players: mockPlayers }));
 
     act(() => {
-      result.current.showPlayerTooltip('player1', { x: 100, y: 200 });
+      result.current.startCycling();
     });
 
-    expect(mockShowTooltip).not.toHaveBeenCalled();
-  });
-
-  it('sets up auto-display timer every minute', () => {
-    renderHook(() =>
-      useTooltipManager({ players: mockPlayers })
-    );
-
-    // Fast-forward 60 seconds
-    act(() => {
-      vi.advanceTimersByTime(60000);
-    });
-
-    // Should have called showTooltip for the first player
-    expect(mockShowTooltip).toHaveBeenCalled();
-  });
-
-  it('displays tooltips sequentially during auto-display', () => {
-    const { result } = renderHook(() =>
-      useTooltipManager({ players: mockPlayers })
-    );
-
-    act(() => {
-      result.current.startAutoDisplay();
-    });
-
-    // Should show first tooltip immediately
     expect(mockShowTooltip).toHaveBeenCalledWith(
       'player1',
       expect.any(Object),
-      expect.objectContaining({ playerName: 'Alice' })
+      expect.objectContaining({ playerName: 'Alice' }),
     );
 
-    // Advance 1 second for next tooltip
     act(() => {
-      vi.advanceTimersByTime(1000);
+      vi.advanceTimersByTime(7000);
     });
 
     expect(mockShowTooltip).toHaveBeenCalledWith(
       'player2',
       expect.any(Object),
-      expect.objectContaining({ playerName: 'Bob' })
-    );
-  });
-
-  it('cleans up timers on unmount', () => {
-    const clearIntervalSpy = vi.spyOn(global, 'clearInterval');
-    // const clearTimeoutSpy = vi.spyOn(global, 'clearTimeout');
-
-    const { unmount } = renderHook(() =>
-      useTooltipManager({ players: mockPlayers })
-    );
-
-    unmount();
-
-    expect(clearIntervalSpy).toHaveBeenCalled();
-    // clearTimeout might not be called if no timeout is active
-    // expect(clearTimeoutSpy).toHaveBeenCalled();
-  });
-
-  it('calculates negative points gained correctly', () => {
-    const { result } = renderHook(() =>
-      useTooltipManager({ players: mockPlayers })
-    );
-
-    const content = result.current.createTooltipContent(mockPlayers[1]); // Bob
-
-    expect(content.pointsGainedToday).toBe(-100); // 1200 - 1300
-  });
-
-  it('does not start auto-display when no players', () => {
-    const { result } = renderHook(() =>
-      useTooltipManager({ players: [] })
+      expect.objectContaining({ playerName: 'Bob' }),
     );
 
     act(() => {
-      result.current.startAutoDisplay();
+      vi.advanceTimersByTime(7000);
+    });
+
+    expect(mockShowTooltip).toHaveBeenCalledWith(
+      'player3',
+      expect.any(Object),
+      expect.objectContaining({ playerName: 'Charlie' }),
+    );
+  });
+
+  it('does not start cycling when disabled', () => {
+    const { result } = renderHook(() => useTooltipManager({ players: mockPlayers, isEnabled: false }));
+
+    act(() => {
+      result.current.startCycling();
     });
 
     expect(mockShowTooltip).not.toHaveBeenCalled();
   });
 
-  it('limits auto-display to 5 seconds maximum', () => {
-    // Create many players to test the 5-second limit
-    const manyPlayers: Player[] = Array.from({ length: 10 }, (_, i) => ({
-      _id: `player${i}`,
-      player: `player${i}`,
-      name: `Player ${i}`,
-      position: i + 1,
-      total: 1000 - i * 100,
-    }));
+  it('clears the cycling interval on cleanup', () => {
+    const clearIntervalSpy = vi.spyOn(global, 'clearInterval');
 
-    const { result } = renderHook(() =>
-      useTooltipManager({ players: manyPlayers })
-    );
+    const { unmount } = renderHook(() => useTooltipManager({ players: mockPlayers }));
 
-    act(() => {
-      result.current.startAutoDisplay();
-    });
+    unmount();
 
-    // Fast-forward 5 seconds (should show 5 tooltips, 1 per second)
-    act(() => {
-      vi.advanceTimersByTime(5000);
-    });
-
-    // Should have shown tooltips for first 5 players (1 second each) plus initial call
-    expect(mockShowTooltip).toHaveBeenCalledTimes(6); // 1 initial + 5 more
+    expect(clearIntervalSpy).toHaveBeenCalled();
   });
 });

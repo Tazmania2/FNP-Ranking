@@ -1,22 +1,30 @@
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useUIStore } from '../store/uiStore';
 import type { Player, TooltipContent } from '../types';
 
 interface UseTooltipManagerProps {
   players: Player[];
   isEnabled?: boolean;
+  getPlayerPosition?: (_playerId: string) => { x: number; y: number } | null;
 }
 
-export const useTooltipManager = ({ players, isEnabled = true }: UseTooltipManagerProps) => {
+export const useTooltipManager = ({
+  players,
+  isEnabled = true,
+  getPlayerPosition,
+}: UseTooltipManagerProps) => {
   const {
     tooltips,
     showTooltip,
     hideTooltip,
-    updateTooltipPosition,
   } = useUIStore();
 
-  const autoDisplayTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const currentAutoDisplayRef = useRef<NodeJS.Timeout | null>(null);
+  const [currentCycleIndex, setCurrentCycleIndex] = useState(0);
+  const [isHovering, setIsHovering] = useState(false);
+  
+  const cycleTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const isHoveringRef = useRef(false);
 
   // Calculate points gained today for a player
   const calculatePointsGainedToday = useCallback((player: Player): number => {
@@ -26,134 +34,168 @@ export const useTooltipManager = ({ players, isEnabled = true }: UseTooltipManag
     return 0;
   }, []);
 
-  // Create tooltip content for a player
-  const createTooltipContent = useCallback((player: Player): TooltipContent => {
-    return {
-      rank: player.position,
-      points: player.total,
-      pointsGainedToday: calculatePointsGainedToday(player),
-      playerName: player.name,
-    };
-  }, [calculatePointsGainedToday]);
+  const createTooltipContent = useCallback((player: Player): TooltipContent => ({
+    rank: player.position,
+    points: player.total,
+    pointsGainedToday: calculatePointsGainedToday(player),
+    playerName: player.name,
+  }), [calculatePointsGainedToday]);
 
-  // Show tooltip for a specific player at a position
   const showPlayerTooltip = useCallback((
     playerId: string,
-    position: { x: number; y: number }
+    position?: { x: number; y: number },
   ) => {
     if (!isEnabled) return;
 
-    const player = players.find(p => p._id === playerId);
+    const player = players.find((p) => p._id === playerId);
     if (!player) return;
 
     const content = createTooltipContent(player);
-    showTooltip(playerId, position, content);
-  }, [players, isEnabled, createTooltipContent, showTooltip]);
+    const resolvedPosition = position ?? getPlayerPosition?.(playerId) ?? { x: 50, y: 50 };
 
-  // Hide current tooltip
+    showTooltip(playerId, resolvedPosition, content);
+  }, [createTooltipContent, getPlayerPosition, isEnabled, showTooltip, players]);
+
   const hidePlayerTooltip = useCallback(() => {
     hideTooltip();
   }, [hideTooltip]);
 
-  // Update tooltip position (useful for following mouse or element movement)
-  const updateTooltipPos = useCallback((position: { x: number; y: number }) => {
-    updateTooltipPosition(position);
-  }, [updateTooltipPosition]);
-
-  // Get position relative to the race container from element
-  const getElementRelativePosition = useCallback((element: HTMLElement): { x: number; y: number } => {
-    const rect = element.getBoundingClientRect();
-    const raceContainer = element.closest('.chicken-race-container');
-    
-    if (raceContainer) {
-      const containerRect = raceContainer.getBoundingClientRect();
-      // Return percentage-based position relative to container
-      const relativeX = ((rect.left + rect.width / 2 - containerRect.left) / containerRect.width) * 100;
-      const relativeY = ((rect.top - containerRect.top) / containerRect.height) * 100;
-      
-      return {
-        x: Math.max(0, Math.min(100, relativeX)),
-        y: Math.max(0, Math.min(100, relativeY)),
-      };
+  // Clean up timers
+  const clearTimers = useCallback(() => {
+    if (cycleTimerRef.current) {
+      clearInterval(cycleTimerRef.current);
+      cycleTimerRef.current = null;
     }
-    
-    // Fallback to center if container not found
-    return { x: 50, y: 50 };
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current);
+      hoverTimeoutRef.current = null;
+    }
   }, []);
 
-  // Handle hover events on chicken elements
+  // Start auto-cycling through players
+  const startCycling = useCallback(() => {
+    if (!isEnabled || players.length === 0 || isHoveringRef.current) {
+      return;
+    }
+
+    clearTimers();
+
+    // Show first player immediately
+    if (players[currentCycleIndex]) {
+      showPlayerTooltip(players[currentCycleIndex]._id);
+    }
+
+    // Set up cycling interval
+    cycleTimerRef.current = setInterval(() => {
+      // Check the ref instead of state to avoid stale closures
+      if (isHoveringRef.current) {
+        return;
+      }
+
+      setCurrentCycleIndex((prevIndex) => {
+        const nextIndex = (prevIndex + 1) % players.length;
+        if (players[nextIndex] && !isHoveringRef.current) {
+          showPlayerTooltip(players[nextIndex]._id);
+        }
+        return nextIndex;
+      });
+    }, 3000); // Show each player for 3 seconds
+  }, [isEnabled, players, currentCycleIndex, showPlayerTooltip, clearTimers]);
+
+  // Stop cycling
+  const stopCycling = useCallback(() => {
+    clearTimers();
+  }, [clearTimers]);
+
+  // Handle chicken hover/click
   const handleChickenHover = useCallback((
     playerId: string | null,
     element?: HTMLElement,
-    mouseEvent?: React.MouseEvent<HTMLDivElement>
   ) => {
     if (!isEnabled) return;
 
-    // For mobile devices, toggle tooltip on tap
-    const isMobile = 'ontouchstart' in window;
-    
-    if (playerId && element) {
-      let position;
+    if (playerId) {
+      // Immediately stop cycling and clear any timers
+      clearTimers();
+      setIsHovering(true);
+      isHoveringRef.current = true;
       
-      // Always use element position relative to race container
-      position = getElementRelativePosition(element);
-      
-      if (isMobile) {
-        // On mobile, toggle tooltip - if same player is already shown, hide it
-        if (tooltips.isVisible && tooltips.content?.playerName === players.find(p => p._id === playerId)?.name) {
-          hidePlayerTooltip();
-        } else {
-          showPlayerTooltip(playerId, position);
+      // Get position from element if provided
+      let position: { x: number; y: number } | undefined;
+      if (element) {
+        const rect = element.getBoundingClientRect();
+        const raceContainer = element.closest('.chicken-race-container');
+        
+        if (raceContainer) {
+          const containerRect = raceContainer.getBoundingClientRect();
+          const relativeX = ((rect.left + rect.width / 2 - containerRect.left) / containerRect.width) * 100;
+          const relativeY = ((rect.top - containerRect.top) / containerRect.height) * 100;
+          
+          position = {
+            x: Math.max(5, Math.min(95, relativeX)),
+            y: Math.max(5, Math.min(95, relativeY)),
+          };
         }
-      } else {
-        // On desktop, show tooltip on hover
-        showPlayerTooltip(playerId, position);
       }
-    } else if (!isMobile) {
-      // On desktop, hide tooltip when not hovering
+
+      showPlayerTooltip(playerId, position);
+
+      // Set timeout to resume cycling after hover ends
+      hoverTimeoutRef.current = setTimeout(() => {
+        setIsHovering(false);
+        isHoveringRef.current = false;
+      }, 5000); // Keep tooltip visible for 5 seconds after hover
+    } else {
+      // Mouse left - clear timers and set up delayed restart
+      clearTimers();
+      setIsHovering(false);
+      isHoveringRef.current = false;
       hidePlayerTooltip();
+      
+      // Resume cycling after a short delay
+      hoverTimeoutRef.current = setTimeout(() => {
+        if (!isHoveringRef.current) {
+          startCycling();
+        }
+      }, 1000);
     }
-  }, [isEnabled, getElementRelativePosition, showPlayerTooltip, hidePlayerTooltip, tooltips.isVisible, tooltips.content, players]);
+  }, [isEnabled, showPlayerTooltip, hidePlayerTooltip, clearTimers, startCycling]);
 
-  // Auto-display tooltips for all players (disabled for now to avoid interference)
-  const startAutoDisplay = useCallback(() => {
-    // Disabled auto-display to prevent interference with manual hover
-    // This was causing positioning issues and unwanted tooltip cycling
-    console.log('Auto-display disabled to prevent tooltip cycling issues');
-  }, []);
-
-  // Disabled automatic tooltip display to prevent cycling issues
+  // Keep ref in sync with state
   useEffect(() => {
-    // Auto-display is disabled to prevent interference with manual hover tooltips
-    return () => {
-      if (autoDisplayTimerRef.current) {
-        clearInterval(autoDisplayTimerRef.current);
-      }
-      if (currentAutoDisplayRef.current) {
-        clearTimeout(currentAutoDisplayRef.current);
-      }
-    };
-  }, []);
+    isHoveringRef.current = isHovering;
+  }, [isHovering]);
+
+  // Start cycling when enabled and players are available
+  useEffect(() => {
+    if (isEnabled && players.length > 0 && !isHovering) {
+      const timer = setTimeout(startCycling, 2000); // Start after 2 seconds
+      return () => clearTimeout(timer);
+    } else {
+      stopCycling();
+    }
+  }, [isEnabled, players.length, isHovering, startCycling, stopCycling]);
+
+  // Reset cycle index when players change
+  useEffect(() => {
+    if (currentCycleIndex >= players.length) {
+      setCurrentCycleIndex(0);
+    }
+  }, [players.length, currentCycleIndex]);
 
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      if (autoDisplayTimerRef.current) {
-        clearInterval(autoDisplayTimerRef.current);
-      }
-      if (currentAutoDisplayRef.current) {
-        clearTimeout(currentAutoDisplayRef.current);
-      }
+      clearTimers();
     };
-  }, []);
+  }, [clearTimers]);
 
   return {
     tooltips,
+    isHovering,
     showPlayerTooltip,
     hidePlayerTooltip,
-    updateTooltipPos,
     handleChickenHover,
-    startAutoDisplay,
     createTooltipContent,
   };
 };

@@ -23,7 +23,7 @@ export class ApiConfigManager {
    */
   public initializeConfig(): FunifierConfig | null {
     const serverUrl = import.meta.env.VITE_FUNIFIER_SERVER_URL;
-    console.log('serverUrl', serverUrl);
+
     const apiKey = import.meta.env.VITE_FUNIFIER_API_KEY;
     const authToken = import.meta.env.VITE_FUNIFIER_AUTH_TOKEN;
     console.log('apiKey', apiKey);

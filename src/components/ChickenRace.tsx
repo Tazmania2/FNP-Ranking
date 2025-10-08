@@ -21,7 +21,7 @@ interface ChickenRaceProps {
 interface ChickenProps {
   player: Player;
   position: ChickenPosition;
-  onHover?: (_playerId: string | null, _element?: HTMLElement, _mouseEvent?: React.MouseEvent<HTMLDivElement>) => void;
+  onHover?: (_playerId: string | null, _element?: HTMLElement) => void;
   isFullscreen?: boolean;
 }
 
@@ -92,25 +92,17 @@ const Chicken: React.FC<ChickenProps> = React.memo(({ player, position, onHover,
 
   // Memoize event handlers to prevent unnecessary re-renders
   const handleMouseEnter = useCallback((event: React.MouseEvent<HTMLDivElement>) => {
-    onHover?.(player._id, event.currentTarget, event);
+    onHover?.(player._id, event.currentTarget);
   }, [onHover, player._id]);
 
   const handleMouseLeave = useCallback(() => {
     onHover?.(null);
   }, [onHover]);
 
-  const handleTouchStart = useCallback((event: React.TouchEvent<HTMLDivElement>) => {
-    // Prevent default to avoid triggering mouse events
+  const handleClick = useCallback((event: React.MouseEvent<HTMLDivElement>) => {
+    // Show tooltip on click for both desktop and mobile
     event.preventDefault();
     onHover?.(player._id, event.currentTarget);
-  }, [onHover, player._id]);
-
-  const handleClick = useCallback((event: React.MouseEvent<HTMLDivElement>) => {
-    // For mobile devices, toggle tooltip on click/tap
-    if ('ontouchstart' in window) {
-      event.preventDefault();
-      onHover?.(player._id, event.currentTarget);
-    }
   }, [onHover, player._id]);
 
   return (
@@ -118,9 +110,8 @@ const Chicken: React.FC<ChickenProps> = React.memo(({ player, position, onHover,
       style={chickenStyle}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
-      onTouchStart={handleTouchStart}
       onClick={handleClick}
-      className="chicken-container cursor-pointer touch-manipulation"
+      className="chicken-container cursor-pointer touch-manipulation select-none"
     >
       {/* Chicken Avatar */}
       <div className="flex flex-col items-center">
@@ -162,7 +153,7 @@ const Chicken: React.FC<ChickenProps> = React.memo(({ player, position, onHover,
   );
 });
 
-export const ChickenRace: React.FC<ChickenRaceProps> = React.memo(({
+export const ChickenRace: React.FC<ChickenRaceProps> = React.memo(({ 
   players,
   leaderboardTitle,
   isLoading,
@@ -171,13 +162,6 @@ export const ChickenRace: React.FC<ChickenRaceProps> = React.memo(({
 }) => {
   // State for fullscreen modal
   const [isFullscreenOpen, setIsFullscreenOpen] = useState(false);
-
-  // Initialize tooltip manager
-  const {
-    tooltips,
-    handleChickenHover,
-    hidePlayerTooltip,
-  } = useTooltipManager({ players, isEnabled: !isLoading });
 
   // Calculate chicken positions based on rankings or use provided positions
   const chickenPositions = useMemo((): ChickenPosition[] => {
@@ -197,12 +181,9 @@ export const ChickenRace: React.FC<ChickenRaceProps> = React.memo(({
     // Players are already processed and have correct positions, just need to calculate visual positions
     const sortedPlayers = [...players].sort((a, b) => a.position - b.position);
 
-    // Debug: Log player data to verify processing (can be removed in production)
-    console.log('🐔 ChickenRace - Players data:', players.map(p => ({
-      name: p.name,
-      position: p.position,
-      total: p.total.toFixed(1)
-    })));
+    // Players data processed and ready for positioning
+
+
 
     // Simplified positioning: group by score (since positions should already be correct)
     const scoreGroups = new Map<number, Player[]>();
@@ -217,56 +198,79 @@ export const ChickenRace: React.FC<ChickenRaceProps> = React.memo(({
     const positions: ChickenPosition[] = [];
     const maxDistance = 70; // Maximum distance from start to finish (85% - 15%)
     const chickenSize = 8; // Approximate chicken size in percentage
-    
-    // Helper function to check if two chickens would overlap
-    const wouldOverlap = (pos1: { x: number; y: number }, pos2: { x: number; y: number }) => {
-      const xDiff = Math.abs(pos1.x - pos2.x);
-      const yDiff = Math.abs(pos1.y - pos2.y);
-      return xDiff < chickenSize && yDiff < chickenSize;
-    };
-    
-    // Helper function to find a non-overlapping position
-    const findNonOverlappingPosition = (baseX: number, baseY: number, existingPositions: { x: number; y: number }[]) => {
-      let x = baseX;
-      let y = baseY;
-      let attempts = 0;
-      const maxAttempts = 20;
-      
-      while (attempts < maxAttempts) {
-        const currentPos = { x, y };
-        const hasOverlap = existingPositions.some(pos => wouldOverlap(currentPos, pos));
-        const inSafeZone = isInSafeZone(x, y, safeZones);
-        
-        if (!hasOverlap && !inSafeZone) {
-          return { x, y };
-        }
-        
-        // Try different positions in a spiral pattern
-        const angle = (attempts * 0.5) * Math.PI;
-        const radius = Math.min(attempts * 2, 15);
-        x = Math.min(Math.max(baseX + Math.cos(angle) * radius, 15), 85);
-        y = Math.min(Math.max(baseY + Math.sin(angle) * radius, 35), 65);
-        
-        attempts++;
-      }
-      
-      // Fallback: return original position if no good position found
-      return { x: baseX, y: baseY };
+
+    // Define safe zones to avoid UI overlaps (made smaller to allow more random positioning)
+    const safeZones = {
+      topLeft: { x: [0, 30], y: [0, 25] }, // Race info overlay (smaller)
+      topRight: { x: [70, 100], y: [0, 25] }, // Fullscreen button (smaller)
+      bottomLeft: { x: [0, 30], y: [75, 100] }, // Future UI (smaller)
+      bottomRight: { x: [70, 100], y: [75, 100] }, // Position legend (smaller)
     };
 
-    // Define safe zones to avoid UI overlaps
-    const safeZones = {
-      topLeft: { x: [0, 35], y: [0, 30] }, // Race info overlay
-      topRight: { x: [65, 100], y: [0, 30] }, // Fullscreen button
-      bottomLeft: { x: [0, 35], y: [70, 100] }, // Future UI
-      bottomRight: { x: [65, 100], y: [70, 100] }, // Position legend
-    };
-    
     // Helper function to check if position is in a safe zone (UI overlay area)
     const isInSafeZone = (x: number, y: number, zones: typeof safeZones) => {
       return Object.values(zones).some((zone) => {
         return x >= zone.x[0] && x <= zone.x[1] && y >= zone.y[0] && y <= zone.y[1];
       });
+    };
+
+    // Helper function to check if two chickens would overlap
+    const wouldOverlap = (pos1: { x: number; y: number }, pos2: { x: number; y: number }) => {
+      const xDiff = Math.abs(pos1.x - pos2.x);
+      const yDiff = Math.abs(pos1.y - pos2.y);
+      // Much more lenient collision detection to allow messy race positioning
+      return xDiff < (chickenSize * 0.8) && yDiff < (chickenSize * 0.5); // 50% more lenient on Y-axis, 20% on X-axis
+    };
+
+    // Helper function to find a non-overlapping position
+    const findNonOverlappingPosition = (baseX: number, baseY: number, existingPositions: { x: number; y: number }[], playerName: string) => {
+      let x = baseX;
+      let y = baseY;
+      let attempts = 0;
+      const maxAttempts = 15; // Reduced attempts to be less aggressive
+
+      // Check initial position
+      const initialPos = { x, y };
+      const initialOverlap = existingPositions.some(pos => wouldOverlap(initialPos, pos));
+      const initialSafeZone = isInSafeZone(x, y, safeZones);
+      
+      // console.log(`🔍 ${playerName}: Initial pos (${x.toFixed(1)}, ${y.toFixed(1)}) - overlap: ${initialOverlap}, safeZone: ${initialSafeZone}`);
+
+      if (!initialOverlap && !initialSafeZone) {
+        // console.log(`✅ ${playerName}: Using original random position`);
+        return { x, y };
+      }
+
+      while (attempts < maxAttempts) {
+        const currentPos = { x, y };
+        const hasOverlap = existingPositions.some(pos => wouldOverlap(currentPos, pos));
+        const inSafeZone = isInSafeZone(x, y, safeZones);
+
+        if (!hasOverlap && !inSafeZone) {
+          // console.log(`✅ ${playerName}: Found position after ${attempts} attempts: (${x.toFixed(1)}, ${y.toFixed(1)})`);
+          return { x, y };
+        }
+
+        // Prefer Y-axis adjustments to maintain ranking (X-axis) positions
+        if (attempts < 8) {
+          // First, try moving vertically (preserve horizontal ranking position)
+          const yOffset = (attempts % 2 === 0 ? 1 : -1) * Math.ceil(attempts / 2) * 2; // Smaller steps
+          y = Math.min(Math.max(baseY + yOffset, 35), 65);
+          x = baseX; // Keep original X position
+        } else {
+          // If vertical adjustments don't work, use spiral pattern
+          const angle = ((attempts - 8) * 0.7) * Math.PI;
+          const radius = Math.min((attempts - 8) * 1.5, 6); // Smaller radius
+          x = Math.min(Math.max(baseX + Math.cos(angle) * radius, 15), 85);
+          y = Math.min(Math.max(baseY + Math.sin(angle) * radius, 35), 65);
+        }
+
+        attempts++;
+      }
+
+      // Fallback: return original position if no good position found
+      // console.log(`⚠️ ${playerName}: Using fallback position after ${maxAttempts} attempts`);
+      return { x: baseX, y: baseY };
     };
 
     // Calculate score range for positioning
@@ -288,42 +292,89 @@ export const ChickenRace: React.FC<ChickenRaceProps> = React.memo(({
         const minSpacing = chickenSize + 2; // Minimum spacing between chickens
         const availableHeight = 65 - 35; // Safe area height (35% to 65%)
         const maxPlayersInColumn = Math.floor(availableHeight / minSpacing);
-        
+
         groupPlayers.forEach((player, indexInGroup) => {
-          let yPosition;
-          let xOffset = 0;
+          // Truly random Y position that changes every load/refresh
+          const randomFactor = Math.random(); // 0 to 1 - changes every time!
           
-          // If too many players for one column, create multiple columns
-          if (groupPlayers.length > maxPlayersInColumn) {
-            const column = Math.floor(indexInGroup / maxPlayersInColumn);
-            const rowInColumn = indexInGroup % maxPlayersInColumn;
-            xOffset = column * 3; // 3% offset for each additional column
-            yPosition = 35 + (rowInColumn * minSpacing);
-          } else {
-            // Single column - evenly distribute players
-            const spacing = Math.min(minSpacing, availableHeight / Math.max(groupPlayers.length - 1, 1));
-            yPosition = 35 + (indexInGroup * spacing);
+          // Add some horizontal variation for tied players (small random offset)
+          const horizontalVariation = (Math.random() - 0.5) * 4; // ±2% variation
+          let xOffset = horizontalVariation;
+
+          // For multiple tied players, add systematic spacing to prevent total overlap
+          if (groupPlayers.length > 1) {
+            const systematicOffset = (indexInGroup - (groupPlayers.length - 1) / 2) * 1.5; // Spread tied players
+            xOffset += systematicOffset;
           }
-          
-          // Ensure position is within safe bounds and not in UI zones
+
+          // Random Y position within safe area (35% to 65% of container height)
+          // Use truly random factor to distribute players across the vertical space
+          const safeAreaHeight = 65 - 35; // 30% of container height
+          const randomYOffset = randomFactor * safeAreaHeight;
+          let yPosition = 35 + randomYOffset;
+
+          // Add some additional randomness for visual variety
+          const additionalRandomness = (Math.random() - 0.5) * 8; // ±4% additional variation
+          yPosition += additionalRandomness;
+
+          // Debug: Truly random positioning calculation
+          // console.log(`🐓 ${player.name}: randomFactor=${randomFactor.toFixed(3)}, yPosition=${yPosition.toFixed(1)}%`);
+
+          // Ensure position is within safe bounds
           yPosition = Math.min(Math.max(yPosition, 35), 65);
           const finalXPosition = Math.min(Math.max(xPosition + xOffset, 15), 85);
-          
+
           // Use collision detection to find final position
           const existingPositions = positions.map(p => ({ x: p.x, y: p.y }));
-          const finalPosition = findNonOverlappingPosition(finalXPosition, yPosition, existingPositions);
+          const finalPosition = findNonOverlappingPosition(finalXPosition, yPosition, existingPositions, player.name);
 
           positions.push({
             playerId: player._id,
-            x: finalPosition.x, // Non-overlapping X coordinate
-            y: finalPosition.y, // Non-overlapping Y coordinate
+            x: finalPosition.x, // Ranking-based X with small variation
+            y: finalPosition.y, // Random Y position (messy race effect!)
             rank: player.position, // Use the player's already corrected position
           });
         });
       });
 
+    // Chicken positions calculated successfully
+
     return positions;
   }, [players, playerPositions]);
+
+  const chickenPositionMap = useMemo(() => {
+    const map = new Map<string, { x: number; y: number }>();
+    chickenPositions.forEach(position => {
+      map.set(position.playerId, { x: position.x, y: position.y });
+    });
+    return map;
+  }, [chickenPositions]);
+
+  const getPlayerTooltipPosition = useCallback((playerId: string) => {
+    const coords = chickenPositionMap.get(playerId);
+    if (!coords) return null;
+
+    // Keep tooltip slightly within the race boundaries to avoid clipping
+    const marginX = 4;
+    const marginY = 12;
+
+    return {
+      x: Math.min(100 - marginX, Math.max(marginX, coords.x)),
+      y: Math.min(100 - marginY, Math.max(marginY, coords.y)),
+    };
+  }, [chickenPositionMap]);
+
+  // Initialize tooltip manager
+  const {
+    tooltips,
+    isHovering,
+    handleChickenHover,
+    hidePlayerTooltip,
+  } = useTooltipManager({
+    players,
+    isEnabled: !isLoading,
+    getPlayerPosition: getPlayerTooltipPosition,
+  });
 
   // Memoize chicken components to prevent unnecessary re-renders
   const chickenComponents = useMemo(() => {
@@ -341,7 +392,7 @@ export const ChickenRace: React.FC<ChickenRaceProps> = React.memo(({
         />
       );
     }).filter(Boolean);
-  }, [chickenPositions, players, handleChickenHover]);
+  }, [chickenPositions, players, handleChickenHover, isFullscreen]);
 
   if (isLoading) {
     return (
@@ -405,12 +456,13 @@ export const ChickenRace: React.FC<ChickenRaceProps> = React.memo(({
         {/* Chickens */}
         {chickenComponents}
 
-        {/* Tooltip System - Inside race container */}
+        {/* Player Tooltip */}
         <Tooltip
           isVisible={tooltips.isVisible}
           position={tooltips.position}
           content={tooltips.content}
           onClose={hidePlayerTooltip}
+          isFixed={!isHovering}
         />
 
         {/* Race Info Overlay */}

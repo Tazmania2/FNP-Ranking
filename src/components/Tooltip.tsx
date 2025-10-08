@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React from 'react';
 import type { TooltipContent } from '../types';
 
 interface TooltipProps {
@@ -6,105 +6,64 @@ interface TooltipProps {
   position: { x: number; y: number };
   content: TooltipContent | null;
   onClose?: () => void;
+  isFixed?: boolean;
+  autoHideDelay?: number | null;
 }
 
 export const Tooltip: React.FC<TooltipProps> = ({
   isVisible,
   position,
   content,
-  onClose,
+  isFixed = false,
 }) => {
-  const tooltipRef = useRef<HTMLDivElement>(null);
-
-  // Auto-hide tooltip after 5 seconds
-  useEffect(() => {
-    if (isVisible && content) {
-      const timer = setTimeout(() => {
-        onClose?.();
-      }, 5000);
-
-      return () => clearTimeout(timer);
-    }
-  }, [isVisible, content, onClose]);
-
-  // Adjust tooltip position to stay within the race container
-  const getAdjustedPosition = () => {
-    if (!tooltipRef.current) return position;
-
-    const tooltip = tooltipRef.current;
-    const rect = tooltip.getBoundingClientRect();
-    const container = tooltipRef.current.parentElement;
-    if (!container) return position;
-
-    const containerRect = container.getBoundingClientRect();
-    const containerWidth = containerRect.width;
-    const containerHeight = containerRect.height;
-
-    let { x, y } = position;
-
-    // Convert percentage positions to pixels within the container
-    const pixelX = (x / 100) * containerWidth;
-    const pixelY = (y / 100) * containerHeight;
-
-    // Adjust horizontal position if tooltip would overflow container
-    let adjustedX = pixelX;
-    if (pixelX + rect.width > containerWidth) {
-      adjustedX = containerWidth - rect.width - 10;
-    }
-    if (adjustedX < 10) {
-      adjustedX = 10;
-    }
-
-    // Adjust vertical position if tooltip would overflow container
-    let adjustedY = pixelY - rect.height - 10; // Position above the chicken by default
-    if (adjustedY < 10) {
-      adjustedY = pixelY + 30; // Position below if not enough space above
-    }
-    if (adjustedY + rect.height > containerHeight) {
-      adjustedY = containerHeight - rect.height - 10;
-    }
-
-    return { x: adjustedX, y: adjustedY };
-  };
-
   if (!isVisible || !content) {
     return null;
   }
 
-  const adjustedPosition = getAdjustedPosition();
-
-  // Calculate points gained today (difference between current and previous total)
+  // Calculate points gained today
   const pointsGainedToday = content.pointsGainedToday || 0;
-  const gainColor = pointsGainedToday > 0 ? 'text-green-600' : 
-                   pointsGainedToday < 0 ? 'text-red-600' : 'text-gray-600';
-  const gainIcon = pointsGainedToday > 0 ? '↗️' : 
-                  pointsGainedToday < 0 ? '↘️' : '➡️';
+
+  // Simple positioning - always show tooltip above and to the right of the chicken
+  const tooltipStyle: React.CSSProperties = {
+    position: 'absolute',
+    left: `${Math.min(position.x + 8, 85)}%`, // Offset to the right, but keep within bounds
+    top: `${Math.max(position.y - 12, 5)}%`, // Offset above, but keep within bounds
+    transform: 'translateY(-100%)', // Move tooltip above its position
+    zIndex: 1000, // Very high z-index to ensure it's always visible
+    pointerEvents: 'none',
+  };
 
   return (
     <div
-      ref={tooltipRef}
-      className="tooltip-container absolute z-50 pointer-events-none"
-      style={{
-        left: `${adjustedPosition.x}px`,
-        top: `${adjustedPosition.y}px`,
-        transform: 'translateX(-50%)', // Center horizontally on the position
-      }}
+      className="tooltip-container"
+      style={tooltipStyle}
     >
-      {/* Tooltip Arrow */}
-      <div className="tooltip-arrow absolute -bottom-1 left-1/2 transform -translate-x-1/2">
-        <div className="w-0 h-0 border-l-2 border-r-2 border-t-2 border-transparent border-t-gray-900"></div>
+      {/* Simple arrow pointing to the chicken */}
+      <div className="absolute -bottom-1 left-4">
+        <div className="w-0 h-0 border-l-[6px] border-r-[6px] border-t-[6px] border-l-transparent border-r-transparent border-t-gray-900/95" />
       </div>
 
-      {/* Tooltip Content - Very discrete version */}
-      <div className="tooltip-content bg-gray-900/90 text-white rounded px-1.5 py-1 shadow-sm text-xs min-w-24 max-w-32 mx-1 backdrop-blur-sm border border-gray-700/50">
-        {/* Very compact info */}
-        <div className="text-center">
-          <div className="text-yellow-300 font-medium text-xs truncate">
+      {/* Tooltip Content */}
+      <div className="tooltip-content bg-gray-900/95 text-white rounded-lg shadow-xl border border-gray-700/50 backdrop-blur-sm px-3 py-2 text-sm min-w-32 max-w-48">
+        <div className="text-left space-y-1">
+          {/* Player Name */}
+          <div className="text-yellow-300 font-semibold truncate">
             {content.playerName}
           </div>
-          <div className="text-white text-xs">
-            #{content.rank} • {content.points.toFixed(1)}pts
+          
+          {/* Position and Points */}
+          <div className="text-white font-medium">
+            #{content.rank} • {content.points.toFixed(1)} pts
           </div>
+          
+          {/* Points gained today (if any) */}
+          {pointsGainedToday !== 0 && (
+            <div className={`text-xs ${
+              pointsGainedToday > 0 ? 'text-green-400' : 'text-red-400'
+            }`}>
+              {pointsGainedToday > 0 ? '+' : ''}{pointsGainedToday.toFixed(1)} hoje
+            </div>
+          )}
         </div>
       </div>
     </div>

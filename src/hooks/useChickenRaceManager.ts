@@ -1,11 +1,75 @@
 import { useEffect, useCallback, useMemo, useState, useRef } from 'react';
 import { FunifierApiService } from '../services/funifierApi';
 // import { useRealTimeUpdatesWithLoading } from './useRealTimeUpdates'; // Temporarily disabled
-import { usePositionTransitions } from './usePositionTransitions';
+// import { usePositionTransitions } from './usePositionTransitions'; // Disabled to use custom positioning
 import { useLeaderboardData } from './useAppState';
 import { useLeaderboardStore } from '../store/leaderboardStore';
 import { appStoreActions } from '../store/appStore';
 import type { FunifierConfig } from '../types';
+
+// Mock data for fallback - defined outside component to prevent re-creation
+const MOCK_LEADERBOARD_DATA = [
+  {
+    "_id": "ana.silva@exemplo.com.br_DEMO1",
+    "total": 95,
+    "position": 1,
+    "move": "up" as const,
+    "player": "ana.silva@exemplo.com.br",
+    "name": "Ana Silva",
+    "extra": { "cache": "DEMO1" },
+    "boardId": "DEMO"
+  },
+  {
+    "_id": "bruno.costa@exemplo.com.br_DEMO2",
+    "total": 87,
+    "position": 2,
+    "move": "up" as const,
+    "player": "bruno.costa@exemplo.com.br",
+    "name": "Bruno Costa",
+    "extra": { "cache": "DEMO2" },
+    "boardId": "DEMO"
+  },
+  {
+    "_id": "carlos.mendes@exemplo.com.br_DEMO3",
+    "total": 82,
+    "position": 3,
+    "move": "down" as const,
+    "player": "carlos.mendes@exemplo.com.br",
+    "name": "Carlos Mendes",
+    "extra": { "cache": "DEMO3" },
+    "boardId": "DEMO"
+  },
+  {
+    "_id": "diana.santos@exemplo.com.br_DEMO4",
+    "total": 78,
+    "position": 4,
+    "move": "up" as const,
+    "player": "diana.santos@exemplo.com.br",
+    "name": "Diana Santos",
+    "extra": { "cache": "DEMO4" },
+    "boardId": "DEMO"
+  },
+  {
+    "_id": "eduardo.lima@exemplo.com.br_DEMO5",
+    "total": 75,
+    "position": 5,
+    "move": "same" as const,
+    "player": "eduardo.lima@exemplo.com.br",
+    "name": "Eduardo Lima",
+    "extra": { "cache": "DEMO5" },
+    "boardId": "DEMO"
+  },
+  {
+    "_id": "fernanda.rocha@exemplo.com.br_DEMO6",
+    "total": 71,
+    "position": 6,
+    "move": "up" as const,
+    "player": "fernanda.rocha@exemplo.com.br",
+    "name": "Fernanda Rocha",
+    "extra": { "cache": "DEMO6" },
+    "boardId": "DEMO"
+  }
+];
 
 /**
  * Configuration for the chicken race manager
@@ -51,69 +115,7 @@ export const useChickenRaceManager = (config: ChickenRaceManagerConfig = {}) => 
   const isInitializingRef = useRef(false);
   const [usingMockData, setUsingMockData] = useState(false);
 
-  // Dados simulados para fallback
-  const MOCK_LEADERBOARD_DATA = [
-    {
-      "_id": "ana.silva@exemplo.com.br_DEMO1",
-      "total": 95,
-      "position": 1,
-      "move": "up" as const,
-      "player": "ana.silva@exemplo.com.br",
-      "name": "Ana Silva",
-      "extra": {"cache": "DEMO1"},
-      "boardId": "DEMO"
-    },
-    {
-      "_id": "bruno.costa@exemplo.com.br_DEMO2",
-      "total": 87,
-      "position": 2,
-      "move": "up" as const,
-      "player": "bruno.costa@exemplo.com.br",
-      "name": "Bruno Costa",
-      "extra": {"cache": "DEMO2"},
-      "boardId": "DEMO"
-    },
-    {
-      "_id": "carlos.mendes@exemplo.com.br_DEMO3",
-      "total": 82,
-      "position": 3,
-      "move": "down" as const,
-      "player": "carlos.mendes@exemplo.com.br",
-      "name": "Carlos Mendes",
-      "extra": {"cache": "DEMO3"},
-      "boardId": "DEMO"
-    },
-    {
-      "_id": "diana.santos@exemplo.com.br_DEMO4",
-      "total": 78,
-      "position": 4,
-      "move": "up" as const,
-      "player": "diana.santos@exemplo.com.br",
-      "name": "Diana Santos",
-      "extra": {"cache": "DEMO4"},
-      "boardId": "DEMO"
-    },
-    {
-      "_id": "eduardo.lima@exemplo.com.br_DEMO5",
-      "total": 75,
-      "position": 5,
-      "move": "same" as const,
-      "player": "eduardo.lima@exemplo.com.br",
-      "name": "Eduardo Lima",
-      "extra": {"cache": "DEMO5"},
-      "boardId": "DEMO"
-    },
-    {
-      "_id": "fernanda.rocha@exemplo.com.br_DEMO6",
-      "total": 71,
-      "position": 6,
-      "move": "up" as const,
-      "player": "fernanda.rocha@exemplo.com.br",
-      "name": "Fernanda Rocha",
-      "extra": {"cache": "DEMO6"},
-      "boardId": "DEMO"
-    }
-  ];
+
 
   const MAX_RETRY_ATTEMPTS = 3; // Reduced to prevent immediate fallback
 
@@ -126,7 +128,7 @@ export const useChickenRaceManager = (config: ChickenRaceManagerConfig = {}) => 
 
     // Sort players by total score (descending - highest score first)
     const sortedPlayers = [...rawPlayers].sort((a, b) => b.total - a.total);
-    
+
     // Group players by score (rounded to 1 decimal place)
     const scoreGroups = new Map<number, any[]>();
     sortedPlayers.forEach(player => {
@@ -153,23 +155,13 @@ export const useChickenRaceManager = (config: ChickenRaceManagerConfig = {}) => 
             total: score, // Ensure consistent score formatting
           });
         });
-        
+
         // Move to next position (skip positions for tied players)
         // e.g., if 3 players tied for 1st, next position is 4th
         currentPosition += groupPlayers.length;
       });
 
-    console.log('🔧 Processed players data:', {
-      original: rawPlayers.length,
-      processed: processedPlayers.length,
-      scoreGroups: scoreGroups.size,
-      sampleData: processedPlayers.slice(0, 3).map(p => ({
-        name: p.name,
-        originalPos: rawPlayers.find(rp => rp._id === p._id)?.position,
-        newPos: p.position,
-        score: p.total.toFixed(1)
-      }))
-    });
+    // Players data processed successfully
 
     return processedPlayers;
   }, []);
@@ -231,15 +223,22 @@ export const useChickenRaceManager = (config: ChickenRaceManagerConfig = {}) => 
     },
   };
 
-  // Set up position transitions
-  const positionTransitions = usePositionTransitions(players, {
-    transitionDuration: 1000,
-    easing: 'ease-out',
-    staggered: true,
-    staggerDelay: 100,
-    celebrateImprovements: true,
-    ...transitionConfig,
-  });
+  // Disabled position transitions to use our custom positioning logic
+  const positionTransitions = {
+    playerPositions: [], // Empty array so ChickenRace uses its own positioning
+    isAnimating: false,
+    getPlayerPosition: () => ({ x: 50, y: 50 }),
+    getAllPlayerPositions: () => [],
+    setImmediatePositions: () => { },
+    animateToNewPositions: () => { },
+    config: {
+      transitionDuration: 1000,
+      easing: 'ease-out' as const,
+      staggered: true,
+      staggerDelay: 100,
+      celebrateImprovements: true,
+    },
+  };
 
   /**
    * Fallback to mock data when API fails repeatedly
@@ -247,9 +246,9 @@ export const useChickenRaceManager = (config: ChickenRaceManagerConfig = {}) => 
   const activateMockDataFallback = useCallback(() => {
     console.warn('🐔 API failed after maximum retries. Using mock data for demonstration.');
     console.warn('Mock data is being displayed. This is not real leaderboard data.');
-    
+
     setUsingMockData(true);
-    
+
     // Criar leaderboard simulado com tipagem adequada
     const mockLeaderboard = {
       _id: 'DEMO',
@@ -275,20 +274,20 @@ export const useChickenRaceManager = (config: ChickenRaceManagerConfig = {}) => 
     leaderboardStore.setCurrentLeaderboard(mockLeaderboard);
     leaderboardStore.setCurrentLeaderboardId(mockLeaderboard._id);
     updatePlayers(processPlayersData(MOCK_LEADERBOARD_DATA));
-    
+
     // Clear any errors and loading states
     console.log('🐔 Clearing all loading states and errors...');
     clearError();
     setLoadingState('leaderboards', false);
     setLoadingState('currentLeaderboard', false);
     setLoadingState('switchingLeaderboard', false);
-    
+
     // Force reset initialization flags
     isInitializingRef.current = false;
     retryCountRef.current = 0;
-    
+
     console.log('🐔 Mock data setup complete!');
-  }, [updatePlayers, clearError, setLoadingState, MOCK_LEADERBOARD_DATA, processPlayersData]);
+  }, [updatePlayers, clearError, setLoadingState, processPlayersData]);
 
   /**
    * Initialize the chicken race with leaderboards
@@ -319,7 +318,7 @@ export const useChickenRaceManager = (config: ChickenRaceManagerConfig = {}) => 
       setInitializationAttempted(true);
       setLoadingState('leaderboards', true);
       clearError();
-      
+
       // Increment retry count
       retryCountRef.current += 1;
       console.log(`Initialization attempt ${retryCountRef.current}/${MAX_RETRY_ATTEMPTS}`);
@@ -340,17 +339,17 @@ export const useChickenRaceManager = (config: ChickenRaceManagerConfig = {}) => 
       // Switch to the first leaderboard (or EVeTmET if available)
       const targetLeaderboard = fetchedLeaderboards.find(lb => lb._id === 'EVeTmET') || fetchedLeaderboards[0];
       console.log('🎯 Switching to leaderboard:', targetLeaderboard._id);
-      
+
       // Set the leaderboard in store without triggering additional API calls
       leaderboardStore.setCurrentLeaderboard(targetLeaderboard);
       leaderboardStore.setCurrentLeaderboardId(targetLeaderboard._id);
-      
+
       // Fetch initial data for this leaderboard
       console.log('🔄 Fetching initial data for leaderboard:', targetLeaderboard._id);
       const response = await apiService.getLeaderboardData(targetLeaderboard._id, {
         live: true,
       });
-      
+
       console.log('✅ Initial leaderboard data loaded:', response.leaders.length, 'players');
       const processedPlayers = processPlayersData(response.leaders);
       updatePlayers(processedPlayers);
@@ -362,7 +361,7 @@ export const useChickenRaceManager = (config: ChickenRaceManagerConfig = {}) => 
 
     } catch (error) {
       console.error('Failed to initialize chicken race:', error);
-      
+
       // Check if it's an auth error
       if (error && typeof error === 'object' && 'type' in error && error.type === 'auth') {
         console.warn('🔐 Authentication error detected, triggering demo mode');
@@ -371,9 +370,9 @@ export const useChickenRaceManager = (config: ChickenRaceManagerConfig = {}) => 
         }
         return;
       }
-      
+
       setError(error as any);
-      
+
       // Fall back to mock data if we've tried multiple times
       if (retryCountRef.current >= 3) {
         console.warn('Multiple initialization failures, falling back to mock data');
@@ -414,7 +413,7 @@ export const useChickenRaceManager = (config: ChickenRaceManagerConfig = {}) => 
 
     } catch (error) {
       console.error('Failed to refresh leaderboard data:', error);
-      
+
       // Check if it's an auth error
       if (error && typeof error === 'object' && 'type' in error && error.type === 'auth') {
         console.warn('🔐 Authentication error during refresh, triggering demo mode');
@@ -423,7 +422,7 @@ export const useChickenRaceManager = (config: ChickenRaceManagerConfig = {}) => 
         }
         return;
       }
-      
+
       setError(error as any);
     } finally {
       setLoadingState('currentLeaderboard', false);
@@ -444,7 +443,7 @@ export const useChickenRaceManager = (config: ChickenRaceManagerConfig = {}) => 
       clearError();
 
       console.log('🔄 Switching to leaderboard:', leaderboardId);
-      
+
       // Switch to new leaderboard
       switchToLeaderboard(leaderboardId);
 
@@ -459,7 +458,7 @@ export const useChickenRaceManager = (config: ChickenRaceManagerConfig = {}) => 
 
     } catch (error) {
       console.error('Failed to switch leaderboard:', error);
-      
+
       // Check if it's an auth error
       if (error && typeof error === 'object' && 'type' in error && error.type === 'auth') {
         console.warn('🔐 Authentication error during leaderboard switch, triggering demo mode');
@@ -468,7 +467,7 @@ export const useChickenRaceManager = (config: ChickenRaceManagerConfig = {}) => 
         }
         return;
       }
-      
+
       setError(error as any);
     } finally {
       setLoadingState('switchingLeaderboard', false);
@@ -567,7 +566,7 @@ export const useChickenRaceManager = (config: ChickenRaceManagerConfig = {}) => 
       retryCount: retryCountRef.current,
       usingMockData
     });
-    
+
     // If we have API config but no API service, it means there was an auth error
     if (apiConfig && !apiService) {
       console.warn('🔐 API config provided but no API service available, likely auth error');
@@ -576,24 +575,20 @@ export const useChickenRaceManager = (config: ChickenRaceManagerConfig = {}) => 
       }
       return;
     }
-    
+
+    // Only initialize once when we have both API config and service, and haven't attempted yet
     if (apiConfig && apiService && !initializationAttempted && !isInitializingRef.current) {
-      console.log('🐔 Starting chicken race initialization...');
-      console.log('🐔 API Config:', {
-        serverUrl: apiConfig.serverUrl,
-        hasApiKey: !!apiConfig.apiKey,
-        hasAuthToken: !!apiConfig.authToken
-      });
+      console.log('🐔 Starting chicken race initialization');
       initializeRace();
     }
-    
+
     // Cleanup function for StrictMode compatibility
     return () => {
       // This cleanup will run when the effect is cleaned up in StrictMode
       console.log('🐔 Initialization effect cleanup');
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [apiConfig, apiService, initializationAttempted, onAuthError]); // Intentionally excluding initializeRace to prevent infinite loop
+  }, [apiConfig, apiService, onAuthError]); // Removed initializationAttempted to prevent infinite loop
 
   return {
     // State

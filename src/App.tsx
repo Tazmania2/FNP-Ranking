@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useChickenRaceManager } from './hooks/useChickenRaceManager';
 import { ChickenRace } from './components/ChickenRace';
 import { Sidebar } from './components/Sidebar';
@@ -32,26 +32,13 @@ function App() {
     };
   });
 
-  // Debug API config
-  console.log('🔧 App.tsx - Environment variables:', {
-    VITE_FUNIFIER_SERVER_URL: import.meta.env.VITE_FUNIFIER_SERVER_URL,
-    VITE_FUNIFIER_API_KEY: import.meta.env.VITE_FUNIFIER_API_KEY,
-    VITE_FUNIFIER_AUTH_TOKEN: import.meta.env.VITE_FUNIFIER_AUTH_TOKEN,
-  });
-  
-  console.log('🔧 App.tsx - API Config:', {
-    hasConfig: !!apiConfig,
-    serverUrl: apiConfig?.serverUrl,
-    hasApiKey: !!apiConfig?.apiKey,
-    hasAuthToken: !!apiConfig?.authToken,
-  });
-  
-  console.log('🔧 App.tsx - Show demo decision:', {
-    showDemo,
-    forceDemo,
-    hasApiConfig: !!apiConfig,
-    willShowDemo: showDemo || forceDemo || !apiConfig,
-  });
+  // API configuration loaded (debug logging removed for security)
+
+  // Stable callback to prevent infinite loops
+  const handleAuthError = useCallback(() => {
+    console.warn('🔐 Authentication error detected, switching to demo mode');
+    setForceDemo(true);
+  }, []);
 
   const {
     // State
@@ -71,6 +58,9 @@ function App() {
     changeLeaderboard,
     retryFailedOperation,
     clearError,
+    
+    // API Service
+    apiService,
   } = useChickenRaceManager({
     apiConfig: apiConfig || undefined,
     realTimeConfig: {
@@ -87,10 +77,7 @@ function App() {
       staggerDelay: 100,
       celebrateImprovements: true,
     },
-    onAuthError: () => {
-      console.warn('🔐 Authentication error detected, switching to demo mode');
-      setForceDemo(false);
-    },
+    onAuthError: handleAuthError,
   });
 
   // Show demo if no API config is provided or auth error occurred
@@ -297,6 +284,9 @@ function App() {
             {/* Daily Goal Progress */}
             <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 sm:p-6 border border-white/20">
               <DailyGoalProgress 
+                apiService={apiService}
+                playerId="dummy"
+                challengeId="E81QYFG"
                 current={39000}
                 target={50000}
               />

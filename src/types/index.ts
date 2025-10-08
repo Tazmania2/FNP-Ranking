@@ -127,3 +127,48 @@ export interface UIState {
 }
 
 export interface AppState extends LeaderboardState, UIState {}
+
+// Player Status and Challenge Progress types
+export interface ChallengeRule {
+  completed: boolean;
+  times_completed: number;
+  times_required: number;
+  percent_completed: number;
+}
+
+export interface ChallengeProgress {
+  player: string;
+  challenge: string;
+  name: string;
+  rules_completed: number;
+  rules_total: number;
+  percent_completed: number;
+  time: number;
+  rules: ChallengeRule[];
+  _id: string;
+}
+
+export interface LevelProgress {
+  percent_completed: number;
+  next_points: number;
+  total_levels: number;
+  percent: number;
+}
+
+export interface PlayerStatus {
+  name: string;
+  total_challenges: number;
+  challenges: Record<string, number>;
+  total_points: number;
+  point_categories: Record<string, number>;
+  total_catalog_items: number;
+  catalog_items: Record<string, any>;
+  level_progress: LevelProgress;
+  challenge_progress: ChallengeProgress[];
+  teams: any[];
+  positions: any[];
+  time: number;
+  extra: Record<string, any>;
+  pointCategories: Record<string, number>;
+  _id: string;
+}
