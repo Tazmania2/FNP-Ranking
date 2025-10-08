@@ -50,7 +50,6 @@ export const useTooltipManager = ({
     const player = players.find((p) => p._id === playerId);
     if (!player) return;
 
-    console.log('🎯 Showing tooltip for:', player.name, 'at position:', position);
     const content = createTooltipContent(player);
     const resolvedPosition = position ?? getPlayerPosition?.(playerId) ?? { x: 50, y: 50 };
 
@@ -58,7 +57,6 @@ export const useTooltipManager = ({
   }, [createTooltipContent, getPlayerPosition, isEnabled, showTooltip, players]);
 
   const hidePlayerTooltip = useCallback(() => {
-    console.log('🚫 Hiding tooltip');
     hideTooltip();
   }, [hideTooltip]);
 
@@ -77,16 +75,13 @@ export const useTooltipManager = ({
   // Start auto-cycling through players
   const startCycling = useCallback(() => {
     if (!isEnabled || players.length === 0 || isHoveringRef.current) {
-      console.log('🚫 Cannot start cycling:', { isEnabled, playersLength: players.length, isHovering: isHoveringRef.current });
       return;
     }
 
-    console.log('🔄 Starting tooltip cycling');
     clearTimers();
 
     // Show first player immediately
     if (players[currentCycleIndex]) {
-      console.log('🎯 Cycling: showing player', currentCycleIndex, players[currentCycleIndex].name);
       showPlayerTooltip(players[currentCycleIndex]._id);
     }
 
@@ -94,14 +89,12 @@ export const useTooltipManager = ({
     cycleTimerRef.current = setInterval(() => {
       // Check the ref instead of state to avoid stale closures
       if (isHoveringRef.current) {
-        console.log('⏸️ Cycling paused - hovering');
         return;
       }
 
       setCurrentCycleIndex((prevIndex) => {
         const nextIndex = (prevIndex + 1) % players.length;
         if (players[nextIndex] && !isHoveringRef.current) {
-          console.log('🎯 Cycling: showing player', nextIndex, players[nextIndex].name);
           showPlayerTooltip(players[nextIndex]._id);
         }
         return nextIndex;
@@ -122,7 +115,6 @@ export const useTooltipManager = ({
     if (!isEnabled) return;
 
     if (playerId) {
-      console.log('🐭 Mouse entered chicken:', playerId);
       // Immediately stop cycling and clear any timers
       clearTimers();
       setIsHovering(true);
@@ -150,12 +142,10 @@ export const useTooltipManager = ({
 
       // Set timeout to resume cycling after hover ends
       hoverTimeoutRef.current = setTimeout(() => {
-        console.log('⏰ Hover timeout - resuming cycling');
         setIsHovering(false);
         isHoveringRef.current = false;
       }, 5000); // Keep tooltip visible for 5 seconds after hover
     } else {
-      console.log('🐭 Mouse left chicken');
       // Mouse left - clear timers and set up delayed restart
       clearTimers();
       setIsHovering(false);
@@ -165,7 +155,6 @@ export const useTooltipManager = ({
       // Resume cycling after a short delay
       hoverTimeoutRef.current = setTimeout(() => {
         if (!isHoveringRef.current) {
-          console.log('🔄 Restarting cycling after mouse leave');
           startCycling();
         }
       }, 1000);
