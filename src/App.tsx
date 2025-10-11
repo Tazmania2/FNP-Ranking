@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { useChickenRaceManager } from './hooks/useChickenRaceManager';
-import { ChickenRace } from './components/ChickenRace';
+import { ChickenRaceCanvas } from './components/ChickenRaceCanvas';
 import { Sidebar } from './components/Sidebar';
 import { LazyDetailedRanking } from './components/LazyDetailedRanking';
 import { LeaderboardSelector } from './components/LeaderboardSelector';
@@ -253,7 +253,7 @@ function App() {
                     </div>
                   )}
 
-                  <ChickenRace
+                  <ChickenRaceCanvas
                     players={players}
                     leaderboardTitle={currentLeaderboard?.title || ''}
                     isLoading={loading.currentLeaderboard}

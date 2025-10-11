@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { ChickenRace } from './ChickenRace';
+import { ChickenRaceCanvas } from './ChickenRaceCanvas';
 import type { Player } from '../types';
 
 interface ChickenRaceFullscreenProps {
@@ -117,7 +117,7 @@ export const ChickenRaceFullscreen: React.FC<ChickenRaceFullscreenProps> = ({
         <div className={`w-full h-full transition-transform duration-300 ${
           isVisible ? 'scale-100' : 'scale-95'
         }`}>
-          <ChickenRace
+          <ChickenRaceCanvas
             players={players}
             leaderboardTitle={leaderboardTitle}
             isLoading={isLoading}
