@@ -13,7 +13,7 @@ interface DailyGoalProgressProps {
 
 export const DailyGoalProgress: React.FC<DailyGoalProgressProps> = ({
   apiService,
-  playerId = 'dummy',
+  playerId = 'dummy@grupo4u.com.br',
   challengeId = 'E81QYFG',
   current: fallbackCurrent = 39000,
   target: fallbackTarget = 50000,

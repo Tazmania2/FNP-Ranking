@@ -285,7 +285,7 @@ function App() {
             <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 sm:p-6 border border-white/20">
               <DailyGoalProgress 
                 apiService={apiService}
-                playerId="dummy"
+                playerId="dummy@grupo4u.com.br"
                 challengeId="E81QYFG"
                 current={39000}
                 target={50000}
