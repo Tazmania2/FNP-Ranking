@@ -9,29 +9,28 @@ class GoogleSheetsConfigManager {
 
   /**
    * Get Google Sheets configuration from environment variables
+   * Note: API calls now go through serverless endpoint, so we just need
+   * a minimal config to indicate the feature is enabled
    */
   public getConfig(): GoogleSheetsConfig | null {
     if (this.config) {
       return this.config;
     }
 
+    // We still keep these for backward compatibility, but they're not used in browser
     const clientId = import.meta.env.VITE_GOOGLE_SHEETS_CLIENT_ID;
     const clientSecret = import.meta.env.VITE_GOOGLE_SHEETS_CLIENT_SECRET;
     const apiKey = import.meta.env.VITE_GOOGLE_SHEETS_API_KEY;
     const spreadsheetId = import.meta.env.VITE_GOOGLE_SHEETS_SPREADSHEET_ID;
 
-    // Validate that all required config is present
-    if (!clientId || !clientSecret || !apiKey || !spreadsheetId) {
-      console.warn('⚠️ Google Sheets API configuration is incomplete');
-      return null;
-    }
-
+    // For the serverless approach, we just need to know if it's configured
+    // The actual API key and credentials are on the server side
     this.config = {
-      clientId,
-      clientSecret,
-      apiKey,
-      spreadsheetId,
-      range: 'Sheet1!A:B', // Fetch all rows from columns A and B
+      clientId: clientId || '',
+      clientSecret: clientSecret || '',
+      apiKey: apiKey || '',
+      spreadsheetId: spreadsheetId || '',
+      range: 'Sheet1!A:B',
     };
 
     return this.config;

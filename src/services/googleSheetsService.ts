@@ -1,5 +1,5 @@
 import axios, { type AxiosInstance, AxiosError } from 'axios';
-import type { GoogleSheetsConfig, GoogleSheetsResponse } from '../types';
+import type { GoogleSheetsConfig } from '../types';
 
 /**
  * Error types for Google Sheets operations
@@ -14,7 +14,7 @@ export interface GoogleSheetsError {
 
 /**
  * Google Sheets API Service
- * Handles fetching data from Google Sheets using the Google Sheets API v4
+ * Handles fetching data from Google Sheets via serverless API endpoint
  * Includes retry logic with exponential backoff
  */
 export class GoogleSheetsService {
@@ -27,8 +27,9 @@ export class GoogleSheetsService {
 
   constructor(config: GoogleSheetsConfig) {
     this.config = config;
+    // Use the serverless API endpoint instead of calling Google Sheets directly
     this.axiosInstance = axios.create({
-      baseURL: 'https://sheets.googleapis.com/v4',
+      baseURL: '/api',
       timeout: 10000,
     });
   }
@@ -40,47 +41,8 @@ export class GoogleSheetsService {
    */
   public async getDailyCode(): Promise<string> {
     return this.retryRequest(async () => {
-      // Fetch all data from columns A and B (date and passcode)
-      const range = this.config.range || 'Sheet1!A:B';
-      const response = await this.fetchSheetData(
-        this.config.spreadsheetId,
-        range
-      );
-
-      if (!response.values || response.values.length === 0) {
-        throw this.createError(
-          'validation',
-          'No data found in the spreadsheet',
-          false
-        );
-      }
-
-      // Get today's date in DD/MM/YYYY format
-      const today = new Date();
-      const day = String(today.getDate()).padStart(2, '0');
-      const month = String(today.getMonth() + 1).padStart(2, '0');
-      const year = today.getFullYear();
-      const todayFormatted = `${day}/${month}/${year}`;
-
-      // Skip header row (index 0) and find today's date
-      for (let i = 1; i < response.values.length; i++) {
-        const row = response.values[i];
-        if (row.length >= 2) {
-          const dateCell = row[0]?.trim();
-          const passcode = row[1]?.trim();
-
-          if (dateCell === todayFormatted && passcode) {
-            return passcode;
-          }
-        }
-      }
-
-      // If today's date not found, throw error
-      throw this.createError(
-        'validation',
-        `Código não encontrado para hoje (${todayFormatted})`,
-        false
-      );
+      const response = await this.fetchDailyCodeFromAPI();
+      return response.code;
     });
   }
 
@@ -122,10 +84,8 @@ export class GoogleSheetsService {
    * @returns Standardized GoogleSheetsError
    */
   private handleError(error: unknown): GoogleSheetsError {
-    const timestamp = Date.now();
-
     // Check if it's already a GoogleSheetsError first
-    if (error && typeof error === 'object' && 'type' in error && 'retryable' in error) {
+    if (error && typeof error === 'object' && 'type' in error && 'retryable' in error && 'timestamp' in error) {
       return error as GoogleSheetsError;
     }
 
@@ -182,11 +142,6 @@ export class GoogleSheetsService {
     }
 
     if (error instanceof Error) {
-      // Check if it's already a GoogleSheetsError
-      if ('type' in error && 'retryable' in error) {
-        return error as GoogleSheetsError;
-      }
-
       return this.createError('validation', error.message, false, error);
     }
 
@@ -216,26 +171,33 @@ export class GoogleSheetsService {
   }
 
   /**
-   * Fetch data from a Google Sheet
-   * @param spreadsheetId The ID of the spreadsheet
-   * @param range The A1 notation range to fetch
-   * @returns The sheet data
+   * Fetch daily code from serverless API endpoint
+   * @returns The daily code response
    */
-  private async fetchSheetData(
-    spreadsheetId: string,
-    range: string
-  ): Promise<GoogleSheetsResponse> {
-    const url = `/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(
-      range
-    )}`;
+  private async fetchDailyCodeFromAPI(): Promise<{ code: string }> {
+    const url = '/daily-code';
 
-    const response = await this.axiosInstance.get<GoogleSheetsResponse>(url, {
-      params: {
-        key: this.config.apiKey,
-      },
+    console.log('Fetching daily code from API:', {
+      url: `${this.axiosInstance.defaults.baseURL}${url}`,
     });
 
-    return response.data;
+    try {
+      const response = await this.axiosInstance.get<{ code: string }>(url);
+
+      console.log('Daily code fetch successful');
+
+      return response.data;
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        console.error('Daily code API error:', {
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          data: error.response?.data,
+          url: error.config?.url,
+        });
+      }
+      throw error;
+    }
   }
 
   /**
