@@ -8,6 +8,27 @@ export interface FunifierConfig {
   authToken: string; // Basic auth token from environment variables
 }
 
+// Google Sheets API Configuration
+export interface GoogleSheetsConfig {
+  clientId: string; // OAuth 2.0 Client ID
+  clientSecret: string; // OAuth 2.0 Client Secret
+  apiKey: string; // Google API Key
+  spreadsheetId: string; // The ID of the Google Sheets document
+  range?: string; // Optional: specific range to fetch (e.g., "Sheet1!A1:B1")
+}
+
+// Daily Code Cache structure
+export interface DailyCodeCache {
+  code: string; // The daily code value
+  timestamp: number; // Unix timestamp in milliseconds when cached
+  expiresAt: number; // Unix timestamp in milliseconds when cache expires
+}
+
+// Google Sheets API Response
+export interface GoogleSheetsResponse {
+  values: string[][]; // 2D array of cell values
+}
+
 // Leaderboard data model
 export interface Leaderboard {
   _id: string;

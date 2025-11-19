@@ -7,6 +7,7 @@ import { LeaderboardSelector } from './components/LeaderboardSelector';
 import { FloatingErrorDisplay } from './components/ErrorDisplay';
 import { LoadingDisplay, OverlayLoading } from './components/LoadingDisplay';
 import { DailyGoalProgress } from './components/DailyGoalProgress';
+import { DailyCodeCard } from './components/DailyCodeCard';
 import ChickenRaceExample from './components/examples/ChickenRaceExample';
 import type { FunifierConfig } from './types';
 
@@ -303,6 +304,9 @@ function App() {
           </div>
         )}
       </main>
+
+      {/* Daily Code Card - Fixed position at bottom-right */}
+      <DailyCodeCard />
     </div>
   );
 }
