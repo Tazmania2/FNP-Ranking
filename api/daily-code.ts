@@ -33,22 +33,37 @@ export default async function handler(
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Google Sheets API error:', response.status, errorText);
+      console.error('Google Sheets API error:', {
+        status: response.status,
+        statusText: response.statusText,
+        error: errorText,
+        url: url.replace(apiKey, 'REDACTED'),
+      });
+      
+      if (response.status === 400) {
+        return res.status(400).json({ 
+          error: 'Bad request. The API key may be invalid or the spreadsheet ID is incorrect.',
+          details: errorText
+        });
+      }
       
       if (response.status === 403) {
         return res.status(403).json({ 
-          error: 'Access denied. Check API key and sheet permissions.' 
+          error: 'Access denied. The spreadsheet must be shared with "Anyone with the link can view".',
+          details: errorText
         });
       }
       
       if (response.status === 404) {
         return res.status(404).json({ 
-          error: 'Spreadsheet not found.' 
+          error: 'Spreadsheet not found. Check the spreadsheet ID.',
+          details: errorText
         });
       }
 
       return res.status(response.status).json({ 
-        error: 'Failed to fetch from Google Sheets' 
+        error: 'Failed to fetch from Google Sheets',
+        details: errorText
       });
     }
 
