@@ -23,8 +23,8 @@ export default async function handler(
   }
 
   try {
-    // Fetch data from Google Sheets
-    const range = 'Sheet1!A:B';
+    // Fetch data from Google Sheets - use just A:B without sheet name to get first sheet
+    const range = 'A:B';
     const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(
       range
     )}?key=${apiKey}`;
