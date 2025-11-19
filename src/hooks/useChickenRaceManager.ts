@@ -598,8 +598,8 @@ export const useChickenRaceManager = (config: ChickenRaceManagerConfig = {}) => 
 
   // Auto-refresh effect - refreshes data every minute
   useEffect(() => {
-    const autoRefreshEnabled = config.autoRefreshConfig?.enabled !== false; // Default to true
-    const refreshInterval = config.autoRefreshConfig?.interval || 60000; // Default 60 seconds
+    const autoRefreshEnabled = autoRefreshConfig?.enabled !== false; // Default to true
+    const refreshInterval = autoRefreshConfig?.interval || 60000; // Default 60 seconds
 
     if (!autoRefreshEnabled || !apiService || usingMockData) {
       return;
@@ -619,7 +619,8 @@ export const useChickenRaceManager = (config: ChickenRaceManagerConfig = {}) => 
       console.log('🔄 Auto-refresh cleanup');
       clearInterval(intervalId);
     };
-  }, [apiService, usingMockData, currentLeaderboardId, refreshData, config.autoRefreshConfig]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [apiService, usingMockData, currentLeaderboardId]); // Removed refreshData and config to prevent loops
 
   return {
     // State

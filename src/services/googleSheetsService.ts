@@ -40,29 +40,45 @@ export class GoogleSheetsService {
    */
   public async getDailyCode(): Promise<string> {
     return this.retryRequest(async () => {
-      // For simplicity, we'll use API key authentication instead of OAuth
-      // This works for public sheets or sheets shared with the service account
-      const range = this.config.range || 'Sheet1!A1:B1';
+      // Fetch all data from columns A and B (date and passcode)
+      const range = this.config.range || 'Sheet1!A:B';
       const response = await this.fetchSheetData(
         this.config.spreadsheetId,
         range
       );
 
-      // Extract the code from the response
-      // Assuming format: [["Código do Dia", "ABC123"]]
-      if (response.values && response.values.length > 0) {
-        const row = response.values[0];
-        // Return the second column value (the actual code)
-        if (row.length > 1) {
-          return row[1];
-        }
-        // If only one column, return that value
-        return row[0];
+      if (!response.values || response.values.length === 0) {
+        throw this.createError(
+          'validation',
+          'No data found in the spreadsheet',
+          false
+        );
       }
 
+      // Get today's date in DD/MM/YYYY format
+      const today = new Date();
+      const day = String(today.getDate()).padStart(2, '0');
+      const month = String(today.getMonth() + 1).padStart(2, '0');
+      const year = today.getFullYear();
+      const todayFormatted = `${day}/${month}/${year}`;
+
+      // Skip header row (index 0) and find today's date
+      for (let i = 1; i < response.values.length; i++) {
+        const row = response.values[i];
+        if (row.length >= 2) {
+          const dateCell = row[0]?.trim();
+          const passcode = row[1]?.trim();
+
+          if (dateCell === todayFormatted && passcode) {
+            return passcode;
+          }
+        }
+      }
+
+      // If today's date not found, throw error
       throw this.createError(
         'validation',
-        'No data found in the specified range',
+        `Código não encontrado para hoje (${todayFormatted})`,
         false
       );
     });

@@ -31,7 +31,7 @@ class GoogleSheetsConfigManager {
       clientSecret,
       apiKey,
       spreadsheetId,
-      range: 'Sheet1!A1:B1', // Default range - can be overridden
+      range: 'Sheet1!A:B', // Fetch all rows from columns A and B
     };
 
     return this.config;
