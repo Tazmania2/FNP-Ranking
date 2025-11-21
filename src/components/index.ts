@@ -14,6 +14,7 @@ export { ChickenRaceFullscreen, default as ChickenRaceFullscreenDefault } from '
 export { Sidebar, default as SidebarDefault } from './Sidebar';
 export { DetailedRanking, default as DetailedRankingDefault } from './DetailedRanking';
 export { DailyGoalProgress, default as DailyGoalProgressDefault } from './DailyGoalProgress';
+export { DailyCodeCard } from './DailyCodeCard';
 export { HoverTooltip, default as HoverTooltipDefault } from './HoverTooltip';
 export { TooltipDebug, default as TooltipDebugDefault } from './TooltipDebug';
 export { Tooltip, default as TooltipDefault } from './Tooltip';

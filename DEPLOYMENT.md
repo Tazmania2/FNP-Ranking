@@ -38,7 +38,7 @@ The following environment variables must be configured in Vercel:
 - **Development**: Use development credentials or production with limited scope
 
 ### GitHub Integration Setup
-
+ll
 #### Automatic Deployments
 
 1. **Connect Repository**:

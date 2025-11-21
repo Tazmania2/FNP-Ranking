@@ -93,6 +93,11 @@ interface ChickenRaceManagerConfig {
     staggerDelay?: number;
     celebrateImprovements?: boolean;
   };
+  /** Auto-refresh configuration */
+  autoRefreshConfig?: {
+    enabled?: boolean;
+    interval?: number; // Interval in milliseconds (default: 60000 = 1 minute)
+  };
   /** Callback for authentication errors */
   onAuthError?: () => void;
 }
@@ -106,6 +111,7 @@ export const useChickenRaceManager = (config: ChickenRaceManagerConfig = {}) => 
     apiConfig,
     realTimeConfig = {},
     transitionConfig = {},
+    autoRefreshConfig = { enabled: true, interval: 60000 },
     onAuthError,
   } = config;
 
@@ -589,6 +595,32 @@ export const useChickenRaceManager = (config: ChickenRaceManagerConfig = {}) => 
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [apiConfig, apiService, onAuthError]); // Removed initializationAttempted to prevent infinite loop
+
+  // Auto-refresh effect - refreshes data every minute
+  useEffect(() => {
+    const autoRefreshEnabled = autoRefreshConfig?.enabled !== false; // Default to true
+    const refreshInterval = autoRefreshConfig?.interval || 60000; // Default 60 seconds
+
+    if (!autoRefreshEnabled || !apiService || usingMockData) {
+      return;
+    }
+
+    console.log(`🔄 Auto-refresh enabled with ${refreshInterval}ms interval`);
+
+    const intervalId = setInterval(() => {
+      // Only refresh if page is visible
+      if (document.visibilityState === 'visible' && currentLeaderboardId) {
+        console.log('🔄 Auto-refreshing data...');
+        refreshData();
+      }
+    }, refreshInterval);
+
+    return () => {
+      console.log('🔄 Auto-refresh cleanup');
+      clearInterval(intervalId);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [apiService, usingMockData, currentLeaderboardId]); // Removed refreshData and config to prevent loops
 
   return {
     // State
