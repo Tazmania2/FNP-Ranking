@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import type { Player, Leaderboard } from '../types';
 
 interface DetailedRankingProps {
@@ -28,6 +28,33 @@ export const DetailedRanking: React.FC<DetailedRankingProps> = ({
     direction: 'asc',
   });
   const [currentPage, setCurrentPage] = useState(1);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  // Handle fullscreen toggle
+  const toggleFullscreen = useCallback(() => {
+    setIsFullscreen(!isFullscreen);
+  }, [isFullscreen]);
+
+  // Handle escape key to exit fullscreen
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && isFullscreen) {
+        setIsFullscreen(false);
+      }
+    };
+
+    if (isFullscreen) {
+      document.addEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = 'unset';
+    };
+  }, [isFullscreen]);
 
   // Generate chicken face emoji based on player position for avatar
   const getChickenAvatar = (position: number): string => {
@@ -35,9 +62,9 @@ export const DetailedRanking: React.FC<DetailedRankingProps> = ({
     return chickenFaces[position % chickenFaces.length];
   };
 
-  // Format points display with proper number formatting
+  // Format points display with proper number formatting (Brazilian format, no decimals)
   const formatPoints = (points: number): string => {
-    return points.toFixed(1);
+    return Math.round(points).toLocaleString('pt-BR');
   };
 
   // Get movement indicator
@@ -200,15 +227,47 @@ export const DetailedRanking: React.FC<DetailedRankingProps> = ({
     );
   }
 
+  // Fullscreen wrapper component
+  const FullscreenWrapper = ({ children }: { children: React.ReactNode }) => {
+    if (isFullscreen) {
+      return (
+        <div className="fixed inset-0 z-50 bg-white overflow-auto">
+          <div className="min-h-screen p-4">
+            {children}
+          </div>
+        </div>
+      );
+    }
+    return <div className="bg-white rounded-lg shadow-lg p-4 sm:p-6">{children}</div>;
+  };
+
   return (
-    <div className="bg-white rounded-lg shadow-lg p-4 sm:p-6">
+    <FullscreenWrapper>
       {/* Header */}
       <div className="mb-4 sm:mb-6">
-        <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-800 mb-2 flex items-center">
-          📊 Lista de Jogadores Completa
-        </h2>
+        <div className="flex items-center justify-between mb-2">
+          <h2 className={`font-bold text-gray-800 flex items-center ${
+            isFullscreen ? 'text-2xl lg:text-4xl' : 'text-lg sm:text-xl lg:text-2xl'
+          }`}>
+            📊 Lista de Jogadores Completa
+          </h2>
+          <button
+            onClick={toggleFullscreen}
+            className={`px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2 ${
+              isFullscreen ? 'text-lg' : 'text-sm'
+            }`}
+            title={isFullscreen ? "Sair da tela cheia (ESC)" : "Modo tela cheia"}
+          >
+            <span>{isFullscreen ? '🗗' : '🗖'}</span>
+            <span className="hidden sm:inline">
+              {isFullscreen ? 'Sair da Tela Cheia' : 'Tela Cheia'}
+            </span>
+          </button>
+        </div>
         {currentLeaderboard && (
-          <p className="text-sm sm:text-base text-gray-600 mb-4">
+          <p className={`text-gray-600 mb-4 ${
+            isFullscreen ? 'text-lg lg:text-xl' : 'text-sm sm:text-base'
+          }`}>
             {currentLeaderboard.title} - {sortedPlayers.length} jogadores
           </p>
         )}
@@ -220,19 +279,23 @@ export const DetailedRanking: React.FC<DetailedRankingProps> = ({
             placeholder="Buscar jogadores..."
             value={searchTerm}
             onChange={(e) => handleSearch(e.target.value)}
-            className="bg-white text-gray-800 w-full px-3 sm:px-4 py-2 pl-8 sm:pl-10 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent"
+            className={`bg-white text-gray-800 w-full px-3 sm:px-4 py-2 pl-8 sm:pl-10 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent ${
+              isFullscreen ? 'text-lg py-3' : 'text-sm sm:text-base'
+            }`}
           />
           <div className="absolute inset-y-0 left-0 pl-2 sm:pl-3 flex items-center pointer-events-none">
-            <span className="text-gray-400 text-sm sm:text-base">🔍</span>
+            <span className={`text-gray-400 ${isFullscreen ? 'text-lg' : 'text-sm sm:text-base'}`}>🔍</span>
           </div>
         </div>
       </div>
 
       {/* Results Info */}
       {searchTerm && (
-        <div className="mb-3 sm:mb-4 text-xs sm:text-sm text-gray-600">
-          Found {sortedPlayers.length} player{sortedPlayers.length !== 1 ? 's' : ''} 
-          {searchTerm && ` matching "${searchTerm}"`}
+        <div className={`mb-3 sm:mb-4 text-gray-600 ${
+          isFullscreen ? 'text-base lg:text-lg' : 'text-xs sm:text-sm'
+        }`}>
+          Encontrados {sortedPlayers.length} jogador{sortedPlayers.length !== 1 ? 'es' : ''} 
+          {searchTerm && ` correspondente${sortedPlayers.length !== 1 ? 's' : ''} a "${searchTerm}"`}
         </div>
       )}
 
@@ -288,7 +351,9 @@ export const DetailedRanking: React.FC<DetailedRankingProps> = ({
           <thead>
             <tr className="border-b-2 border-gray-200">
               <th 
-                className="w-20 text-center py-3 px-2 lg:px-4 font-semibold text-gray-700 cursor-pointer hover:bg-gray-50 transition-colors text-sm lg:text-base"
+                className={`w-20 text-center py-3 px-2 lg:px-4 font-semibold text-gray-700 cursor-pointer hover:bg-gray-50 transition-colors ${
+                  isFullscreen ? 'text-lg lg:text-xl py-4' : 'text-sm lg:text-base'
+                }`}
                 onClick={() => handleSort('position')}
               >
                 <div className="flex items-center justify-center space-x-1 lg:space-x-2">
@@ -296,11 +361,15 @@ export const DetailedRanking: React.FC<DetailedRankingProps> = ({
                   {getSortIcon('position')}
                 </div>
               </th>
-              <th className="w-16 text-center py-3 px-2 lg:px-4 font-semibold text-gray-700 text-sm lg:text-base">
+              <th className={`w-16 text-center py-3 px-2 lg:px-4 font-semibold text-gray-700 ${
+                isFullscreen ? 'text-lg lg:text-xl py-4' : 'text-sm lg:text-base'
+              }`}>
                 Ícone
               </th>
               <th 
-                className="w-60 text-left py-3 px-2 lg:px-4 font-semibold text-gray-700 cursor-pointer hover:bg-gray-50 transition-colors text-sm lg:text-base"
+                className={`w-60 text-left py-3 px-2 lg:px-4 font-semibold text-gray-700 cursor-pointer hover:bg-gray-50 transition-colors ${
+                  isFullscreen ? 'text-lg lg:text-xl py-4' : 'text-sm lg:text-base'
+                }`}
                 onClick={() => handleSort('name')}
               >
                 <div className="flex items-center space-x-1 lg:space-x-2 ">
@@ -309,7 +378,9 @@ export const DetailedRanking: React.FC<DetailedRankingProps> = ({
                 </div>
               </th>
               <th 
-                className="w-24 text-right py-3 px-2 lg:px-4 font-semibold text-gray-700 cursor-pointer hover:bg-gray-50 transition-colors text-sm lg:text-base"
+                className={`w-24 text-right py-3 px-2 lg:px-4 font-semibold text-gray-700 cursor-pointer hover:bg-gray-50 transition-colors ${
+                  isFullscreen ? 'text-lg lg:text-xl py-4' : 'text-sm lg:text-base'
+                }`}
                 onClick={() => handleSort('total')}
               >
                 <div className="flex items-center justify-end space-x-1 lg:space-x-2">
@@ -318,7 +389,9 @@ export const DetailedRanking: React.FC<DetailedRankingProps> = ({
                 </div>
               </th>
               <th 
-                className="w-24 text-center py-3 px-2 lg:px-4 font-semibold text-gray-700 cursor-pointer hover:bg-gray-50 transition-colors text-sm lg:text-base"
+                className={`w-24 text-center py-3 px-2 lg:px-4 font-semibold text-gray-700 cursor-pointer hover:bg-gray-50 transition-colors ${
+                  isFullscreen ? 'text-lg lg:text-xl py-4' : 'text-sm lg:text-base'
+                }`}
                 onClick={() => handleSort('move')}
               >
                 <div className="flex items-center justify-center space-x-1 lg:space-x-2">
@@ -352,31 +425,49 @@ export const DetailedRanking: React.FC<DetailedRankingProps> = ({
                   key={player._id}
                   className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
                 >
-                  <td className="w-20 text-center py-3 lg:py-4 px-2 lg:px-4">
+                  <td className={`w-20 text-center px-2 lg:px-4 ${
+                    isFullscreen ? 'py-4 lg:py-6' : 'py-3 lg:py-4'
+                  }`}>
                     <div className="flex justify-center">
-                      <div className={getPositionBadge(player.position)}>
+                      <div className={`${getPositionBadge(player.position)} ${
+                        isFullscreen ? 'w-10 h-10 text-lg' : ''
+                      }`}>
                         {player.position}
                       </div>
                     </div>
                   </td>
-                  <td className="w-16 text-center py-3 lg:py-4 px-2 lg:px-4">
+                  <td className={`w-16 text-center px-2 lg:px-4 ${
+                    isFullscreen ? 'py-4 lg:py-6' : 'py-3 lg:py-4'
+                  }`}>
                     <div className="flex justify-center">
-                      <div className="text-xl lg:text-2xl" title={`${player.name}'s chicken`}>
+                      <div className={`${
+                        isFullscreen ? 'text-3xl lg:text-4xl' : 'text-xl lg:text-2xl'
+                      }`} title={`${player.name}'s chicken`}>
                         {getChickenAvatar(player.position - 1)}
                       </div>
                     </div>
                   </td>
-                  <td className="py-3 lg:py-4 px-2 lg:px-4">
-                    <div className="font-medium text-gray-800 text-sm lg:text-base truncate">
+                  <td className={`px-2 lg:px-4 ${
+                    isFullscreen ? 'py-4 lg:py-6' : 'py-3 lg:py-4'
+                  }`}>
+                    <div className={`font-medium text-gray-800 truncate ${
+                      isFullscreen ? 'text-lg lg:text-xl' : 'text-sm lg:text-base'
+                    }`}>
                       {player.name}
                     </div>
                   </td>
-                  <td className="w-24 text-right py-3 lg:py-4 px-2 lg:px-4">
-                    <div className="font-bold text-blue-600 text-sm lg:text-base">
+                  <td className={`w-24 text-right px-2 lg:px-4 ${
+                    isFullscreen ? 'py-4 lg:py-6' : 'py-3 lg:py-4'
+                  }`}>
+                    <div className={`font-bold text-blue-600 ${
+                      isFullscreen ? 'text-lg lg:text-xl' : 'text-sm lg:text-base'
+                    }`}>
                       {formatPoints(player.total)}
                     </div>
                   </td>
-                  <td className="w-24 text-center py-3 lg:py-4 px-2 lg:px-4">
+                  <td className={`w-24 text-center px-2 lg:px-4 ${
+                    isFullscreen ? 'py-4 lg:py-6' : 'py-3 lg:py-4'
+                  }`}>
                     <div className="flex justify-center">
                       {getMoveIndicator(player)}
                     </div>
@@ -391,7 +482,9 @@ export const DetailedRanking: React.FC<DetailedRankingProps> = ({
       {/* Pagination */}
       {totalPages > 1 && (
         <div className="mt-4 sm:mt-6 flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-0">
-          <div className="text-xs sm:text-sm text-gray-600 order-2 sm:order-1">
+          <div className={`text-gray-600 order-2 sm:order-1 ${
+            isFullscreen ? 'text-base lg:text-lg' : 'text-xs sm:text-sm'
+          }`}>
             Mostrando {startItem}-{endItem} de {sortedPlayers.length} jogadores
           </div>
           
@@ -399,7 +492,9 @@ export const DetailedRanking: React.FC<DetailedRankingProps> = ({
             <button
               onClick={() => handlePageChange(currentPage - 1)}
               disabled={currentPage === 1}
-              className="px-2 sm:px-3 py-1 border border-gray-300 rounded-md text-xs sm:text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              className={`px-2 sm:px-3 py-1 border border-gray-300 rounded-md font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed ${
+                isFullscreen ? 'text-base lg:text-lg px-4 py-2' : 'text-xs sm:text-sm'
+              }`}
             >
               <span className="sm:hidden">‹</span>
               <span className="hidden sm:inline">Anterior</span>
@@ -424,7 +519,9 @@ export const DetailedRanking: React.FC<DetailedRankingProps> = ({
                   <button
                     key={pageNum}
                     onClick={() => handlePageChange(pageNum)}
-                    className={`px-2 sm:px-3 py-1 border rounded-md text-xs sm:text-sm font-medium ${
+                    className={`px-2 sm:px-3 py-1 border rounded-md font-medium ${
+                      isFullscreen ? 'text-base lg:text-lg px-4 py-2' : 'text-xs sm:text-sm'
+                    } ${
                       currentPage === pageNum
                         ? 'bg-blue-600 text-white border-blue-600'
                         : 'text-gray-700 bg-white border-gray-300 hover:bg-gray-50'
@@ -439,7 +536,9 @@ export const DetailedRanking: React.FC<DetailedRankingProps> = ({
             <button
               onClick={() => handlePageChange(currentPage + 1)}
               disabled={currentPage === totalPages}
-              className="px-2 sm:px-3 py-1 border border-gray-300 rounded-md text-xs sm:text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              className={`px-2 sm:px-3 py-1 border border-gray-300 rounded-md font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed ${
+                isFullscreen ? 'text-base lg:text-lg px-4 py-2' : 'text-xs sm:text-sm'
+              }`}
             >
               <span className="sm:hidden">›</span>
               <span className="hidden sm:inline">Próximo</span>
@@ -447,7 +546,7 @@ export const DetailedRanking: React.FC<DetailedRankingProps> = ({
           </div>
         </div>
       )}
-    </div>
+    </FullscreenWrapper>
   );
 };
 

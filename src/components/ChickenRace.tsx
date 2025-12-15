@@ -223,7 +223,7 @@ export const ChickenRace: React.FC<ChickenRaceProps> = React.memo(({
     };
 
     // Helper function to find a non-overlapping position
-    const findNonOverlappingPosition = (baseX: number, baseY: number, existingPositions: { x: number; y: number }[], playerName: string) => {
+    const findNonOverlappingPosition = (baseX: number, baseY: number, existingPositions: { x: number; y: number }[], _playerName: string) => {
       let x = baseX;
       let y = baseY;
       let attempts = 0;
@@ -291,7 +291,7 @@ export const ChickenRace: React.FC<ChickenRaceProps> = React.memo(({
         const chickenSize = 8; // Approximate chicken size in percentage
         const minSpacing = chickenSize + 2; // Minimum spacing between chickens
         const availableHeight = 65 - 35; // Safe area height (35% to 65%)
-        const maxPlayersInColumn = Math.floor(availableHeight / minSpacing);
+        const _maxPlayersInColumn = Math.floor(availableHeight / minSpacing);
 
         groupPlayers.forEach((player, indexInGroup) => {
           // Truly random Y position that changes every load/refresh
@@ -545,7 +545,7 @@ export const ChickenRace: React.FC<ChickenRaceProps> = React.memo(({
           }`}>
           <div className={`font-bold text-yellow-600 ${isFullscreen ? 'text-xl sm:text-2xl lg:text-3xl' : 'text-lg sm:text-xl lg:text-2xl'
             }`}>
-            {(players.find(p => p.position === 1)?.total || 0).toFixed(1)}
+            {Math.round(players.find(p => p.position === 1)?.total || 0).toLocaleString('pt-BR')}
           </div>
           <div className={`text-gray-600 ${isFullscreen ? 'text-sm sm:text-base' : 'text-xs sm:text-sm'
             }`}>

@@ -1,10 +1,11 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { GoogleSheetsService } from '../services/googleSheetsService';
 import { googleSheetsConfig } from '../config/googleSheets';
 import type { DailyCodeCache } from '../types';
 
 const CACHE_KEY = 'daily_code_cache';
 const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+const REFRESH_INTERVAL = 30 * 1000; // 30 seconds for more frequent updates
 
 interface UseDailyCodeReturn {
   code: string | null;
@@ -21,6 +22,7 @@ export const useDailyCode = (): UseDailyCodeReturn => {
   const [code, setCode] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   /**
    * Get cached code from localStorage
@@ -118,6 +120,7 @@ export const useDailyCode = (): UseDailyCodeReturn => {
 
   /**
    * Initialize: check cache first, then fetch if needed
+   * Also set up periodic refresh
    */
   useEffect(() => {
     const initializeCode = async () => {
@@ -129,6 +132,9 @@ export const useDailyCode = (): UseDailyCodeReturn => {
         setCode(cachedCode);
         setLoading(false);
         setError(null);
+        
+        // Still fetch in background to ensure we have the latest
+        fetchCode();
       } else {
         // No valid cache, fetch from API
         await fetchCode();
@@ -136,7 +142,44 @@ export const useDailyCode = (): UseDailyCodeReturn => {
     };
 
     initializeCode();
+
+    // Set up periodic refresh to keep code updated
+    intervalRef.current = setInterval(() => {
+      console.log('Auto-refreshing daily code...');
+      fetchCode();
+    }, REFRESH_INTERVAL);
+
+    // Cleanup interval on unmount
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+    };
   }, [getCachedCode, fetchCode]);
+
+  // Also refresh when page becomes visible again and on focus
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden && code) {
+        console.log('Page became visible, refreshing daily code...');
+        fetchCode();
+      }
+    };
+
+    const handleFocus = () => {
+      console.log('Window focused, refreshing daily code...');
+      fetchCode();
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleFocus);
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [fetchCode, code]);
 
   return {
     code,
