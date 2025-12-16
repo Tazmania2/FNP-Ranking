@@ -26,15 +26,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
     return chickenFaces[position % chickenFaces.length];
   };
 
-  // Format points display with proper number formatting
+  // Format points display with proper number formatting (Brazilian format, no decimals)
   const formatPoints = (points: number): string => {
-    if (points >= 1000000) {
-      return `${(points / 1000000).toFixed(1)}M`;
+    const roundedPoints = Math.round(points);
+    if (roundedPoints >= 1000000) {
+      return `${(roundedPoints / 1000000).toFixed(1).replace('.', ',')}M`;
     }
-    if (points >= 1000) {
-      return `${(points / 1000).toFixed(1)}K`;
+    if (roundedPoints >= 1000) {
+      return `${(roundedPoints / 1000).toFixed(1).replace('.', ',')}K`;
     }
-    return points.toString();
+    return roundedPoints.toLocaleString('pt-BR');
   };
 
   // Get position indicator with proper styling
