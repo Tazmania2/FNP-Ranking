@@ -59,7 +59,7 @@ export const DailyCodeCard: React.FC = () => {
                       console.log('QR Code loaded successfully');
                       setQrError(false);
                     }}
-                    onError={(e) => {
+                    onError={(_e) => {
                       console.error('QR Code failed to load:', qrCodeUrl);
                       setQrError(true);
                     }}
