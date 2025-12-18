@@ -191,7 +191,7 @@ describe('DailyCodeCard', () => {
 
     const qrImage = screen.getByAltText('QR Code para Check-in');
     expect(qrImage).toBeInTheDocument();
-    expect(qrImage).toHaveAttribute('src', 'https://i.ibb.co/V0sDKGzY/qrcode-docs-google-com-1.png');
+    expect(qrImage).toHaveAttribute('src', '/qrcode-checkin.png');
     expect(qrImage).toHaveClass('w-[120px]', 'h-[120px]');
   });
 });

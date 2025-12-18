@@ -9,11 +9,12 @@ import { useDailyCode } from '../hooks/useDailyCode';
  */
 export const DailyCodeCard: React.FC = () => {
   const { code, loading, error } = useDailyCode();
+  const [qrError, setQrError] = React.useState(false);
   
   const checkInUrl = 'https://docs.google.com/forms/d/e/1FAIpQLSeRZAVjnrAaQEyhC8U-hXnT405ZxJhsQ-DsR3Jqt6XLCXC0ew/viewform?usp=dialog';
   
-  // Use the specific QR code image provided
-  const qrCodeUrl = 'https://i.ibb.co/V0sDKGzY/qrcode-docs-google-com-1.png';
+  // Use local QR code image
+  const qrCodeUrl = '/qrcode-checkin.png';
 
   return (
     <div className="fixed bottom-4 right-4 z-50">
@@ -53,17 +54,22 @@ export const DailyCodeCard: React.FC = () => {
                   <img 
                     src={qrCodeUrl} 
                     alt="QR Code para Check-in"
-                    className="border border-gray-300 rounded w-[120px] h-[120px]"
+                    className="border border-gray-300 rounded w-[120px] h-[120px] object-contain bg-white"
+                    onLoad={() => {
+                      console.log('QR Code loaded successfully');
+                      setQrError(false);
+                    }}
                     onError={(e) => {
-                      const target = e.target as HTMLImageElement;
-                      target.style.display = 'none';
-                      target.nextElementSibling?.classList.remove('hidden');
+                      console.error('QR Code failed to load:', qrCodeUrl);
+                      setQrError(true);
                     }}
                   />
-                  <div className="hidden text-xs text-red-600 mt-2 text-center">
-                    Erro ao carregar QR Code
-                  </div>
                 </div>
+                {qrError && (
+                  <div className="text-xs text-red-600 mt-2 text-center">
+                    ❌ Erro ao carregar QR Code
+                  </div>
+                )}
                 <a 
                   href={checkInUrl}
                   target="_blank"
