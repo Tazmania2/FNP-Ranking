@@ -106,7 +106,7 @@ describe('DailyCodeCard', () => {
 
     const cardContainer = container.querySelector('.fixed');
     expect(cardContainer).toHaveClass('bottom-4');
-    expect(cardContainer).toHaveClass('right-4');
+    expect(cardContainer).toHaveClass('left-4');
     expect(cardContainer).toHaveClass('z-50');
   });
 

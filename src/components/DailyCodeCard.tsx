@@ -4,7 +4,7 @@ import { useDailyCode } from '../hooks/useDailyCode';
 /**
  * DailyCodeCard Component
  * Displays the daily code fetched from Google Sheets
- * Positioned at bottom-right corner - always visible (persistent)
+ * Positioned at bottom-left corner - always visible (persistent)
  * Includes QR code for check-in form
  */
 export const DailyCodeCard: React.FC = () => {
@@ -17,7 +17,7 @@ export const DailyCodeCard: React.FC = () => {
   const qrCodeUrl = '/qrcode-checkin.png';
 
   return (
-    <div className="fixed bottom-4 right-4 z-50">
+    <div className="fixed bottom-4 left-4 z-50">
       <div className="bg-white/95 backdrop-blur-sm border border-white/20 rounded-xl shadow-lg p-4 min-w-[220px]">
         {/* Header */}
         <div className="mb-3">

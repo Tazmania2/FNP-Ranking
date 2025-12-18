@@ -305,7 +305,7 @@ function App() {
         )}
       </main>
 
-      {/* Daily Code Card - Fixed position at bottom-right */}
+      {/* Daily Code Card - Fixed position at bottom-left */}
       <DailyCodeCard />
     </div>
   );
