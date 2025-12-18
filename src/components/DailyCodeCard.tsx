@@ -1,27 +1,22 @@
 import React from 'react';
 import { useDailyCode } from '../hooks/useDailyCode';
-import { useFadeAnimation } from '../hooks/useFadeAnimation';
 
 /**
  * DailyCodeCard Component
  * Displays the daily code fetched from Google Sheets
- * Positioned at bottom-right corner with fade animation
+ * Positioned at bottom-right corner - always visible (persistent)
  * Includes QR code for check-in form
  */
 export const DailyCodeCard: React.FC = () => {
   const { code, loading, error } = useDailyCode();
-  const { opacity } = useFadeAnimation();
   
   const checkInUrl = 'https://docs.google.com/forms/d/e/1FAIpQLSeRZAVjnrAaQEyhC8U-hXnT405ZxJhsQ-DsR3Jqt6XLCXC0ew/viewform?usp=dialog';
   
-  // Generate QR code URL using qr-server.com API
-  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(checkInUrl)}`;
+  // Use the specific QR code image provided
+  const qrCodeUrl = 'https://i.ibb.co/V0sDKGzY/qrcode-docs-google-com-1.png';
 
   return (
-    <div
-      className="fixed bottom-4 right-4 z-50 transition-opacity duration-300"
-      style={{ opacity }}
-    >
+    <div className="fixed bottom-4 right-4 z-50">
       <div className="bg-white/95 backdrop-blur-sm border border-white/20 rounded-xl shadow-lg p-4 min-w-[220px]">
         {/* Header */}
         <div className="mb-3">
@@ -58,7 +53,7 @@ export const DailyCodeCard: React.FC = () => {
                   <img 
                     src={qrCodeUrl} 
                     alt="QR Code para Check-in"
-                    className="border border-gray-300 rounded"
+                    className="border border-gray-300 rounded w-[120px] h-[120px]"
                     onError={(e) => {
                       const target = e.target as HTMLImageElement;
                       target.style.display = 'none';

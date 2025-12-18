@@ -5,7 +5,7 @@ import type { DailyCodeCache } from '../types';
 
 const CACHE_KEY = 'daily_code_cache';
 const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
-const REFRESH_INTERVAL = 30 * 1000; // 30 seconds for more frequent updates
+const REFRESH_INTERVAL = 60 * 60 * 1000; // 1 hour - force refresh every hour
 
 interface UseDailyCodeReturn {
   code: string | null;

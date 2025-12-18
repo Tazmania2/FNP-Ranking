@@ -2,23 +2,16 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import { DailyCodeCard } from '../DailyCodeCard';
 import * as useDailyCodeModule from '../../hooks/useDailyCode';
-import * as useFadeAnimationModule from '../../hooks/useFadeAnimation';
 
 // Mock the hooks
 vi.mock('../../hooks/useDailyCode');
-vi.mock('../../hooks/useFadeAnimation');
 
 describe('DailyCodeCard', () => {
   let mockUseDailyCode: any;
-  let mockUseFadeAnimation: any;
 
   beforeEach(() => {
     // Default mock implementations
     mockUseDailyCode = vi.spyOn(useDailyCodeModule, 'useDailyCode');
-    mockUseFadeAnimation = vi.spyOn(useFadeAnimationModule, 'useFadeAnimation');
-
-    // Default fade animation
-    mockUseFadeAnimation.mockReturnValue({ opacity: 1 });
   });
 
   afterEach(() => {
@@ -85,7 +78,7 @@ describe('DailyCodeCard', () => {
     expect(screen.getByText(/Usando código em cache/)).toBeInTheDocument();
   });
 
-  it('should apply fade animation opacity', () => {
+  it('should be always visible (persistent)', () => {
     mockUseDailyCode.mockReturnValue({
       code: 'TEST456',
       loading: false,
@@ -93,12 +86,12 @@ describe('DailyCodeCard', () => {
       refetch: vi.fn(),
     });
 
-    mockUseFadeAnimation.mockReturnValue({ opacity: 0.5 });
-
     const { container } = render(<DailyCodeCard />);
 
     const cardContainer = container.querySelector('.fixed');
-    expect(cardContainer).toHaveStyle({ opacity: '0.5' });
+    // Card should always be visible (no fade animation)
+    expect(cardContainer).not.toHaveStyle({ opacity: '0.5' });
+    expect(cardContainer).not.toHaveStyle({ opacity: '0' });
   });
 
   it('should have correct positioning classes', () => {
@@ -127,7 +120,7 @@ describe('DailyCodeCard', () => {
 
     const { container } = render(<DailyCodeCard />);
 
-    const innerCard = container.querySelector('.bg-white\\/90');
+    const innerCard = container.querySelector('.bg-white\\/95');
     expect(innerCard).toHaveClass('backdrop-blur-sm');
     expect(innerCard).toHaveClass('rounded-xl');
     expect(innerCard).toHaveClass('shadow-lg');
@@ -186,26 +179,19 @@ describe('DailyCodeCard', () => {
     expect(document.querySelector('.animate-spin')).not.toBeInTheDocument();
   });
 
-  it('should handle fade animation cycle', () => {
+  it('should display QR code image', () => {
     mockUseDailyCode.mockReturnValue({
-      code: 'FADE555',
+      code: 'QR123',
       loading: false,
       error: null,
       refetch: vi.fn(),
     });
 
-    // Test different opacity values
-    const opacities = [1, 0.75, 0.5, 0.25, 0];
+    render(<DailyCodeCard />);
 
-    opacities.forEach((opacity) => {
-      mockUseFadeAnimation.mockReturnValue({ opacity });
-
-      const { container, unmount } = render(<DailyCodeCard />);
-
-      const cardContainer = container.querySelector('.fixed');
-      expect(cardContainer).toHaveStyle({ opacity: opacity.toString() });
-
-      unmount();
-    });
+    const qrImage = screen.getByAltText('QR Code para Check-in');
+    expect(qrImage).toBeInTheDocument();
+    expect(qrImage).toHaveAttribute('src', 'https://i.ibb.co/V0sDKGzY/qrcode-docs-google-com-1.png');
+    expect(qrImage).toHaveClass('w-[120px]', 'h-[120px]');
   });
 });
