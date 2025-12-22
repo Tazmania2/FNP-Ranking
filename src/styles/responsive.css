@@ -1,0 +1,350 @@
+/* Responsive Design System for Raspberry Pi Kiosk */
+/* Optimized for 12" to 40"+ displays */
+
+/* CSS Custom Properties - Set by ResponsiveDisplayManager */
+:root {
+  /* Base responsive properties */
+  --responsive-scale-factor: 1;
+  --responsive-font-size: 16px;
+  --responsive-touch-target: 44px;
+  --responsive-spacing-unit: 8px;
+  --responsive-border-radius: 8px;
+  --responsive-line-height: 1.5;
+  
+  /* Density-based properties */
+  --responsive-density-multiplier: 1;
+  --responsive-padding: 8px;
+  --responsive-margin: 8px;
+  
+  /* Interaction mode properties */
+  --responsive-interaction-mode: mouse;
+  --responsive-hover-delay: 150ms;
+}
+
+/* Base responsive display class */
+.responsive-display {
+  font-size: var(--responsive-font-size);
+  line-height: var(--responsive-line-height);
+}
+
+/* Layout density classes */
+.layout-compact {
+  --responsive-density-multiplier: 0.75;
+}
+
+.layout-normal {
+  --responsive-density-multiplier: 1;
+}
+
+.layout-spacious {
+  --responsive-density-multiplier: 1.5;
+}
+
+/* Scale-based classes */
+.scale-small {
+  /* 12-15" displays */
+  --responsive-scale-factor: 1;
+}
+
+.scale-medium {
+  /* 16-24" displays */
+  --responsive-scale-factor: 1.1;
+}
+
+.scale-large {
+  /* 25-32" displays */
+  --responsive-scale-factor: 1.25;
+}
+
+.scale-xlarge {
+  /* 33-40" displays */
+  --responsive-scale-factor: 1.4;
+}
+
+.scale-xxlarge {
+  /* 40"+ displays */
+  --responsive-scale-factor: 1.6;
+}
+
+/* Touch vs Mouse interaction modes */
+.touch-enabled {
+  /* Optimize for touch interactions */
+  --responsive-hover-delay: 0ms;
+}
+
+.touch-enabled * {
+  /* Ensure all interactive elements meet touch target size */
+  min-height: var(--responsive-touch-target);
+  min-width: var(--responsive-touch-target);
+}
+
+.mouse-enabled {
+  /* Optimize for mouse interactions */
+  --responsive-hover-delay: 150ms;
+}
+
+/* Responsive container classes */
+.responsive-container {
+  padding: calc(var(--responsive-padding) * var(--responsive-density-multiplier));
+  margin: calc(var(--responsive-margin) * var(--responsive-density-multiplier));
+}
+
+.responsive-container.responsive-small {
+  /* Compact layout for smaller displays */
+  max-width: 100%;
+  padding: calc(var(--responsive-padding) * 0.75);
+}
+
+.responsive-container.responsive-medium {
+  /* Normal layout for medium displays */
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.responsive-container.responsive-large,
+.responsive-container.responsive-xlarge,
+.responsive-container.responsive-xxlarge {
+  /* Spacious layout for large displays */
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: calc(var(--responsive-padding) * 1.5);
+}
+
+/* Responsive text classes */
+.responsive-text {
+  font-size: var(--responsive-font-size);
+  line-height: var(--responsive-line-height);
+}
+
+.text-scale-small {
+  font-size: calc(var(--responsive-font-size) * 1);
+}
+
+.text-scale-medium {
+  font-size: calc(var(--responsive-font-size) * 1.1);
+}
+
+.text-scale-large {
+  font-size: calc(var(--responsive-font-size) * 1.25);
+}
+
+.text-scale-xlarge {
+  font-size: calc(var(--responsive-font-size) * 1.4);
+}
+
+.text-scale-xxlarge {
+  font-size: calc(var(--responsive-font-size) * 1.6);
+}
+
+/* Responsive spacing classes */
+.responsive-spacing {
+  gap: calc(var(--responsive-spacing-unit) * var(--responsive-density-multiplier));
+}
+
+.spacing-compact {
+  gap: calc(var(--responsive-spacing-unit) * 0.75);
+}
+
+.spacing-normal {
+  gap: var(--responsive-spacing-unit);
+}
+
+.spacing-spacious {
+  gap: calc(var(--responsive-spacing-unit) * 1.5);
+}
+
+/* Touch target classes */
+.touch-target {
+  min-height: var(--responsive-touch-target);
+  min-width: var(--responsive-touch-target);
+  border-radius: var(--responsive-border-radius);
+}
+
+.touch-enabled .touch-target {
+  /* Ensure adequate spacing between touch targets */
+  margin: calc(var(--responsive-spacing-unit) * 0.5);
+}
+
+.touch-disabled .touch-target {
+  /* Allow tighter spacing for mouse interactions */
+  margin: calc(var(--responsive-spacing-unit) * 0.25);
+}
+
+/* Responsive button classes */
+.responsive-button {
+  min-height: var(--responsive-touch-target);
+  min-width: var(--responsive-touch-target);
+  padding: calc(var(--responsive-padding) * 0.75) calc(var(--responsive-padding) * 1.5);
+  font-size: var(--responsive-font-size);
+  border-radius: var(--responsive-border-radius);
+  transition: all var(--responsive-hover-delay) ease;
+}
+
+/* Responsive form elements */
+.responsive-input {
+  min-height: var(--responsive-touch-target);
+  padding: calc(var(--responsive-padding) * 0.75);
+  font-size: var(--responsive-font-size);
+  border-radius: var(--responsive-border-radius);
+}
+
+/* Responsive grid system */
+.responsive-grid {
+  display: grid;
+  gap: calc(var(--responsive-spacing-unit) * var(--responsive-density-multiplier));
+}
+
+.responsive-grid.grid-small {
+  grid-template-columns: 1fr;
+}
+
+.responsive-grid.grid-medium {
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+}
+
+.responsive-grid.grid-large,
+.responsive-grid.grid-xlarge,
+.responsive-grid.grid-xxlarge {
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+}
+
+/* Responsive flexbox utilities */
+.responsive-flex {
+  display: flex;
+  gap: calc(var(--responsive-spacing-unit) * var(--responsive-density-multiplier));
+}
+
+.responsive-flex.flex-column {
+  flex-direction: column;
+}
+
+.responsive-flex.flex-wrap {
+  flex-wrap: wrap;
+}
+
+/* Responsive card components */
+.responsive-card {
+  padding: calc(var(--responsive-padding) * var(--responsive-density-multiplier));
+  border-radius: calc(var(--responsive-border-radius) * var(--responsive-scale-factor));
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Responsive navigation */
+.responsive-nav {
+  padding: calc(var(--responsive-padding) * 0.5);
+}
+
+.responsive-nav .nav-item {
+  min-height: var(--responsive-touch-target);
+  padding: calc(var(--responsive-padding) * 0.5) calc(var(--responsive-padding) * 1);
+  font-size: var(--responsive-font-size);
+}
+
+/* Responsive modal/overlay */
+.responsive-modal {
+  padding: calc(var(--responsive-padding) * 2);
+  border-radius: calc(var(--responsive-border-radius) * 2);
+  max-width: calc(100vw - var(--responsive-padding) * 4);
+  max-height: calc(100vh - var(--responsive-padding) * 4);
+}
+
+/* Responsive table */
+.responsive-table {
+  font-size: var(--responsive-font-size);
+}
+
+.responsive-table th,
+.responsive-table td {
+  padding: calc(var(--responsive-padding) * var(--responsive-density-multiplier));
+  min-height: var(--responsive-touch-target);
+}
+
+/* Responsive animations - reduce motion for performance */
+@media (prefers-reduced-motion: reduce) {
+  .responsive-display * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .responsive-display {
+    --responsive-border-radius: 4px; /* Sharper corners for better contrast */
+  }
+  
+  .responsive-card,
+  .responsive-button,
+  .responsive-input {
+    border: 2px solid currentColor;
+  }
+}
+
+/* Print styles - maintain readability when printed */
+@media print {
+  .responsive-display {
+    --responsive-font-size: 12pt;
+    --responsive-spacing-unit: 6pt;
+  }
+  
+  .responsive-container {
+    max-width: none;
+    margin: 0;
+    padding: 0;
+  }
+}
+
+/* Utility classes for manual responsive adjustments */
+.hide-on-small { display: none; }
+.hide-on-medium { display: block; }
+.hide-on-large { display: block; }
+.hide-on-xlarge { display: block; }
+.hide-on-xxlarge { display: block; }
+
+@media (min-width: 768px) {
+  .hide-on-small { display: block; }
+  .hide-on-medium { display: none; }
+}
+
+@media (min-width: 1024px) {
+  .hide-on-medium { display: block; }
+  .hide-on-large { display: none; }
+}
+
+@media (min-width: 1440px) {
+  .hide-on-large { display: block; }
+  .hide-on-xlarge { display: none; }
+}
+
+@media (min-width: 1920px) {
+  .hide-on-xlarge { display: block; }
+  .hide-on-xxlarge { display: none; }
+}
+
+/* Show only on specific sizes */
+.show-on-small { display: block; }
+.show-on-medium { display: none; }
+.show-on-large { display: none; }
+.show-on-xlarge { display: none; }
+.show-on-xxlarge { display: none; }
+
+@media (min-width: 768px) {
+  .show-on-small { display: none; }
+  .show-on-medium { display: block; }
+}
+
+@media (min-width: 1024px) {
+  .show-on-medium { display: none; }
+  .show-on-large { display: block; }
+}
+
+@media (min-width: 1440px) {
+  .show-on-large { display: none; }
+  .show-on-xlarge { display: block; }
+}
+
+@media (min-width: 1920px) {
+  .show-on-xlarge { display: none; }
+  .show-on-xxlarge { display: block; }
+}

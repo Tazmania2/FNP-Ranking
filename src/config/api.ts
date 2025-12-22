@@ -20,24 +20,33 @@ export class ApiConfigManager {
   /**
    * Initialize configuration from environment variables
    * Returns null if configuration is missing (for demo mode fallback)
+   * Enforces HTTPS for all API communications
    */
   public initializeConfig(): FunifierConfig | null {
     const serverUrl = import.meta.env.VITE_FUNIFIER_SERVER_URL;
-
     const apiKey = import.meta.env.VITE_FUNIFIER_API_KEY;
     const authToken = import.meta.env.VITE_FUNIFIER_AUTH_TOKEN;
-    console.log('apiKey', apiKey);
-    console.log('authToken', authToken);
+    
+    // Security: Do not log sensitive credentials
+    // Only log configuration status, not actual values
+    
     // Return null instead of throwing error to allow demo mode fallback
     if (!serverUrl || !apiKey || !authToken) {
       console.warn(
-        'Missing Funifier configuration. Environment variables not found: VITE_FUNIFIER_SERVER_URL, VITE_FUNIFIER_API_KEY, VITE_FUNIFIER_AUTH_TOKEN. Falling back to demo mode.'
+        'Missing Funifier configuration. Falling back to demo mode.'
       );
       return null;
     }
 
+    // Security: Enforce HTTPS for all API communications
+    const cleanServerUrl = serverUrl.replace(/\/$/, ''); // Remove trailing slash
+    if (!cleanServerUrl.startsWith('https://')) {
+      console.error('Security Error: API server URL must use HTTPS protocol');
+      return null;
+    }
+
     this.config = {
-      serverUrl: serverUrl.replace(/\/$/, ''), // Remove trailing slash
+      serverUrl: cleanServerUrl,
       apiKey,
       authToken,
     };

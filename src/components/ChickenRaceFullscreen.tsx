@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { ChickenRace } from './ChickenRace';
+import { useKioskModeContext } from './KioskModeProvider';
 import type { Player } from '../types';
 
 interface ChickenRaceFullscreenProps {
@@ -26,11 +27,13 @@ export const ChickenRaceFullscreen: React.FC<ChickenRaceFullscreenProps> = ({
   playerPositions,
 }) => {
   const [isVisible, setIsVisible] = useState(false);
+  const kioskMode = useKioskModeContext();
 
   // Handle escape key to close modal
   useEffect(() => {
     const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && isOpen) {
+      // In kiosk mode, prevent escape key from closing unless explicitly allowed
+      if (event.key === 'Escape' && isOpen && !kioskMode.isKioskMode) {
         onClose();
       }
     };
@@ -89,26 +92,28 @@ export const ChickenRaceFullscreen: React.FC<ChickenRaceFullscreenProps> = ({
             </p>
           </div>
           
-          {/* Close button */}
-          <button
-            onClick={onClose}
-            className="flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 bg-white/20 hover:bg-white/30 rounded-full transition-colors backdrop-blur-sm"
-            aria-label="Fechar tela cheia"
-          >
-            <svg
-              className="w-5 h-5 sm:w-6 sm:h-6 text-white"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
+          {/* Close button - Hidden in kiosk mode */}
+          {!kioskMode.isKioskMode && (
+            <button
+              onClick={onClose}
+              className="flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 bg-white/20 hover:bg-white/30 rounded-full transition-colors backdrop-blur-sm touch-target"
+              aria-label="Fechar tela cheia"
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M6 18L18 6M6 6l12 12"
-              />
-            </svg>
-          </button>
+              <svg
+                className="w-5 h-5 sm:w-6 sm:h-6 text-white"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
+          )}
         </div>
       </div>
 
@@ -127,22 +132,33 @@ export const ChickenRaceFullscreen: React.FC<ChickenRaceFullscreenProps> = ({
         </div>
       </div>
 
-      {/* Footer with instructions */}
+      {/* Footer with instructions - Adapted for kiosk mode */}
       <div className="absolute bottom-0 left-0 right-0 z-10 bg-gradient-to-t from-black/80 to-transparent p-4 sm:p-6">
         <div className="text-center text-white/80">
           <p className="text-sm sm:text-base">
-            Pressione <kbd className="px-2 py-1 bg-white/20 rounded text-xs">ESC</kbd> para sair • 
+            {!kioskMode.isKioskMode && (
+              <>
+                Pressione <kbd className="px-2 py-1 bg-white/20 rounded text-xs">ESC</kbd> para sair • 
+              </>
+            )}
             Atualização automática em tempo real
+            {kioskMode.isFirefox && (
+              <span className="block text-xs mt-1 text-white/60">
+                Otimizado para Firefox em modo kiosk
+              </span>
+            )}
           </p>
         </div>
       </div>
 
-      {/* Click outside to close */}
-      <div
-        className="absolute inset-0 -z-10"
-        onClick={onClose}
-        aria-label="Clique fora para fechar"
-      />
+      {/* Click outside to close - Disabled in kiosk mode */}
+      {!kioskMode.isKioskMode && (
+        <div
+          className="absolute inset-0 -z-10"
+          onClick={onClose}
+          aria-label="Clique fora para fechar"
+        />
+      )}
     </div>,
     document.body // Render directly in document.body
   );

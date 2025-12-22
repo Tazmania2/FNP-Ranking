@@ -12,9 +12,13 @@ export { LeaderboardSelector, default as LeaderboardSelectorDefault } from './Le
 export { ChickenRace, default as ChickenRaceDefault } from './ChickenRace';
 export { ChickenRaceFullscreen, default as ChickenRaceFullscreenDefault } from './ChickenRaceFullscreen';
 export { Sidebar, default as SidebarDefault } from './Sidebar';
-export { DetailedRanking, default as DetailedRankingDefault } from './DetailedRanking';
+export { default as DetailedRanking, DetailedRanking as DetailedRankingDefault } from './DetailedRanking';
+export { KioskModeProvider, useKioskModeContext, withKioskMode } from './KioskModeProvider';
+export { FullscreenButton, default as FullscreenButtonDefault } from './FullscreenButton';
+export { ResponsiveWrapper, default as ResponsiveWrapperDefault } from './ResponsiveWrapper';
 export { DailyGoalProgress, default as DailyGoalProgressDefault } from './DailyGoalProgress';
 export { DailyCodeCard } from './DailyCodeCard';
+export { FeatureParityStatus, FeatureParityIndicator } from './FeatureParityStatus';
 export { HoverTooltip, default as HoverTooltipDefault } from './HoverTooltip';
 export { TooltipDebug, default as TooltipDebugDefault } from './TooltipDebug';
 export { Tooltip, default as TooltipDefault } from './Tooltip';
