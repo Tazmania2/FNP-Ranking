@@ -27,7 +27,7 @@ export class ResponsiveDisplayManager {
   private constructor() {
     this.layoutConfig = {
       minTouchTargetSize: 44,  // WCAG minimum
-      maxTouchTargetSize: 72,  // Maximum for very large displays
+      maxTouchTargetSize: 120, // Increased maximum for very large displays
       baseFontSize: 16,
       lineHeight: 1.5,
       spacingUnit: 8,
@@ -71,15 +71,51 @@ export class ResponsiveDisplayManager {
     const physicalWidth = width / pixelRatio;
     const physicalHeight = height / pixelRatio;
     
-    // Rough estimation of diagonal in inches (assuming ~96 DPI)
+    // Improved estimation of diagonal in inches
+    // Use different DPI assumptions based on display size
+    let assumedDPI = 96; // Default for desktop monitors
+    
+    // For very high resolution displays, assume higher DPI (likely monitors)
+    if (width >= 2560 && pixelRatio >= 2) {
+      assumedDPI = 220; // High-DPI monitor (like Retina)
+    } else if (width >= 2560 && pixelRatio >= 1.5) {
+      assumedDPI = 150; // Medium high-DPI monitor
+    } else if (width >= 1920 && pixelRatio === 1) {
+      // Large resolution with low pixel ratio likely indicates TV
+      assumedDPI = 72; // TV displays typically have lower DPI
+    } else if (pixelRatio >= 1.5) {
+      assumedDPI = 150; // High-DPI monitor
+    }
+    
     const diagonal = Math.sqrt(
-      Math.pow(physicalWidth / 96, 2) + Math.pow(physicalHeight / 96, 2)
+      Math.pow(physicalWidth / assumedDPI, 2) + Math.pow(physicalHeight / assumedDPI, 2)
     );
+
+    // Additional heuristics for TV detection
+    const aspectRatio = width / height;
+    const isLikelyTV = (
+      width >= 1920 && 
+      pixelRatio === 1 && 
+      (aspectRatio >= 1.7 && aspectRatio <= 1.8) // 16:9 or similar TV aspect ratio
+    );
+
+    // If it looks like a TV, assume larger diagonal
+    const estimatedDiagonal = isLikelyTV ? Math.max(diagonal, 32) : diagonal;
+
+    // Debug logging for development
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Display detection:', {
+        width, height, pixelRatio, assumedDPI,
+        diagonal: diagonal.toFixed(1),
+        estimatedDiagonal: estimatedDiagonal.toFixed(1),
+        isLikelyTV
+      });
+    }
 
     return {
       width,
       height,
-      diagonal: diagonal > 10 ? diagonal : undefined, // Only if reasonable estimate
+      diagonal: estimatedDiagonal > 8 ? estimatedDiagonal : undefined,
     };
   }
 
@@ -94,49 +130,56 @@ export class ResponsiveDisplayManager {
     let scaleFactor = 1.0;
     let layoutDensity: 'compact' | 'normal' | 'spacious' = 'normal';
 
-    if (diagonal) {
-      // Use diagonal size if available
-      if (diagonal >= 40) {
-        scaleFactor = 1.8;
+    if (diagonal && diagonal > 15) {
+      // Use diagonal size if available - more aggressive scaling for TV displays
+      if (diagonal >= 50) {
+        scaleFactor = 2.8;  // Very large TVs (50"+)
+        layoutDensity = 'spacious';
+      } else if (diagonal >= 40) {
+        scaleFactor = 2.4;  // Large TVs (40-49")
         layoutDensity = 'spacious';
       } else if (diagonal >= 32) {
-        scaleFactor = 1.5;
+        scaleFactor = 2.0;  // Medium TVs (32-39")
         layoutDensity = 'spacious';
       } else if (diagonal >= 24) {
-        scaleFactor = 1.3;
+        scaleFactor = 1.6;  // Large monitors (24-31")
         layoutDensity = 'normal';
       } else if (diagonal >= 16) {
-        scaleFactor = 1.1;
+        scaleFactor = 1.3;  // Standard monitors (16-23")
         layoutDensity = 'normal';
       } else {
-        scaleFactor = 1.0;
+        scaleFactor = 1.0;  // Small displays (12-15")
         layoutDensity = 'compact';
       }
     } else {
-      // Fallback to width-based calculation
-      if (width >= 2560) {
-        scaleFactor = 1.8;
+      // Fallback to width-based calculation - more aggressive for high resolutions
+      if (width >= 3840) {
+        scaleFactor = 3.0;  // 4K+ displays
+        layoutDensity = 'spacious';
+      } else if (width >= 2560) {
+        scaleFactor = 2.4;  // 1440p+ displays
         layoutDensity = 'spacious';
       } else if (width >= 1920) {
-        scaleFactor = 1.5;
+        scaleFactor = 2.0;  // 1080p displays
         layoutDensity = 'spacious';
       } else if (width >= 1440) {
-        scaleFactor = 1.3;
+        scaleFactor = 1.6;  // Large laptop displays
         layoutDensity = 'normal';
       } else if (width >= 1024) {
-        scaleFactor = 1.1;
+        scaleFactor = 1.3;  // Standard laptop displays
         layoutDensity = 'normal';
       } else {
-        scaleFactor = 1.0;
+        scaleFactor = 1.0;  // Small displays
         layoutDensity = 'compact';
       }
     }
 
     // Calculate touch target size
     const baseTouchSize = this.layoutConfig.minTouchTargetSize;
+    const maxTouchSize = this.layoutConfig.maxTouchTargetSize;
     const touchTargetSize = Math.min(
-      Math.max(baseTouchSize * scaleFactor, this.layoutConfig.minTouchTargetSize),
-      this.layoutConfig.maxTouchTargetSize
+      Math.max(baseTouchSize * scaleFactor, baseTouchSize),
+      maxTouchSize
     );
 
     // Calculate font size
@@ -212,10 +255,11 @@ export class ResponsiveDisplayManager {
    * Get scale category for CSS classes
    */
   private getScaleCategory(scaleFactor: number): string {
-    if (scaleFactor >= 1.6) return 'xxlarge';
-    if (scaleFactor >= 1.4) return 'xlarge';
-    if (scaleFactor >= 1.2) return 'large';
-    if (scaleFactor >= 1.05) return 'medium';
+    if (scaleFactor >= 2.6) return 'xxxlarge';  // 50"+ TVs
+    if (scaleFactor >= 2.2) return 'xxlarge';   // 40"+ TVs
+    if (scaleFactor >= 1.8) return 'xlarge';    // 33-40" displays
+    if (scaleFactor >= 1.4) return 'large';     // 25-32" displays
+    if (scaleFactor >= 1.15) return 'medium';   // 16-24" displays
     return 'small';
   }
 
@@ -292,4 +336,31 @@ export const getCurrentDisplayConfig = (): DisplayConfig | null => {
 
 export const recalculateResponsiveLayout = (): DisplayConfig => {
   return globalDisplayManager.recalculate();
+};
+
+// Development utility for testing different screen sizes
+export const simulateScreenSize = (width: number, height: number): DisplayConfig => {
+  if (process.env.NODE_ENV === 'development') {
+    // Temporarily override window dimensions for testing
+    const originalInnerWidth = window.innerWidth;
+    const originalInnerHeight = window.innerHeight;
+    
+    // @ts-ignore - Override for testing
+    window.innerWidth = width;
+    // @ts-ignore - Override for testing  
+    window.innerHeight = height;
+    
+    const config = globalDisplayManager.recalculate();
+    
+    // Restore original dimensions
+    // @ts-ignore
+    window.innerWidth = originalInnerWidth;
+    // @ts-ignore
+    window.innerHeight = originalInnerHeight;
+    
+    console.log(`🧪 Simulated ${width}x${height} - Scale: ${config.scaleFactor}, Size: ${config.screenWidth >= 2560 ? 'xxlarge' : config.screenWidth >= 1920 ? 'xlarge' : 'large'}`);
+    
+    return config;
+  }
+  return globalDisplayManager.getCurrentConfig() || globalDisplayManager.detectAndConfigure();
 };
