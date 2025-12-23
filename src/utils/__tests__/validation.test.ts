@@ -14,10 +14,11 @@ describe('Validation Utilities', () => {
       expect(sanitizeString('<img src="x" onerror="alert(1)">')).toBe('');
     });
 
-    it('should decode HTML entities', () => {
-      expect(sanitizeString('&lt;script&gt;')).toBe('<script>');
+    it('should decode HTML entities but remove dangerous tags', () => {
+      expect(sanitizeString('&lt;script&gt;')).toBe(''); // Script tags are removed after decoding
       expect(sanitizeString('&amp;test&amp;')).toBe('&test&');
       expect(sanitizeString('&quot;hello&quot;')).toBe('"hello"');
+      expect(sanitizeString('&lt;div&gt;content&lt;/div&gt;')).toBe('content'); // Safe tags are removed but content remains
     });
 
     it('should handle non-string input', () => {

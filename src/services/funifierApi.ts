@@ -14,6 +14,7 @@ import {
   validatePlayerName,
   validateNumber,
 } from '../utils/validation';
+import { securityService } from './securityService';
 
 /**
  * Funifier API Service for handling all API communications
@@ -34,9 +35,14 @@ export class FunifierApiService {
       throw new Error('No API configuration available - falling back to demo mode');
     }
 
-    // Validate API configuration for security
+    // Enhanced security validation for kiosk deployment
     if (!validateApiConfig(resolvedConfig)) {
       throw new Error('Invalid API configuration provided - falling back to demo mode');
+    }
+
+    // Additional security check: ensure HTTPS
+    if (!securityService.validateSecureUrl(resolvedConfig.serverUrl)) {
+      throw new Error('API server URL must use HTTPS protocol - falling back to demo mode');
     }
 
     this.config = resolvedConfig;

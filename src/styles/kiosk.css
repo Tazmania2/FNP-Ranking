@@ -1,0 +1,260 @@
+/**
+ * Kiosk Mode Styles for Firefox Compatibility
+ * Optimizations for fullscreen kiosk deployment on Raspberry Pi
+ */
+
+/* Base kiosk mode styles */
+.kiosk-mode {
+  /* Ensure full viewport usage */
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  
+  /* Disable text selection */
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  
+  /* Disable drag and drop */
+  -webkit-user-drag: none;
+  -khtml-user-drag: none;
+  -moz-user-drag: none;
+  -o-user-drag: none;
+  user-drag: none;
+  
+  /* Optimize for hardware acceleration */
+  transform: translateZ(0);
+  will-change: transform;
+}
+
+/* Touch-optimized kiosk mode */
+.kiosk-touch-optimized {
+  /* Larger touch targets */
+  --touch-target-min: var(--kiosk-touch-target-min, 44px);
+  --touch-spacing: var(--kiosk-touch-spacing, 8px);
+  
+  /* Disable touch callouts and highlights */
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+  
+  /* Optimize scrolling for touch */
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
+
+/* Touch target optimization */
+.kiosk-touch-optimized button,
+.kiosk-touch-optimized .touch-target {
+  min-width: var(--touch-target-min);
+  min-height: var(--touch-target-min);
+  margin: var(--touch-spacing);
+  
+  /* Ensure touch targets are easily tappable */
+  position: relative;
+  z-index: 1;
+}
+
+/* Fullscreen-specific optimizations */
+.kiosk-fullscreen {
+  /* Remove any margins or padding that might cause scrollbars */
+  margin: 0;
+  padding: 0;
+  
+  /* Ensure content fits exactly */
+  box-sizing: border-box;
+  
+  /* Hide scrollbars completely */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+.kiosk-fullscreen::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}
+
+/* Firefox-specific optimizations */
+@-moz-document url-prefix() {
+  .kiosk-mode {
+    /* Firefox-specific hardware acceleration */
+    -moz-transform: translateZ(0);
+    
+    /* Optimize font rendering */
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeSpeed;
+  }
+  
+  .kiosk-touch-optimized {
+    /* Firefox touch optimizations */
+    -moz-user-select: none;
+    -moz-touch-action: manipulation;
+  }
+}
+
+/* High DPI display optimizations */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  .kiosk-mode {
+    /* Optimize for high DPI displays */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+/* Large display optimizations (40"+ screens) */
+@media (min-width: 2560px) {
+  .kiosk-mode {
+    /* Larger fonts and spacing for large displays */
+    --kiosk-font-scale: 1.5;
+    --kiosk-spacing-scale: 1.5;
+    --kiosk-touch-target-min: 66px;
+  }
+}
+
+/* Small display optimizations (12" screens) */
+@media (max-width: 1024px) {
+  .kiosk-mode {
+    /* Compact layout for smaller displays */
+    --kiosk-font-scale: 0.9;
+    --kiosk-spacing-scale: 0.8;
+    --kiosk-touch-target-min: 44px;
+  }
+}
+
+/* Performance optimizations for animations in kiosk mode */
+.kiosk-mode * {
+  /* Use hardware acceleration for all elements */
+  backface-visibility: hidden;
+  perspective: 1000px;
+}
+
+.kiosk-mode .animate {
+  /* Optimize animations for kiosk mode */
+  will-change: transform, opacity;
+  transform: translateZ(0);
+}
+
+/* Disable context menu styling */
+.kiosk-mode *::selection {
+  background: transparent;
+}
+
+.kiosk-mode *::-moz-selection {
+  background: transparent;
+}
+
+/* Kiosk mode loading screen */
+.kiosk-loading {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+}
+
+.kiosk-loading-content {
+  text-align: center;
+  color: white;
+}
+
+.kiosk-loading-spinner {
+  width: 60px;
+  height: 60px;
+  border: 4px solid rgba(255, 255, 255, 0.3);
+  border-top: 4px solid white;
+  border-radius: 50%;
+  animation: kiosk-spin 1s linear infinite;
+  margin: 0 auto 20px;
+}
+
+@keyframes kiosk-spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Error screen for kiosk mode */
+.kiosk-error {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  color: white;
+  text-align: center;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+.kiosk-error-content h1 {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+.kiosk-error-content p {
+  font-size: 1.2rem;
+  margin-bottom: 2rem;
+  max-width: 600px;
+}
+
+.kiosk-error-button {
+  background: rgba(255, 255, 255, 0.2);
+  border: 2px solid white;
+  color: white;
+  padding: 12px 24px;
+  font-size: 1.1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  min-width: var(--touch-target-min, 44px);
+  min-height: var(--touch-target-min, 44px);
+}
+
+.kiosk-error-button:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: translateY(-2px);
+}
+
+/* Responsive adjustments for kiosk mode */
+@media (orientation: landscape) {
+  .kiosk-mode {
+    /* Landscape-specific optimizations */
+    --kiosk-layout: landscape;
+  }
+}
+
+@media (orientation: portrait) {
+  .kiosk-mode {
+    /* Portrait-specific optimizations */
+    --kiosk-layout: portrait;
+  }
+}
+
+/* Accessibility improvements for kiosk mode */
+.kiosk-mode:focus-visible {
+  outline: 3px solid #4A90E2;
+  outline-offset: 2px;
+}
+
+.kiosk-mode button:focus-visible,
+.kiosk-mode .touch-target:focus-visible {
+  outline: 3px solid #4A90E2;
+  outline-offset: 2px;
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .kiosk-mode * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

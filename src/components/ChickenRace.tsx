@@ -1,6 +1,9 @@
 import React, { useMemo, useEffect, useState, useCallback, useRef } from 'react';
 import type { Player, ChickenPosition } from '../types';
 import { useTooltipManager } from '../hooks/useTooltipManager';
+import { useOptimizedAnimation, useQualityMonitor } from '../hooks/useOptimizedAnimation';
+import { globalFrameRateMonitor } from '../utils/frameRateMonitor';
+import { globalHardwareAcceleration } from '../utils/hardwareAcceleration';
 import Tooltip from './Tooltip';
 import ChickenRaceFullscreen from './ChickenRaceFullscreen';
 import './ChickenRace.css';
@@ -27,6 +30,23 @@ interface ChickenProps {
 
 // Individual Chicken component with optimized animations
 const Chicken: React.FC<ChickenProps> = React.memo(({ player, position, onHover, isFullscreen = false }) => {
+  const chickenRef = useRef<HTMLDivElement>(null);
+  const qualitySettings = useQualityMonitor();
+  
+  // Use optimized animation for chicken movement
+  const xAnimation = useOptimizedAnimation(position.x, {
+    duration: 800,
+    complexity: qualitySettings.animationComplexity,
+    respectReducedMotion: true
+  });
+  
+  const yAnimation = useOptimizedAnimation(position.y, {
+    duration: 800,
+    complexity: qualitySettings.animationComplexity,
+    respectReducedMotion: true
+  });
+
+  // Optimized idle animation with performance awareness
   const [animationOffset, setAnimationOffset] = useState({ x: 0, y: 0, rotate: 0, scale: 1 });
   const animationFrameRef = useRef<number>();
   const lastTimeRef = useRef<number>(0);
@@ -34,22 +54,34 @@ const Chicken: React.FC<ChickenProps> = React.memo(({ player, position, onHover,
 
   // Memoize player ID seed for consistent animations
   useMemo(() => {
-    playerIdSeed.current = parseInt(player._id.slice(-2), 16) || 1;
+    playerIdSeed.current = player._id ? parseInt(player._id.slice(-2), 16) || 1 : 1;
   }, [player._id]);
 
-  // Optimized 60fps animation using requestAnimationFrame
+  // Performance-aware idle animation
   useEffect(() => {
+    // Skip idle animations if quality is too low or reduced motion is preferred
+    if (qualitySettings.animationComplexity < 3 || !qualitySettings.enableTransitions) {
+      setAnimationOffset({ x: 0, y: 0, rotate: 0, scale: 1 });
+      return;
+    }
+
     const animateChicken = (currentTime: number) => {
-      // Throttle to 60fps max
-      if (currentTime - lastTimeRef.current >= 16.67) { // ~60fps
+      // Throttle based on quality settings
+      const targetFPS = qualitySettings.targetFPS || 30;
+      const frameInterval = 1000 / targetFPS;
+      
+      if (currentTime - lastTimeRef.current >= frameInterval) {
         const time = currentTime * 0.001; // Convert to seconds
         const seed = playerIdSeed.current!;
+        const complexity = qualitySettings.animationComplexity / 10; // 0.1 to 1.0
 
-        // Optimized calculations with reduced complexity
-        const x = Math.sin(time * 0.5 + seed) * 2; // Horizontal sway (±2px)
-        const y = Math.cos(time * 0.7 + seed) * 1.5; // Vertical bob (±1.5px)
-        const rotate = Math.sin(time * 0.3 + seed) * 1; // Slight rotation (±1deg)
-        const scale = 1 + Math.sin(time * 0.8 + seed) * 0.02; // Subtle scale (±2%)
+        // Scale animation intensity based on quality
+        const intensity = complexity * 0.5; // Reduce base intensity
+        
+        const x = Math.sin(time * 0.5 + seed) * (2 * intensity);
+        const y = Math.cos(time * 0.7 + seed) * (1.5 * intensity);
+        const rotate = Math.sin(time * 0.3 + seed) * (1 * intensity);
+        const scale = 1 + Math.sin(time * 0.8 + seed) * (0.02 * intensity);
 
         setAnimationOffset({ x, y, rotate, scale });
         lastTimeRef.current = currentTime;
@@ -58,37 +90,51 @@ const Chicken: React.FC<ChickenProps> = React.memo(({ player, position, onHover,
       animationFrameRef.current = requestAnimationFrame(animateChicken);
     };
 
-    // Check for reduced motion preference
-    const prefersReducedMotion = typeof window !== 'undefined' && window.matchMedia
-      ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
-      : false;
-
-    if (!prefersReducedMotion) {
-      animationFrameRef.current = requestAnimationFrame(animateChicken);
-    }
+    animationFrameRef.current = requestAnimationFrame(animateChicken);
 
     return () => {
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
       }
     };
-  }, [player._id]);
+  }, [player._id, qualitySettings]);
+
+  // Apply hardware acceleration to chicken element
+  useEffect(() => {
+    if (chickenRef.current && qualitySettings.enableTransitions) {
+      const cleanup = xAnimation.applyToElement(chickenRef.current);
+      return cleanup;
+    }
+  }, [xAnimation, qualitySettings.enableTransitions]);
 
   // Memoize style calculations for performance
-  const chickenStyle: React.CSSProperties = useMemo(() => ({
-    position: 'absolute',
-    left: `${position.x}%`,
-    top: `${position.y}%`,
-    transform: `translate(-50%, -50%) 
-                translate3d(${animationOffset.x}px, ${animationOffset.y}px, 0) 
-                rotate(${animationOffset.rotate}deg) 
-                scale(${animationOffset.scale})`,
-    transition: 'left 0.8s cubic-bezier(0.4, 0, 0.2, 1), top 0.8s cubic-bezier(0.4, 0, 0.2, 1)',
-    cursor: 'pointer',
-    zIndex: 1, // Very low z-index to stay behind all UI elements
-    willChange: 'transform',
-    backfaceVisibility: 'hidden',
-  }), [position.x, position.y, animationOffset]);
+  const chickenStyle: React.CSSProperties = useMemo(() => {
+    const baseStyle: React.CSSProperties = {
+      position: 'absolute',
+      left: `${xAnimation.currentValue}%`,
+      top: `${yAnimation.currentValue}%`,
+      cursor: 'pointer',
+      zIndex: 1,
+    };
+
+    // Apply hardware acceleration and transforms based on quality
+    if (qualitySettings.enableTransitions) {
+      baseStyle.transform = `translate(-50%, -50%) 
+                            translate3d(${animationOffset.x}px, ${animationOffset.y}px, 0) 
+                            rotate(${animationOffset.rotate}deg) 
+                            scale(${animationOffset.scale})`;
+      baseStyle.transition = xAnimation.isAnimating || yAnimation.isAnimating 
+        ? 'left 0.8s cubic-bezier(0.4, 0, 0.2, 1), top 0.8s cubic-bezier(0.4, 0, 0.2, 1)'
+        : 'none';
+      baseStyle.willChange = 'transform';
+      baseStyle.backfaceVisibility = 'hidden';
+    } else {
+      // Simplified positioning for low-quality mode
+      baseStyle.transform = 'translate(-50%, -50%)';
+    }
+
+    return baseStyle;
+  }, [xAnimation.currentValue, yAnimation.currentValue, animationOffset, qualitySettings.enableTransitions, xAnimation.isAnimating, yAnimation.isAnimating]);
 
   // Memoize event handlers to prevent unnecessary re-renders
   const handleMouseEnter = useCallback((event: React.MouseEvent<HTMLDivElement>) => {
@@ -107,6 +153,7 @@ const Chicken: React.FC<ChickenProps> = React.memo(({ player, position, onHover,
 
   return (
     <div
+      ref={chickenRef}
       style={chickenStyle}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
@@ -115,7 +162,9 @@ const Chicken: React.FC<ChickenProps> = React.memo(({ player, position, onHover,
     >
       {/* Chicken Avatar */}
       <div className="flex flex-col items-center">
-        <div className={`chicken-sprite mb-1 flex items-center justify-center hover:scale-110 transition-transform will-change-transform ${isFullscreen
+        <div className={`chicken-sprite mb-1 flex items-center justify-center transition-transform will-change-transform ${
+          qualitySettings.enableTransitions ? 'hover:scale-110' : ''
+        } ${isFullscreen
           ? 'w-16 h-16 text-2xl'
           : 'w-12 h-12 text-lg'
           }`}>
@@ -124,7 +173,9 @@ const Chicken: React.FC<ChickenProps> = React.memo(({ player, position, onHover,
           </div>
         </div>
         {/* Player Name */}
-        <div className={`player-name-tag font-medium text-gray-800 bg-white/80 px-2 py-1 rounded shadow-sm truncate ${isFullscreen
+        <div className={`player-name-tag font-medium text-gray-800 bg-white/80 px-2 py-1 rounded truncate ${
+          qualitySettings.enableShadows ? 'shadow-sm' : ''
+        } ${isFullscreen
           ? 'text-sm max-w-24'
           : 'text-xs max-w-20'
           }`}>
@@ -162,6 +213,24 @@ export const ChickenRace: React.FC<ChickenRaceProps> = React.memo(({
 }) => {
   // State for fullscreen modal
   const [isFullscreenOpen, setIsFullscreenOpen] = useState(false);
+  
+  // Monitor quality settings for performance optimization
+  const qualitySettings = useQualityMonitor();
+
+  // Initialize performance monitoring
+  useEffect(() => {
+    // Start frame rate monitoring when component mounts
+    globalFrameRateMonitor.startMonitoring();
+    
+    // Log hardware capabilities
+    const capabilities = globalHardwareAcceleration.getCapabilities();
+    console.log('ChickenRace: Hardware capabilities detected', capabilities);
+    
+    return () => {
+      // Clean up monitoring when component unmounts
+      globalFrameRateMonitor.stopMonitoring();
+    };
+  }, []);
 
   // Calculate chicken positions based on rankings or use provided positions
   const chickenPositions = useMemo((): ChickenPosition[] => {

@@ -6,6 +6,9 @@
 /* stylelint-disable-next-line at-rule-no-unknown */
 @tailwind utilities;
 
+/* Responsive Design System */
+@import './styles/responsive.css';
+
 /* Custom styles for the chicken race application */
 :root {
   font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
