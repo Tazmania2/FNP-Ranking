@@ -54,7 +54,7 @@ const Chicken: React.FC<ChickenProps> = React.memo(({ player, position, onHover,
 
   // Memoize player ID seed for consistent animations
   useMemo(() => {
-    playerIdSeed.current = parseInt(player._id.slice(-2), 16) || 1;
+    playerIdSeed.current = player._id ? parseInt(player._id.slice(-2), 16) || 1 : 1;
   }, [player._id]);
 
   // Performance-aware idle animation

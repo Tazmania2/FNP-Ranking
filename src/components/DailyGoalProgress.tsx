@@ -86,13 +86,22 @@ export const DailyGoalProgress: React.FC<DailyGoalProgressProps> = ({
       {/* Progress Details */}
       <div className="flex items-center justify-between text-sm sm:text-base">
         <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4">
-          <div className="text-gray-600">
-            <span className="font-medium text-gray-800">{formatNumber(current)}</span>
-            <span className="text-gray-500"> / {formatNumber(target)}</span>
-          </div>
-          <div className="text-gray-500 text-xs sm:text-sm">
-            Restam: <span className="font-medium text-gray-700">{formatNumber(target - current)}</span>
-          </div>
+          {progressPercentage >= 100 ? (
+            // When completed, show blank instead of current/target
+            <div className="text-gray-600">
+              <span className="font-medium text-green-600">Meta concluída!</span>
+            </div>
+          ) : (
+            <>
+              <div className="text-gray-600">
+                <span className="font-medium text-gray-800">{formatNumber(current)}</span>
+                <span className="text-gray-500"> / {formatNumber(target)}</span>
+              </div>
+              <div className="text-gray-500 text-xs sm:text-sm">
+                Restam: <span className="font-medium text-gray-700">{formatNumber(target - current)}</span>
+              </div>
+            </>
+          )}
         </div>
         
         {/* Status indicator */}

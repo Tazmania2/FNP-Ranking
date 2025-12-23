@@ -77,8 +77,8 @@ export const LeaderboardSelector: React.FC<LeaderboardSelectorProps> = ({
     return `${minutes}:${seconds.toString().padStart(2, '0')}`;
   };
 
-  const currentLeaderboard = leaderboards.find(lb => lb._id === currentLeaderboardId);
-  const canAutoCycle = leaderboards.length > 1;
+  const currentLeaderboard = Array.isArray(leaderboards) ? leaderboards.find(lb => lb._id === currentLeaderboardId) : null;
+  const canAutoCycle = Array.isArray(leaderboards) && leaderboards.length > 1;
 
   return (
     <div className={`flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-4 ${className}`}>

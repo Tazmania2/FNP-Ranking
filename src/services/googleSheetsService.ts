@@ -178,7 +178,7 @@ export class GoogleSheetsService {
     const url = '/daily-code';
 
     console.log('Fetching daily code from API:', {
-      url: `${this.axiosInstance.defaults.baseURL}${url}`,
+      url: `${this.axiosInstance.defaults.baseURL || ''}${url}`,
     });
 
     try {

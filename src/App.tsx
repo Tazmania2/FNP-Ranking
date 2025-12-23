@@ -15,7 +15,6 @@ import { globalResourceOptimizer } from './utils/resourceOptimizer';
 import { globalRaspberryPiOptimizationManager } from './utils/initializeRaspberryPiOptimizations';
 import { ResponsiveWrapper } from './components/ResponsiveWrapper';
 import { KioskModeProvider } from './components/KioskModeProvider';
-import { FullscreenButton } from './components/FullscreenButton';
 import { initializeSecurity } from './utils/securityInit';
 // import ChickenRaceExample from './components/examples/ChickenRaceExample';
 import type { FunifierConfig } from './types';
@@ -204,13 +203,6 @@ function App() {
                       />
                     </div>
                   )}
-
-                  {/* Fullscreen Button for Kiosk Mode */}
-                  <FullscreenButton
-                    size="medium"
-                    variant="both"
-                    className="hidden sm:flex"
-                  />
 
                   <button
                     onClick={() => setShowDemo(true)}
