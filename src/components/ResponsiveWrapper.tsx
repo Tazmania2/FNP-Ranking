@@ -49,7 +49,22 @@ export const ResponsiveWrapper: React.FC<ResponsiveWrapperProps> = ({
         touchEnabled: isTouch,
         layoutDensity: displayConfig.layoutDensity,
         dimensions: `${displayConfig.screenWidth}x${displayConfig.screenHeight}`,
+        pixelRatio: displayConfig.pixelDensity,
+        estimatedDiagonal: displayConfig.screenWidth >= 1920 ? 'TV-sized display detected' : 'Monitor-sized display',
       });
+
+      // Add TV-specific optimizations
+      if (displayConfig.scaleFactor >= 2.0) {
+        console.log('📺 TV display detected - applying kiosk optimizations');
+        document.body.classList.add('tv-display');
+        
+        // Disable text selection for kiosk mode
+        document.body.style.userSelect = 'none';
+        document.body.style.webkitUserSelect = 'none';
+        
+        // Optimize for viewing distance
+        document.documentElement.style.setProperty('--tv-viewing-distance-factor', '1.2');
+      }
     }
   }, [enableAutoDetection, screenSize, displayConfig, isTouch]);
 
@@ -59,12 +74,20 @@ export const ResponsiveWrapper: React.FC<ResponsiveWrapperProps> = ({
     className,
   ].filter(Boolean).join(' ');
 
+  // Add debug information for development
+  const debugInfo = process.env.NODE_ENV === 'development' ? {
+    'data-debug-scale': displayConfig.scaleFactor,
+    'data-debug-screen-size': screenSize,
+    'data-debug-dimensions': `${displayConfig.screenWidth}x${displayConfig.screenHeight}`,
+  } : {};
+
   return (
     <div 
       className={combinedClassName}
       data-screen-size={screenSize}
       data-touch-enabled={isTouch}
       data-layout-density={displayConfig.layoutDensity}
+      {...debugInfo}
       style={{
         '--current-scale-factor': displayConfig.scaleFactor,
         '--current-font-size': `${displayConfig.preferredFontSize}px`,

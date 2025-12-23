@@ -30,21 +30,21 @@ const DEFAULT_BREAKPOINTS: Breakpoints = {
   xxlarge: 2560, // 40"+ displays
 };
 
-// Touch target size recommendations (in pixels)
+// Touch target size recommendations (in pixels) - larger for TV displays
 const TOUCH_TARGET_SIZES = {
   small: 44,    // Minimum recommended
-  medium: 48,   // Comfortable
-  large: 56,    // Large displays
-  xlarge: 64,   // Very large displays
+  medium: 56,   // Comfortable for medium displays
+  large: 72,    // Large displays - increased
+  xlarge: 88,   // TV displays - much larger
 };
 
-// Font scale factors for different screen sizes
+// Font scale factors for different screen sizes - more aggressive for TV displays
 const FONT_SCALE_FACTORS = {
   small: 1.0,    // Base size for smaller displays
-  medium: 1.1,   // Slightly larger for medium displays
-  large: 1.25,   // Larger for big displays
-  xlarge: 1.4,   // Much larger for very big displays
-  xxlarge: 1.6,  // Largest for huge displays
+  medium: 1.3,   // Larger for medium displays
+  large: 1.6,    // Much larger for big displays
+  xlarge: 2.0,   // Very large for TV displays
+  xxlarge: 2.4,  // Largest for huge TV displays
 };
 
 export type ScreenSize = keyof Breakpoints;
@@ -232,10 +232,10 @@ export const useResponsiveDesign = (
 // Helper functions
 
 function calculateScaleFactor(width: number, breakpoints: Breakpoints): number {
-  if (width >= breakpoints.xxlarge) return 1.6;  // 40"+ displays
-  if (width >= breakpoints.xlarge) return 1.4;   // 33-40" displays
-  if (width >= breakpoints.large) return 1.25;   // 25-32" displays
-  if (width >= breakpoints.medium) return 1.1;   // 16-24" displays
+  if (width >= breakpoints.xxlarge) return 2.4;  // 40"+ displays - much more aggressive
+  if (width >= breakpoints.xlarge) return 2.0;   // 33-40" displays - more aggressive
+  if (width >= breakpoints.large) return 1.6;    // 25-32" displays - increased
+  if (width >= breakpoints.medium) return 1.3;   // 16-24" displays - increased
   return 1.0; // 12-15" displays
 }
 
