@@ -16,8 +16,42 @@ interface ResponsiveWrapperProps {
 }
 
 /**
+ * Determines the appropriate TV scaling class based on screen dimensions
+ * Uses CSS transform: scale() for reliable scaling regardless of CSS framework
+ */
+function getTVScaleClass(width: number, height: number): string | null {
+  const aspectRatio = width / height;
+  
+  // Ultra-wide displays (aspect ratio > 2.5, like 3840x1229 = 3.12)
+  if (width >= 3840 && aspectRatio > 2.5) {
+    return 'tv-scale-ultrawide';
+  }
+  
+  // Standard 4K displays (3840x2160)
+  if (width >= 3840) {
+    return 'tv-scale-4k';
+  }
+  
+  // 1440p displays (2560x1440)
+  if (width >= 2560) {
+    return 'tv-scale-1440p';
+  }
+  
+  // 1080p displays (1920x1080)
+  if (width >= 1920) {
+    return 'tv-scale-1080p';
+  }
+  
+  // No scaling needed for smaller displays
+  return null;
+}
+
+/**
  * ResponsiveWrapper component that provides responsive design context
  * and automatically configures display settings for kiosk deployment
+ * 
+ * Uses CSS transform: scale() for TV displays to ensure consistent scaling
+ * regardless of what CSS framework (Tailwind, etc.) is used for styling.
  */
 export const ResponsiveWrapper: React.FC<ResponsiveWrapperProps> = ({
   children,
@@ -39,46 +73,44 @@ export const ResponsiveWrapper: React.FC<ResponsiveWrapperProps> = ({
     if (!initRef.current && enableAutoDetection) {
       initRef.current = true;
       
-      // Initialize display manager
+      // Initialize display manager (sets CSS variables for components that use them)
       globalDisplayManager.detectAndConfigure();
+      
+      const { screenWidth, screenHeight, scaleFactor, layoutDensity, pixelDensity } = displayConfig;
       
       // Log configuration for debugging
       console.log('🖥️ Responsive display configured:', {
         screenSize,
-        scaleFactor: displayConfig.scaleFactor,
+        scaleFactor,
         touchEnabled: isTouch,
-        layoutDensity: displayConfig.layoutDensity,
-        dimensions: `${displayConfig.screenWidth}x${displayConfig.screenHeight}`,
-        pixelRatio: displayConfig.pixelDensity,
-        estimatedDiagonal: displayConfig.screenWidth >= 1920 ? 'TV-sized display detected' : 'Monitor-sized display',
+        layoutDensity,
+        dimensions: `${screenWidth}x${screenHeight}`,
+        pixelRatio: pixelDensity,
       });
 
-      // Add TV-specific optimizations
-      if (displayConfig.scaleFactor >= 2.0) {
-        console.log('📺 TV display detected - applying kiosk optimizations');
-        document.body.classList.add('tv-display');
+      // Determine if this is a TV/large display that needs transform scaling
+      const tvScaleClass = getTVScaleClass(screenWidth, screenHeight);
+      
+      if (tvScaleClass) {
+        console.log(`📺 TV display detected (${screenWidth}x${screenHeight}) - applying ${tvScaleClass}`);
         
-        // Disable text selection for kiosk mode
-        document.body.style.userSelect = 'none';
-        document.body.style.webkitUserSelect = 'none';
+        // Add TV display base class and specific scale class
+        document.body.classList.add('tv-display', tvScaleClass);
         
-        // Optimize for viewing distance
-        document.documentElement.style.setProperty('--tv-viewing-distance-factor', '1.2');
-      }
-
-      // Emergency check - if we're on a large display but scaling is too small, force it
-      if (displayConfig.screenWidth >= 1920 && displayConfig.scaleFactor < 1.8) {
-        console.warn('🚨 Large display with insufficient scaling detected, applying emergency scaling');
-        const emergencyScale = displayConfig.screenWidth >= 3840 ? 3.0 : 2.0;
+        // Set the scale factor CSS variable for the transform
+        const scaleFactorMap: Record<string, number> = {
+          'tv-scale-1080p': 1.3,
+          'tv-scale-1440p': 1.5,
+          'tv-scale-4k': 1.8,
+          'tv-scale-ultrawide': 2.0,
+        };
         
-        // Apply emergency scaling directly
-        document.documentElement.style.setProperty('--responsive-scale-factor', emergencyScale.toString());
-        document.documentElement.style.setProperty('--responsive-font-size', `${16 * emergencyScale}px`);
-        document.documentElement.style.setProperty('--responsive-touch-target', `${44 * emergencyScale}px`);
-        document.documentElement.style.setProperty('--responsive-spacing-unit', `${8 * emergencyScale}px`);
+        const cssScaleFactor = scaleFactorMap[tvScaleClass] || 1.5;
+        document.documentElement.style.setProperty('--tv-scale-factor', cssScaleFactor.toString());
         
-        document.body.classList.add('tv-display');
-        document.body.classList.add(emergencyScale >= 2.6 ? 'scale-xxxlarge' : 'scale-xxlarge');
+        console.log(`✅ Applied TV scaling: ${cssScaleFactor}x via CSS transform`);
+      } else {
+        console.log('🖥️ Standard display - no transform scaling needed');
       }
     }
   }, [enableAutoDetection, screenSize, displayConfig, isTouch]);

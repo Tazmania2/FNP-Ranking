@@ -399,43 +399,21 @@ export const simulateScreenSize = (width: number, height: number): DisplayConfig
 
 // Emergency manual scaling override for debugging
 export const forceScaling = (scaleFactor: number): void => {
-  console.log(`🔧 Forcing scale factor to ${scaleFactor}x`);
+  console.log(`🔧 Forcing scale factor to ${scaleFactor}x via CSS transform`);
   
-  const root = document.documentElement;
-  root.style.setProperty('--responsive-scale-factor', scaleFactor.toString());
-  root.style.setProperty('--responsive-font-size', `${16 * scaleFactor}px`);
-  root.style.setProperty('--responsive-touch-target', `${44 * scaleFactor}px`);
-  root.style.setProperty('--responsive-spacing-unit', `${8 * scaleFactor}px`);
-  root.style.setProperty('--responsive-border-radius', `${8 * scaleFactor}px`);
+  // Remove any existing scale classes
+  document.body.classList.remove(
+    'tv-scale-1080p', 'tv-scale-1440p', 'tv-scale-4k', 
+    'tv-scale-ultrawide', 'tv-scale-custom'
+  );
   
-  // Add appropriate scale class
-  document.body.classList.remove('scale-small', 'scale-medium', 'scale-large', 'scale-xlarge', 'scale-xxlarge', 'scale-xxxlarge');
+  // Add TV display class and custom scale class
+  document.body.classList.add('tv-display', 'tv-scale-custom');
   
-  if (scaleFactor >= 2.6) {
-    document.body.classList.add('scale-xxxlarge');
-  } else if (scaleFactor >= 2.2) {
-    document.body.classList.add('scale-xxlarge');
-  } else if (scaleFactor >= 1.8) {
-    document.body.classList.add('scale-xlarge');
-  } else if (scaleFactor >= 1.4) {
-    document.body.classList.add('scale-large');
-  } else if (scaleFactor >= 1.15) {
-    document.body.classList.add('scale-medium');
-  } else {
-    document.body.classList.add('scale-small');
-  }
+  // Set the custom scale factor
+  document.documentElement.style.setProperty('--tv-scale-factor', scaleFactor.toString());
   
-  // Force TV optimizations for large scales
-  if (scaleFactor >= 2.0) {
-    document.body.classList.add('tv-display');
-    document.body.style.userSelect = 'none';
-    document.body.style.webkitUserSelect = 'none';
-  }
-  
-  // Trigger reflow
-  document.body.offsetHeight;
-  
-  console.log(`✅ Applied ${scaleFactor}x scaling manually`);
+  console.log(`✅ Applied ${scaleFactor}x scaling via CSS transform`);
 };
 
 // Make functions available globally for console debugging
@@ -446,4 +424,38 @@ if (typeof window !== 'undefined') {
   window.simulateScreenSize = simulateScreenSize;
   // @ts-ignore
   window.recalculateResponsive = recalculateResponsiveLayout;
+  
+  // @ts-ignore - Set specific TV scale preset
+  window.setTVScale = (preset: '1080p' | '1440p' | '4k' | 'ultrawide') => {
+    const scaleMap = {
+      '1080p': 1.3,
+      '1440p': 1.5,
+      '4k': 1.8,
+      'ultrawide': 2.0,
+    };
+    
+    // Remove existing scale classes
+    document.body.classList.remove(
+      'tv-scale-1080p', 'tv-scale-1440p', 'tv-scale-4k', 
+      'tv-scale-ultrawide', 'tv-scale-custom'
+    );
+    
+    // Add new classes
+    document.body.classList.add('tv-display', `tv-scale-${preset}`);
+    document.documentElement.style.setProperty('--tv-scale-factor', scaleMap[preset].toString());
+    
+    console.log(`✅ Applied ${preset} TV scaling (${scaleMap[preset]}x)`);
+  };
+  
+  // @ts-ignore - Remove all TV scaling
+  window.resetScaling = () => {
+    document.body.classList.remove(
+      'tv-display', 'tv-scale-1080p', 'tv-scale-1440p', 
+      'tv-scale-4k', 'tv-scale-ultrawide', 'tv-scale-custom'
+    );
+    document.documentElement.style.removeProperty('--tv-scale-factor');
+    console.log('✅ TV scaling removed');
+  };
+  
+  console.log('🧪 Debug functions: forceScaling(1.5), setTVScale("4k"), resetScaling()');
 }
