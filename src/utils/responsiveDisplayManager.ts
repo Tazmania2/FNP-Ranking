@@ -102,15 +102,14 @@ export class ResponsiveDisplayManager {
     // If it looks like a TV, assume larger diagonal
     const estimatedDiagonal = isLikelyTV ? Math.max(diagonal, 32) : diagonal;
 
-    // Debug logging for development
-    if (process.env.NODE_ENV === 'development') {
-      console.log('Display detection:', {
-        width, height, pixelRatio, assumedDPI,
-        diagonal: diagonal.toFixed(1),
-        estimatedDiagonal: estimatedDiagonal.toFixed(1),
-        isLikelyTV
-      });
-    }
+    // Debug logging for development and production (temporarily for debugging)
+    console.log('🖥️ Display detection:', {
+      width, height, pixelRatio, assumedDPI,
+      diagonal: diagonal.toFixed(1),
+      estimatedDiagonal: estimatedDiagonal.toFixed(1),
+      isLikelyTV,
+      aspectRatio: (width / height).toFixed(2)
+    });
 
     return {
       width,
@@ -174,6 +173,17 @@ export class ResponsiveDisplayManager {
       }
     }
 
+    // Emergency fallback for ultra-high resolution displays that might be missed
+    if (width >= 3840 && scaleFactor < 2.5) {
+      console.warn('🚨 Ultra-high resolution detected, forcing aggressive scaling');
+      scaleFactor = 3.0;
+      layoutDensity = 'spacious';
+    } else if (width >= 1920 && scaleFactor < 1.8) {
+      console.warn('🚨 Large display detected, forcing TV-appropriate scaling');
+      scaleFactor = 2.0;
+      layoutDensity = 'spacious';
+    }
+
     // Calculate touch target size
     const baseTouchSize = this.layoutConfig.minTouchTargetSize;
     const maxTouchSize = this.layoutConfig.maxTouchTargetSize;
@@ -184,6 +194,11 @@ export class ResponsiveDisplayManager {
 
     // Calculate font size
     const preferredFontSize = Math.round(this.layoutConfig.baseFontSize * scaleFactor);
+
+    console.log('🎯 Calculated config:', {
+      width, height, diagonal: diagonal?.toFixed(1),
+      scaleFactor, layoutDensity, preferredFontSize, touchTargetSize
+    });
 
     return {
       screenWidth: width,
@@ -204,6 +219,13 @@ export class ResponsiveDisplayManager {
     if (typeof document === 'undefined') return;
 
     const root = document.documentElement;
+    
+    console.log('🎨 Applying global styles with config:', {
+      scaleFactor: config.scaleFactor,
+      fontSize: config.preferredFontSize,
+      touchTarget: config.touchTargetSize,
+      layoutDensity: config.layoutDensity
+    });
     
     // Set CSS custom properties
     root.style.setProperty('--responsive-scale-factor', config.scaleFactor.toString());
@@ -238,6 +260,16 @@ export class ResponsiveDisplayManager {
     } else {
       document.body.classList.add('mouse-enabled');
     }
+
+    // Force immediate style recalculation
+    document.body.offsetHeight; // Trigger reflow
+    
+    console.log('✅ Applied CSS classes:', {
+      responsive: 'responsive-display',
+      layout: `layout-${config.layoutDensity}`,
+      scale: `scale-${this.getScaleCategory(config.scaleFactor)}`,
+      touch: config.touchEnabled ? 'touch-enabled' : 'mouse-enabled'
+    });
   }
 
   /**
@@ -364,3 +396,54 @@ export const simulateScreenSize = (width: number, height: number): DisplayConfig
   }
   return globalDisplayManager.getCurrentConfig() || globalDisplayManager.detectAndConfigure();
 };
+
+// Emergency manual scaling override for debugging
+export const forceScaling = (scaleFactor: number): void => {
+  console.log(`🔧 Forcing scale factor to ${scaleFactor}x`);
+  
+  const root = document.documentElement;
+  root.style.setProperty('--responsive-scale-factor', scaleFactor.toString());
+  root.style.setProperty('--responsive-font-size', `${16 * scaleFactor}px`);
+  root.style.setProperty('--responsive-touch-target', `${44 * scaleFactor}px`);
+  root.style.setProperty('--responsive-spacing-unit', `${8 * scaleFactor}px`);
+  root.style.setProperty('--responsive-border-radius', `${8 * scaleFactor}px`);
+  
+  // Add appropriate scale class
+  document.body.classList.remove('scale-small', 'scale-medium', 'scale-large', 'scale-xlarge', 'scale-xxlarge', 'scale-xxxlarge');
+  
+  if (scaleFactor >= 2.6) {
+    document.body.classList.add('scale-xxxlarge');
+  } else if (scaleFactor >= 2.2) {
+    document.body.classList.add('scale-xxlarge');
+  } else if (scaleFactor >= 1.8) {
+    document.body.classList.add('scale-xlarge');
+  } else if (scaleFactor >= 1.4) {
+    document.body.classList.add('scale-large');
+  } else if (scaleFactor >= 1.15) {
+    document.body.classList.add('scale-medium');
+  } else {
+    document.body.classList.add('scale-small');
+  }
+  
+  // Force TV optimizations for large scales
+  if (scaleFactor >= 2.0) {
+    document.body.classList.add('tv-display');
+    document.body.style.userSelect = 'none';
+    document.body.style.webkitUserSelect = 'none';
+  }
+  
+  // Trigger reflow
+  document.body.offsetHeight;
+  
+  console.log(`✅ Applied ${scaleFactor}x scaling manually`);
+};
+
+// Make functions available globally for console debugging
+if (typeof window !== 'undefined') {
+  // @ts-ignore
+  window.forceScaling = forceScaling;
+  // @ts-ignore
+  window.simulateScreenSize = simulateScreenSize;
+  // @ts-ignore
+  window.recalculateResponsive = recalculateResponsiveLayout;
+}

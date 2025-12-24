@@ -65,6 +65,21 @@ export const ResponsiveWrapper: React.FC<ResponsiveWrapperProps> = ({
         // Optimize for viewing distance
         document.documentElement.style.setProperty('--tv-viewing-distance-factor', '1.2');
       }
+
+      // Emergency check - if we're on a large display but scaling is too small, force it
+      if (displayConfig.screenWidth >= 1920 && displayConfig.scaleFactor < 1.8) {
+        console.warn('🚨 Large display with insufficient scaling detected, applying emergency scaling');
+        const emergencyScale = displayConfig.screenWidth >= 3840 ? 3.0 : 2.0;
+        
+        // Apply emergency scaling directly
+        document.documentElement.style.setProperty('--responsive-scale-factor', emergencyScale.toString());
+        document.documentElement.style.setProperty('--responsive-font-size', `${16 * emergencyScale}px`);
+        document.documentElement.style.setProperty('--responsive-touch-target', `${44 * emergencyScale}px`);
+        document.documentElement.style.setProperty('--responsive-spacing-unit', `${8 * emergencyScale}px`);
+        
+        document.body.classList.add('tv-display');
+        document.body.classList.add(emergencyScale >= 2.6 ? 'scale-xxxlarge' : 'scale-xxlarge');
+      }
     }
   }, [enableAutoDetection, screenSize, displayConfig, isTouch]);
 
