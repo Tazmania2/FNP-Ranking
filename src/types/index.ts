@@ -193,3 +193,56 @@ export interface PlayerStatus {
   pointCategories: Record<string, number>;
   _id: string;
 }
+
+// Challenge Completion Notification Configuration Types
+export interface ChallengeCompletionEvent {
+  id: string;
+  playerId: string;
+  playerName: string;
+  challengeId: string;
+  challengeName: string;
+  completedAt: Date;
+  points?: number;
+  timestamp: Date;
+  challengeType?: string;
+  challengeCategory?: string;
+}
+
+export interface PopupAnimationConfig {
+  enterDuration: number;
+  exitDuration: number;
+  enterEasing: string;
+  exitEasing: string;
+}
+
+export interface WebhookConfig {
+  url: string;
+  authToken?: string;
+  apiKey?: string;
+  signatureSecret?: string;
+  timeout: number;
+  retryAttempts: number;
+}
+
+export interface SSEConfig {
+  url: string;
+  reconnectInterval: number;
+  maxReconnectAttempts: number;
+  heartbeatTimeout: number;
+}
+
+export interface NotificationConfig {
+  displayDuration: number;
+  position: 'top-right' | 'top-center' | 'center';
+  maxQueueSize: number;
+  enabledChallengeTypes: string[];
+  enabledChallengeCategories: string[];
+  animationConfig: PopupAnimationConfig;
+  webhookConfig: WebhookConfig;
+  sseConfig: SSEConfig;
+  enableNotifications: boolean;
+  enableSounds: boolean;
+  enableVibration: boolean;
+  memoryCleanupInterval: number;
+  maxStoredEvents: number;
+}
