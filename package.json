@@ -63,11 +63,15 @@
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",
+    "@upstash/redis": "^1.36.1",
+    "@vercel/kv": "^3.0.0",
     "axios": "^1.12.2",
     "date-fns": "^4.1.0",
     "framer-motion": "^12.23.16",
+    "ioredis": "^5.9.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "redis": "^5.10.0",
     "zustand": "^5.0.8"
   }
 }

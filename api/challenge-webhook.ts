@@ -1,9 +1,17 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { createClient } from 'redis';
 import { 
   ChallengeCompletionEvent, 
   parseWebhookPayload, 
   validateWebhookSignature 
 } from './utils/webhook-utils.js';
+
+// Create Redis client
+const getRedisClient = async () => {
+  const client = createClient({ url: process.env.REDIS_URL });
+  await client.connect();
+  return client;
+};
 
 // Error handling utilities for webhook processing
 interface WebhookError {
@@ -422,7 +430,41 @@ export default async function handler(
       return handleWebhookError(error, res);
     }
 
-    // Use high-frequency processor for better performance
+    // Store event in Redis for real-time SSE delivery
+    let redis;
+    try {
+      redis = await getRedisClient();
+      
+      // Store the event with a TTL of 5 minutes
+      const eventKey = `challenge-event:${event.id}`;
+      const eventData = JSON.stringify({
+        ...event,
+        completedAt: event.completedAt.toISOString(),
+        timestamp: event.timestamp.toISOString()
+      });
+      
+      await redis.setEx(eventKey, 300, eventData); // 5 minute expiry
+      
+      // Also add to a list of recent events for SSE polling
+      await redis.lPush('challenge-events:recent', eventData);
+      
+      // Trim the list to keep only last 50 events
+      await redis.lTrim('challenge-events:recent', 0, 49);
+      
+      // Store the latest event timestamp for quick polling
+      await redis.set('challenge-events:latest', Date.now().toString());
+      
+      console.log('Event stored in Redis:', event.id);
+    } catch (redisError) {
+      console.error('Failed to store event in Redis:', redisError);
+      // Continue processing even if Redis fails
+    } finally {
+      if (redis) {
+        await redis.disconnect();
+      }
+    }
+
+    // Also use local processor for backward compatibility
     try {
       highFrequencyProcessor.addEvent(event);
     } catch (processingError) {
@@ -433,23 +475,7 @@ export default async function handler(
         { processingError, event },
         'critical'
       );
-      // Log error but continue processing - don't fail the webhook
       logWebhookError(error);
-      
-      // Fallback to direct processing
-      try {
-        eventStore.addEvent(event);
-        broadcastEventToSSEClients(event);
-      } catch (fallbackError) {
-        const fallbackWebhookError = createWebhookError(
-          'system',
-          'FALLBACK_PROCESSING_ERROR',
-          'Failed to process event even with fallback',
-          { fallbackError, event },
-          'critical'
-        );
-        logWebhookError(fallbackWebhookError);
-      }
     }
 
     // Log successful processing with performance metrics

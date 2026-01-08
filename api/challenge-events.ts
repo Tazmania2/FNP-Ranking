@@ -1,4 +1,12 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { createClient } from 'redis';
+
+// Create Redis client
+const getRedisClient = async () => {
+  const client = createClient({ url: process.env.REDIS_URL });
+  await client.connect();
+  return client;
+};
 
 /**
  * Challenge completion event data structure
@@ -506,9 +514,63 @@ export default async function handler(
       // Continue with connection even if initial events fail
     }
 
-    // Keep connection alive with periodic heartbeat and cleanup
-    heartbeatInterval = setInterval(() => {
+    // Track last seen event timestamp for polling
+    let lastSeenTimestamp = Date.now();
+
+    // Keep connection alive with periodic heartbeat and KV polling
+    heartbeatInterval = setInterval(async () => {
       try {
+        // Poll Redis for new events
+        let redis;
+        try {
+          redis = await getRedisClient();
+          const latestTimestamp = await redis.get('challenge-events:latest');
+          if (latestTimestamp && parseInt(latestTimestamp) > lastSeenTimestamp) {
+            // New events available - fetch them
+            const recentEvents = await redis.lRange('challenge-events:recent', 0, 9);
+            
+            for (const eventJson of recentEvents) {
+              try {
+                const event = JSON.parse(eventJson);
+                const eventTimestamp = new Date(event.timestamp).getTime();
+                
+                if (eventTimestamp > lastSeenTimestamp) {
+                  // Send this event to the client
+                  const eventData = safeJSONStringify({
+                    id: event.id,
+                    type: 'challenge_completed',
+                    data: {
+                      playerId: event.playerId,
+                      playerName: event.playerName,
+                      challengeId: event.challengeId,
+                      challengeName: event.challengeName,
+                      completedAt: event.completedAt,
+                      points: event.points
+                    },
+                    timestamp: event.timestamp
+                  });
+
+                  safeSSEWrite(res, `id: ${event.id}\n`, connectionId!);
+                  safeSSEWrite(res, `event: challenge_completed\n`, connectionId!);
+                  safeSSEWrite(res, `data: ${eventData}\n\n`, connectionId!);
+                  
+                  console.log('Sent event to SSE client:', event.id);
+                }
+              } catch (parseError) {
+                console.error('Error parsing event from KV:', parseError);
+              }
+            }
+            
+            lastSeenTimestamp = parseInt(latestTimestamp);
+          }
+        } catch (redisError) {
+          console.error('Error polling Redis for events:', redisError);
+        } finally {
+          if (redis) {
+            await redis.disconnect();
+          }
+        }
+
         // Cleanup stale connections periodically
         const cleanedCount = connectionManager.cleanupStaleConnections();
         if (cleanedCount > 0) {
@@ -542,7 +604,7 @@ export default async function handler(
         }
         connectionManager.removeConnection(connectionId!);
       }
-    }, 30000); // 30 second heartbeat
+    }, 2000); // Poll every 2 seconds for near real-time updates
 
     // Handle client disconnect with performance logging
     req.on('close', () => {
