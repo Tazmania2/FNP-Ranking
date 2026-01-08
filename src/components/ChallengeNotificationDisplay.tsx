@@ -2,44 +2,22 @@
  * Challenge Notification Display Component
  * 
  * Integrates with the main application to display challenge completion notifications.
- * Handles the complete notification lifecycle from SSE events to popup dismissal.
+ * Handles the complete notification lifecycle from polling events to popup dismissal.
  */
 
-import React from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { ChallengeNotificationPopup } from './ChallengeNotificationPopup';
-import { useNotificationDisplay } from '../hooks/useChallengeNotifications';
+import { challengeEventPoller, type ChallengeEvent } from '../services/challengeEventPoller';
 import { useDisplayConfig } from '../hooks/useChallengeNotificationConfig';
 
 export interface ChallengeNotificationDisplayProps {
-  /**
-   * Whether to show connection status indicator
-   */
   showConnectionStatus?: boolean;
-  
-  /**
-   * Custom position override
-   */
   position?: 'top-right' | 'top-center' | 'center';
-  
-  /**
-   * Custom duration override (in milliseconds)
-   */
   duration?: number;
-  
-  /**
-   * Whether to show error indicators
-   */
   showErrors?: boolean;
-  
-  /**
-   * Custom CSS class for styling
-   */
   className?: string;
 }
 
-/**
- * Main notification display component for integration with the app
- */
 export const ChallengeNotificationDisplay: React.FC<ChallengeNotificationDisplayProps> = ({
   showConnectionStatus = false,
   position: propPosition,
@@ -47,41 +25,79 @@ export const ChallengeNotificationDisplay: React.FC<ChallengeNotificationDisplay
   showErrors = true,
   className
 }) => {
-  // Get notification state and actions
-  const {
-    currentNotification,
-    isConnected,
-    hasErrors,
-    dismissNotification,
-    clearErrors
-  } = useNotificationDisplay();
+  const [currentNotification, setCurrentNotification] = useState<ChallengeEvent | null>(null);
+  const [notificationQueue, setNotificationQueue] = useState<ChallengeEvent[]>([]);
+  const [isPolling, setIsPolling] = useState(false);
+  const [hasErrors, setHasErrors] = useState(false);
 
-  // Get display configuration
   const displayConfig = useDisplayConfig();
-  
-  // Use prop values or fall back to configuration
   const position = propPosition || displayConfig.position;
   const duration = propDuration || displayConfig.displayDuration;
 
+  // Start polling on mount
+  useEffect(() => {
+    console.log('Starting challenge event poller...');
+    challengeEventPoller.start(2000);
+    setIsPolling(true);
+
+    const unsubscribe = challengeEventPoller.onEvent((event) => {
+      console.log('Received challenge event:', event);
+      setNotificationQueue(prev => [...prev, event]);
+    });
+
+    return () => {
+      unsubscribe();
+      challengeEventPoller.stop();
+      setIsPolling(false);
+    };
+  }, []);
+
+  // Process notification queue
+  useEffect(() => {
+    if (!currentNotification && notificationQueue.length > 0) {
+      const [next, ...rest] = notificationQueue;
+      setCurrentNotification(next);
+      setNotificationQueue(rest);
+    }
+  }, [currentNotification, notificationQueue]);
+
+  const dismissNotification = useCallback(() => {
+    setCurrentNotification(null);
+  }, []);
+
+  const clearErrors = useCallback(() => {
+    setHasErrors(false);
+  }, []);
+
+  // Convert ChallengeEvent to the format expected by ChallengeNotificationPopup
+  const notificationForPopup = currentNotification ? {
+    id: currentNotification.id,
+    playerId: currentNotification.playerId,
+    playerName: currentNotification.playerName,
+    challengeId: currentNotification.challengeId,
+    challengeName: currentNotification.challengeName,
+    completedAt: currentNotification.completedAt,
+    points: currentNotification.points,
+    timestamp: currentNotification.timestamp
+  } : null;
+
   return (
     <div className={`challenge-notification-display ${className || ''}`}>
-      {/* Main notification popup */}
-      {currentNotification && (
+      {notificationForPopup && (
         <ChallengeNotificationPopup
-          notification={currentNotification}
+          notification={notificationForPopup}
           position={position}
           duration={duration}
           onDismiss={dismissNotification}
         />
       )}
 
-      {/* Connection status indicator (optional) */}
       {showConnectionStatus && (
         <div className={`
           fixed bottom-4 left-4 z-40
           px-3 py-2 rounded-lg text-sm font-medium
           transition-all duration-300
-          ${isConnected 
+          ${isPolling 
             ? 'bg-green-100 text-green-800 border border-green-200' 
             : 'bg-red-100 text-red-800 border border-red-200'
           }
@@ -89,16 +105,15 @@ export const ChallengeNotificationDisplay: React.FC<ChallengeNotificationDisplay
           <div className="flex items-center gap-2">
             <div className={`
               w-2 h-2 rounded-full
-              ${isConnected ? 'bg-green-500' : 'bg-red-500'}
+              ${isPolling ? 'bg-green-500' : 'bg-red-500'}
             `} />
             <span>
-              {isConnected ? 'Notifications Active' : 'Notifications Offline'}
+              {isPolling ? 'Notifications Active' : 'Notifications Offline'}
             </span>
           </div>
         </div>
       )}
 
-      {/* Error indicator (optional) */}
       {showErrors && hasErrors && (
         <div className="
           fixed bottom-4 right-4 z-40
@@ -117,11 +132,7 @@ export const ChallengeNotificationDisplay: React.FC<ChallengeNotificationDisplay
             </div>
             <button
               onClick={clearErrors}
-              className="
-                text-yellow-600 hover:text-yellow-800
-                text-xs font-medium
-                flex-shrink-0
-              "
+              className="text-yellow-600 hover:text-yellow-800 text-xs font-medium flex-shrink-0"
             >
               Dismiss
             </button>
@@ -132,9 +143,6 @@ export const ChallengeNotificationDisplay: React.FC<ChallengeNotificationDisplay
   );
 };
 
-/**
- * Minimal notification display for kiosk mode
- */
 export const KioskNotificationDisplay: React.FC<{
   position?: 'top-right' | 'top-center' | 'center';
   duration?: number;
@@ -150,9 +158,6 @@ export const KioskNotificationDisplay: React.FC<{
   );
 };
 
-/**
- * Full-featured notification display for admin/debug mode
- */
 export const AdminNotificationDisplay: React.FC = () => {
   return (
     <ChallengeNotificationDisplay
