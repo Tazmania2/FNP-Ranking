@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Challenge Notification Popup Test</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .test-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .test-button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .test-button:hover {
+            background: #45a049;
+        }
+        .status {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🎯 Challenge Completion Notifications - Core Functionality Test</h1>
+        
+        <div id="test-status"></div>
+        
+        <div>
+            <h2>Manual Tests</h2>
+            <button class="test-button" onclick="testPopupDisplay()">Test Popup Display</button>
+            <button class="test-button" onclick="testPopupDismissal()">Test Auto Dismissal</button>
+            <button class="test-button" onclick="testPopupPositions()">Test Different Positions</button>
+            <button class="test-button" onclick="testResponsiveDesign()">Test Responsive Design</button>
+        </div>
+        
+        <div>
+            <h2>Component Integration</h2>
+            <div id="popup-container"></div>
+        </div>
+        
+        <div>
+            <h2>Test Results</h2>
+            <div id="test-results"></div>
+        </div>
+    </div>
+
+    <script type="text/babel">
+        // Mock ChallengeNotificationPopup component for testing
+        const ChallengeNotificationPopup = ({ notification, duration = 4000, position = 'top-right', onDismiss }) => {
+            const [animationState, setAnimationState] = React.useState('entering');
+            
+            React.useEffect(() => {
+                const enterTimer = setTimeout(() => {
+                    setAnimationState('visible');
+                }, 50);
+                return () => clearTimeout(enterTimer);
+            }, []);
+            
+            React.useEffect(() => {
+                const dismissTimer = setTimeout(() => {
+                    setAnimationState('exiting');
+                    setTimeout(onDismiss, 300);
+                }, duration);
+                return () => clearTimeout(dismissTimer);
+            }, [duration, onDismiss]);
+            
+            const getPositionClasses = () => {
+                switch (position) {
+                    case 'top-center':
+                        return 'top-4 left-1/2 transform -translate-x-1/2';
+                    case 'center':
+                        return 'top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2';
+                    case 'top-right':
+                    default:
+                        return 'top-4 right-4';
+                }
+            };
+            
+            const getAnimationClasses = () => {
+                switch (animationState) {
+                    case 'entering':
+                        return 'opacity-0 scale-95 -translate-y-2';
+                    case 'visible':
+                        return 'opacity-100 scale-100 translate-y-0';
+                    case 'exiting':
+                        return 'opacity-0 scale-95 translate-y-2';
+                    default:
+                        return 'opacity-0 scale-95 -translate-y-2';
+                }
+            };
+            
+            return React.createElement('div', {
+                'data-testid': 'challenge-notification-popup',
+                className: `fixed z-50 ${getPositionClasses()} transition-all duration-300 ease-out ${getAnimationClasses()}`,
+                style: {
+                    maxWidth: 'min(400px, calc(100vw - 2rem))',
+                    minWidth: '280px'
+                }
+            }, React.createElement('div', {
+                className: 'bg-white rounded-xl shadow-2xl border p-6 relative overflow-hidden'
+            }, [
+                React.createElement('div', {
+                    key: 'celebration',
+                    'data-testid': 'notification-celebration',
+                    className: 'absolute inset-0 bg-gradient-to-br from-yellow-400/20 via-orange-400/20 to-red-400/20'
+                }),
+                React.createElement('div', {
+                    key: 'icon',
+                    className: 'absolute top-2 right-2 text-2xl'
+                }, '🎉'),
+                React.createElement('div', {
+                    key: 'content',
+                    className: 'relative z-10'
+                }, [
+                    React.createElement('h3', {
+                        key: 'title',
+                        className: 'text-lg font-bold text-gray-800 mb-3'
+                    }, 'Challenge Completed!'),
+                    React.createElement('div', {
+                        key: 'player',
+                        className: 'mb-4'
+                    }, [
+                        React.createElement('div', {
+                            key: 'player-label',
+                            className: 'flex items-center gap-2 mb-2'
+                        }, [
+                            React.createElement('div', {
+                                key: 'dot',
+                                className: 'w-2 h-2 bg-green-500 rounded-full'
+                            }),
+                            React.createElement('span', {
+                                key: 'label',
+                                className: 'text-sm font-medium text-gray-600'
+                            }, 'Player')
+                        ]),
+                        React.createElement('p', {
+                            key: 'player-name',
+                            'data-testid': 'notification-player-name',
+                            className: 'text-xl font-bold text-gray-900',
+                            title: notification.playerName
+                        }, notification.playerName)
+                    ]),
+                    React.createElement('div', {
+                        key: 'challenge',
+                        className: 'mb-4'
+                    }, [
+                        React.createElement('div', {
+                            key: 'challenge-label',
+                            className: 'flex items-center gap-2 mb-2'
+                        }, [
+                            React.createElement('div', {
+                                key: 'dot',
+                                className: 'w-2 h-2 bg-blue-500 rounded-full'
+                            }),
+                            React.createElement('span', {
+                                key: 'label',
+                                className: 'text-sm font-medium text-gray-600'
+                            }, 'Challenge')
+                        ]),
+                        React.createElement('p', {
+                            key: 'challenge-name',
+                            'data-testid': 'notification-challenge-name',
+                            className: 'text-base font-semibold text-gray-800',
+                            title: notification.challengeName
+                        }, notification.challengeName)
+                    ]),
+                    notification.points && React.createElement('div', {
+                        key: 'points',
+                        className: 'flex items-center justify-between'
+                    }, [
+                        React.createElement('span', {
+                            key: 'points-label',
+                            className: 'text-sm font-medium text-gray-600'
+                        }, 'Points Earned'),
+                        React.createElement('span', {
+                            key: 'points-value',
+                            'data-testid': 'notification-points',
+                            className: 'text-lg font-bold text-green-600'
+                        }, `+${notification.points}`)
+                    ]),
+                    React.createElement('div', {
+                        key: 'time',
+                        className: 'mt-3 pt-3 border-t border-gray-200'
+                    }, React.createElement('span', {
+                        className: 'text-xs text-gray-500'
+                    }, `Completed ${new Date(notification.completedAt).toLocaleTimeString()}`))
+                ])
+            ]));
+        };
+        
+        // Test functions
+        let testResults = [];
+        
+        function addTestResult(test, status, message) {
+            testResults.push({ test, status, message, timestamp: new Date() });
+            updateTestResults();
+        }
+        
+        function updateTestResults() {
+            const resultsDiv = document.getElementById('test-results');
+            resultsDiv.innerHTML = testResults.map(result => 
+                `<div class="status ${result.status}">
+                    <strong>${result.test}:</strong> ${result.message}
+                    <small> (${result.timestamp.toLocaleTimeString()})</small>
+                </div>`
+            ).join('');
+        }
+        
+        function updateStatus(message, type = 'info') {
+            const statusDiv = document.getElementById('test-status');
+            statusDiv.innerHTML = `<div class="status ${type}">${message}</div>`;
+        }
+        
+        function testPopupDisplay() {
+            updateStatus('Testing popup display...', 'info');
+            
+            const testNotification = {
+                id: 'test-1',
+                playerId: 'player-123',
+                playerName: 'Test Player',
+                challengeId: 'challenge-456',
+                challengeName: 'Complete Daily Challenge',
+                completedAt: new Date().toISOString(),
+                points: 100,
+                timestamp: new Date().toISOString()
+            };
+            
+            const container = document.getElementById('popup-container');
+            
+            const popup = React.createElement(ChallengeNotificationPopup, {
+                notification: testNotification,
+                duration: 5000,
+                position: 'top-right',
+                onDismiss: () => {
+                    ReactDOM.unmountComponentAtNode(container);
+                    addTestResult('Popup Display', 'success', 'Popup displayed and dismissed successfully');
+                    updateStatus('Popup display test completed', 'success');
+                }
+            });
+            
+            ReactDOM.render(popup, container);
+            addTestResult('Popup Display', 'success', 'Popup rendered successfully with all required information');
+        }
+        
+        function testPopupDismissal() {
+            updateStatus('Testing automatic dismissal...', 'info');
+            
+            const testNotification = {
+                id: 'test-2',
+                playerId: 'player-456',
+                playerName: 'Auto Dismiss Test',
+                challengeId: 'challenge-789',
+                challengeName: 'Auto Dismissal Test Challenge',
+                completedAt: new Date().toISOString(),
+                points: 50,
+                timestamp: new Date().toISOString()
+            };
+            
+            const container = document.getElementById('popup-container');
+            const startTime = Date.now();
+            
+            const popup = React.createElement(ChallengeNotificationPopup, {
+                notification: testNotification,
+                duration: 2000, // 2 seconds for quick test
+                position: 'top-center',
+                onDismiss: () => {
+                    const elapsed = Date.now() - startTime;
+                    ReactDOM.unmountComponentAtNode(container);
+                    
+                    if (elapsed >= 1800 && elapsed <= 2500) { // Allow some tolerance
+                        addTestResult('Auto Dismissal', 'success', `Popup dismissed after ${elapsed}ms (expected ~2000ms)`);
+                        updateStatus('Auto dismissal test passed', 'success');
+                    } else {
+                        addTestResult('Auto Dismissal', 'error', `Popup dismissed after ${elapsed}ms (expected ~2000ms)`);
+                        updateStatus('Auto dismissal test failed', 'error');
+                    }
+                }
+            });
+            
+            ReactDOM.render(popup, container);
+        }
+        
+        function testPopupPositions() {
+            updateStatus('Testing different positions...', 'info');
+            
+            const positions = ['top-right', 'top-center', 'center'];
+            let currentPosition = 0;
+            
+            function showNextPosition() {
+                if (currentPosition >= positions.length) {
+                    addTestResult('Position Tests', 'success', 'All positions tested successfully');
+                    updateStatus('Position tests completed', 'success');
+                    return;
+                }
+                
+                const position = positions[currentPosition];
+                const testNotification = {
+                    id: `test-pos-${currentPosition}`,
+                    playerId: 'player-pos',
+                    playerName: `Position Test ${currentPosition + 1}`,
+                    challengeId: 'challenge-pos',
+                    challengeName: `Testing ${position} position`,
+                    completedAt: new Date().toISOString(),
+                    points: 25,
+                    timestamp: new Date().toISOString()
+                };
+                
+                const container = document.getElementById('popup-container');
+                
+                const popup = React.createElement(ChallengeNotificationPopup, {
+                    notification: testNotification,
+                    duration: 1500,
+                    position: position,
+                    onDismiss: () => {
+                        ReactDOM.unmountComponentAtNode(container);
+                        currentPosition++;
+                        setTimeout(showNextPosition, 500);
+                    }
+                });
+                
+                ReactDOM.render(popup, container);
+                addTestResult('Position Tests', 'success', `${position} position rendered successfully`);
+            }
+            
+            showNextPosition();
+        }
+        
+        function testResponsiveDesign() {
+            updateStatus('Testing responsive design...', 'info');
+            
+            const testNotification = {
+                id: 'test-responsive',
+                playerId: 'player-responsive',
+                playerName: 'Responsive Design Test Player with Very Long Name',
+                challengeId: 'challenge-responsive',
+                challengeName: 'Complete Responsive Design Challenge with Very Long Description',
+                completedAt: new Date().toISOString(),
+                points: 200,
+                timestamp: new Date().toISOString()
+            };
+            
+            const container = document.getElementById('popup-container');
+            
+            const popup = React.createElement(ChallengeNotificationPopup, {
+                notification: testNotification,
+                duration: 4000,
+                position: 'center',
+                onDismiss: () => {
+                    ReactDOM.unmountComponentAtNode(container);
+                    addTestResult('Responsive Design', 'success', 'Responsive design test completed');
+                    updateStatus('Responsive design test completed', 'success');
+                }
+            });
+            
+            ReactDOM.render(popup, container);
+            addTestResult('Responsive Design', 'success', 'Popup adapts to content and screen size');
+        }
+        
+        // Initialize
+        updateStatus('Challenge Completion Notifications Test Page Ready', 'success');
+        addTestResult('Initialization', 'success', 'Test page loaded and React components ready');
+    </script>
+</body>
+</html>

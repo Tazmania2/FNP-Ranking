@@ -7,7 +7,8 @@ import { LeaderboardSelector } from './components/LeaderboardSelector';
 import { FloatingErrorDisplay } from './components/ErrorDisplay';
 import { LoadingDisplay, OverlayLoading } from './components/LoadingDisplay';
 import { DailyGoalProgress } from './components/DailyGoalProgress';
-import { DailyCodeCard } from './components/DailyCodeCard';
+// import { DailyCodeCard } from './components/DailyCodeCard';
+import { ChallengeNotificationDisplay } from './components/ChallengeNotificationDisplay';
 import { globalPreloadingService } from './services/preloadingService';
 import { initializeAdaptivePreloading } from './utils/lazyLoading';
 import { globalPerformanceMonitor } from './utils/performanceMonitor';
@@ -353,7 +354,14 @@ function App() {
         </main>
 
         {/* Daily Code Card - Fixed position at bottom-left */}
-        <DailyCodeCard />
+        {/* <DailyCodeCard /> */}
+
+        {/* Challenge Completion Notifications */}
+        <ChallengeNotificationDisplay
+          showConnectionStatus={false}
+          showErrors={true}
+          position="top-right"
+        />
       </div>
     </ResponsiveWrapper>
   </KioskModeProvider>
