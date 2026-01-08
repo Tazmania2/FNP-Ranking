@@ -22,3 +22,11 @@ export { FeatureParityStatus, FeatureParityIndicator } from './FeatureParityStat
 export { HoverTooltip, default as HoverTooltipDefault } from './HoverTooltip';
 export { TooltipDebug, default as TooltipDebugDefault } from './TooltipDebug';
 export { Tooltip, default as TooltipDefault } from './Tooltip';
+export { ChallengeNotificationPopup, default as ChallengeNotificationPopupDefault } from './ChallengeNotificationPopup';
+export { ChallengeNotificationConfigPanel, default as ChallengeNotificationConfigPanelDefault } from './ChallengeNotificationConfigPanel';
+export { 
+  ChallengeNotificationDisplay, 
+  KioskNotificationDisplay, 
+  AdminNotificationDisplay,
+  default as ChallengeNotificationDisplayDefault 
+} from './ChallengeNotificationDisplay';
