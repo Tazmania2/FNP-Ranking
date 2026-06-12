@@ -1,0 +1,32 @@
+{
+  "timestamp": "2026-06-12T15:15:18.436Z",
+  "stats": {
+    "players": {
+      "total": 31,
+      "imported": 31,
+      "skipped": 0,
+      "errors": 0
+    },
+    "actions": {
+      "presenca": {
+        "total": 0,
+        "imported": 0
+      },
+      "sales": {
+        "total": 0,
+        "imported": 0
+      },
+      "errors": 0
+    }
+  },
+  "summary": {
+    "totalPlayers": 31,
+    "importedPlayers": 31,
+    "totalActions": 0,
+    "importedActions": 0,
+    "successRate": {
+      "players": "100.00%",
+      "actions": "0%"
+    }
+  }
+}

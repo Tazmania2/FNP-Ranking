@@ -29,6 +29,7 @@
     "verify:deployment": "node scripts/verify-deployment.js",
     "postbuild": "echo 'Build completed successfully. Ready for deployment.'",
     "migrate:import": "tsx scripts/import-to-supabase.ts",
+    "migrate:may": "tsx scripts/import-may-data-from-funifier.ts",
     "migrate:schema": "echo 'Please run the supabase-schema.sql file in your Supabase SQL editor'",
     "setup:supabase": "node scripts/setup-supabase-env.js"
   },
@@ -49,6 +50,7 @@
     "@vitest/ui": "^3.2.4",
     "autoprefixer": "^10.4.21",
     "cssnano": "^7.0.6",
+    "dotenv": "^17.4.2",
     "eslint": "^9.36.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-prettier": "^5.5.4",

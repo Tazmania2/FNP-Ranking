@@ -1,0 +1,2 @@
+# Dependências mínimas para o exportador GCOM
+mysql-connector-python==8.3.0

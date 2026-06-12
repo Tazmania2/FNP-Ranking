@@ -1,0 +1,7 @@
+{
+  "host": "PREENCHER_HOST_MYSQL",
+  "port": 3306,
+  "user": "PREENCHER_USUARIO",
+  "password": "PREENCHER_SENHA",
+  "database": "PREENCHER_DATABASE"
+}

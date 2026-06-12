@@ -174,6 +174,107 @@ export class SupabaseApiService {
   }
 
   /**
+   * Get current month's leaderboard (or specific year/month)
+   */
+  public async getCurrentMonthLeaderboard(year?: number, month?: number): Promise<LeaderboardResponse> {
+    return this.retryRequest(async () => {
+      const now = new Date();
+      const targetYear = year || now.getFullYear();
+      const targetMonth = month || (now.getMonth() + 1);
+
+      // Call the get_monthly_leaderboard function
+      const { data, error } = await this.supabase
+        .rpc('get_monthly_leaderboard', {
+          p_year: targetYear,
+          p_month: targetMonth
+        });
+
+      if (error) throw error;
+      if (!data || data.length === 0) {
+        throw new Error(`No leaderboard data found for ${targetYear}-${String(targetMonth).padStart(2, '0')}`);
+      }
+
+      // Get leaderboard info
+      const leaderboardTitle = `Ranking ${this.getMonthName(targetMonth)} ${targetYear}`;
+      
+      // Transform to Funifier format
+      const leaders: Player[] = data.map((entry: any) => ({
+        _id: entry.player_id,
+        player: entry.player_id,
+        name: entry.player_name,
+        position: entry.position,
+        total: parseFloat(entry.total_points),
+        previous_position: entry.previous_position,
+        previous_total: entry.previous_total ? parseFloat(entry.previous_total) : undefined,
+        move: this.calculateMove(entry.position, entry.previous_position),
+        image: entry.player_image,
+        extra: {
+          presence_days: entry.presence_days,
+          sales_count: entry.sales_count,
+        },
+      }));
+
+      return {
+        leaderboard: {
+          _id: `monthly-${targetYear}-${String(targetMonth).padStart(2, '0')}`,
+          title: leaderboardTitle,
+          description: `Rankings do mês de ${this.getMonthName(targetMonth)} de ${targetYear}`,
+          principalType: 0,
+          operation: {
+            type: 0,
+            achievement_type: 0,
+            item: 'total_points',
+            sort: -1,
+          },
+          period: {
+            type: 2, // Monthly
+            timeAmount: 1,
+            timeScale: 2,
+          },
+        },
+        leaders,
+      };
+    });
+  }
+
+  /**
+   * List all available monthly leaderboards
+   */
+  public async listMonthlyLeaderboards(): Promise<Array<{
+    id: string;
+    title: string;
+    year: number;
+    month: number;
+    playerCount: number;
+  }>> {
+    return this.retryRequest(async () => {
+      const { data, error } = await this.supabase
+        .rpc('list_monthly_leaderboards');
+
+      if (error) throw error;
+
+      return (data || []).map((item: any) => ({
+        id: item.id,
+        title: item.title,
+        year: item.year,
+        month: item.month,
+        playerCount: item.player_count,
+      }));
+    });
+  }
+
+  /**
+   * Get month name in Portuguese
+   */
+  private getMonthName(month: number): string {
+    const months = [
+      'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+      'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+    ];
+    return months[month - 1] || 'Desconhecido';
+  }
+
+  /**
    * Get player details by ID
    */
   public async getPlayerDetails(playerId: string): Promise<Player> {

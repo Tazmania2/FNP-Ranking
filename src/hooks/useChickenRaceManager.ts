@@ -334,34 +334,22 @@ export const useChickenRaceManager = (config: ChickenRaceManagerConfig = {}) => 
       console.log(`Initialization attempt ${retryCountRef.current}/${MAX_RETRY_ATTEMPTS}`);
 
       // Fetch leaderboards from API
-      console.log('🚀 Fetching leaderboards from API...');
-      const fetchedLeaderboards = await apiService.getLeaderboards();
-      console.log('✅ Leaderboards fetched:', fetchedLeaderboards);
+      console.log('🚀 Fetching current month leaderboard from API...');
+      
+      // Get current month's leaderboard
+      const currentMonthData = await apiService.getCurrentMonthLeaderboard();
+      console.log('✅ Current month leaderboard fetched:', currentMonthData.leaderboard.title);
 
-      if (fetchedLeaderboards.length === 0) {
-        throw new Error('No leaderboards available');
-      }
-
-      // Set leaderboards in store
+      // Set leaderboards in store (using just current month)
       const leaderboardStore = useLeaderboardStore.getState();
-      leaderboardStore.setLeaderboards(fetchedLeaderboards);
+      leaderboardStore.setLeaderboards([currentMonthData.leaderboard]);
 
-      // Switch to the first leaderboard (or EVeTmET if available)
-      const targetLeaderboard = fetchedLeaderboards.find(lb => lb._id === 'EVeTmET') || fetchedLeaderboards[0];
-      console.log('🎯 Switching to leaderboard:', targetLeaderboard._id);
+      // Set the current month leaderboard as active
+      leaderboardStore.setCurrentLeaderboard(currentMonthData.leaderboard);
+      leaderboardStore.setCurrentLeaderboardId(currentMonthData.leaderboard._id);
 
-      // Set the leaderboard in store without triggering additional API calls
-      leaderboardStore.setCurrentLeaderboard(targetLeaderboard);
-      leaderboardStore.setCurrentLeaderboardId(targetLeaderboard._id);
-
-      // Fetch initial data for this leaderboard
-      console.log('🔄 Fetching initial data for leaderboard:', targetLeaderboard._id);
-      const response = await apiService.getLeaderboardData(targetLeaderboard._id, {
-        live: true,
-      });
-
-      console.log('✅ Initial leaderboard data loaded:', response.leaders.length, 'players');
-      const processedPlayers = processPlayersData(response.leaders);
+      console.log('✅ Current month leaderboard data loaded:', currentMonthData.leaders.length, 'players');
+      const processedPlayers = processPlayersData(currentMonthData.leaders);
       updatePlayers(processedPlayers);
 
       // Reset retry count on success
@@ -403,22 +391,15 @@ export const useChickenRaceManager = (config: ChickenRaceManagerConfig = {}) => 
       return;
     }
 
-    if (!currentLeaderboardId) {
-      console.log('No current leaderboard ID, skipping refresh');
-      return;
-    }
-
     try {
       setLoadingState('currentLeaderboard', true);
       clearError();
 
-      console.log('🔄 Refreshing leaderboard data for:', currentLeaderboardId);
-      const response = await apiService.getLeaderboardData(currentLeaderboardId, {
-        live: true,
-      });
+      console.log('🔄 Refreshing current month leaderboard data...');
+      const currentMonthData = await apiService.getCurrentMonthLeaderboard();
 
-      console.log('✅ Leaderboard data refreshed:', response.leaders.length, 'players');
-      const processedPlayers = processPlayersData(response.leaders);
+      console.log('✅ Leaderboard data refreshed:', currentMonthData.leaders.length, 'players');
+      const processedPlayers = processPlayersData(currentMonthData.leaders);
       updatePlayers(processedPlayers);
 
     } catch (error) {
@@ -437,7 +418,7 @@ export const useChickenRaceManager = (config: ChickenRaceManagerConfig = {}) => 
     } finally {
       setLoadingState('currentLeaderboard', false);
     }
-  }, [currentLeaderboardId, apiService, setLoadingState, clearError, setError, updatePlayers, onAuthError, processPlayersData]);
+  }, [apiService, setLoadingState, clearError, setError, updatePlayers, onAuthError, processPlayersData]);
 
   /**
    * Switch to a different leaderboard

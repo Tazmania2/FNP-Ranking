@@ -9,13 +9,21 @@ Print this and check off as you go!
 - [x] Verify real-time enabled on 4 tables
 - [x] Create `.env.local` with credentials
 
-## Phase 2: Actions Setup ⏳ IN PROGRESS
-- [ ] Run `SUPABASE_ACTIONS_FUNCTIONS.sql` in Supabase Studio
-- [ ] Verify `actions` table created
-- [ ] Verify `daily_presence` table created
-- [ ] Verify `log_presenca()` function exists
-- [ ] Verify `log_sale()` function exists
-- [ ] Test functions with sample data
+## Phase 2: Actions Setup ✅ DONE
+- [x] Run `SUPABASE_ACTIONS_FUNCTIONS.sql` in Supabase Studio
+- [x] Verify `actions` table created
+- [x] Verify `daily_presence` table created
+- [x] Verify `log_presenca()` function exists
+- [x] Verify `log_sale()` function exists
+- [x] Test functions with sample data
+
+## Phase 2.5: Monthly Leaderboards Setup ⏳ IN PROGRESS
+- [ ] Run `SUPABASE_MONTHLY_LEADERBOARDS.sql` in Supabase Studio
+- [ ] Verify monthly leaderboard functions created
+- [ ] Verify auto-update trigger created
+- [ ] Import May 2024 data: `npm run migrate:may`
+- [ ] Check May 2024 rankings
+- [ ] Verify June leaderboard auto-created on first action
 
 ## Phase 3: API Deployment
 - [ ] Deploy to Vercel: `vercel --prod`
