@@ -39,22 +39,29 @@ function App() {
     };
   }, []);
 
-  // Single source of truth: dashboard snapshot from Supabase
-  const { players, dailySales, totalPlayers, leaderPoints, loading, error, lastUpdated } =
+  // Dashboard snapshot for daily sales data only
+  const { dailySales, totalPlayers, leaderPoints, loading: snapshotLoading, error, lastUpdated } =
     useDashboardSnapshot(60000);
 
-  // Chicken race manager uses pre-fetched players (no API calls)
+  // Chicken race manager fetches monthly leaderboard via API
   const {
+    players,
     raceStatus,
     playerPositions,
     currentLeaderboard,
     retryFailedOperation,
     clearError,
+    isLoading: raceLoading,
     error: raceError,
   } = useChickenRaceManager({
-    initialPlayers: players,
-    autoRefreshConfig: { enabled: false },
+    apiConfig: {
+      url: import.meta.env.VITE_SUPABASE_URL,
+      anonKey: import.meta.env.VITE_SUPABASE_ANON_KEY,
+    },
+    autoRefreshConfig: { enabled: true, interval: 60000 },
   });
+
+  const loading = snapshotLoading || raceLoading;
 
   // Show loading screen while first fetch is in progress
   if (loading && players.length === 0) {
