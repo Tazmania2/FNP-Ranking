@@ -349,6 +349,12 @@ export const useChickenRaceManager = (config: ChickenRaceManagerConfig = {}) => 
       leaderboardStore.setCurrentLeaderboardId(currentMonthData.leaderboard._id);
 
       console.log('✅ Current month leaderboard data loaded:', currentMonthData.leaders.length, 'players');
+      
+      // If no players yet this month, show empty state (not an error)
+      if (currentMonthData.leaders.length === 0) {
+        console.log('📭 No player data for this month yet. Showing empty leaderboard.');
+      }
+      
       const processedPlayers = processPlayersData(currentMonthData.leaders);
       updatePlayers(processedPlayers);
 

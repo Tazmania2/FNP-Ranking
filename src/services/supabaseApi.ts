@@ -190,12 +190,33 @@ export class SupabaseApiService {
         });
 
       if (error) throw error;
-      if (!data || data.length === 0) {
-        throw new Error(`No leaderboard data found for ${targetYear}-${String(targetMonth).padStart(2, '0')}`);
-      }
 
       // Get leaderboard info
       const leaderboardTitle = `Ranking ${this.getMonthName(targetMonth)} ${targetYear}`;
+
+      // If no data yet for this month, return empty leaderboard (not an error)
+      if (!data || data.length === 0) {
+        return {
+          leaderboard: {
+            _id: `monthly-${targetYear}-${String(targetMonth).padStart(2, '0')}`,
+            title: leaderboardTitle,
+            description: `Rankings do mês de ${this.getMonthName(targetMonth)} de ${targetYear}`,
+            principalType: 0,
+            operation: {
+              type: 0,
+              achievement_type: 0,
+              item: 'total_points',
+              sort: -1,
+            },
+            period: {
+              type: 2,
+              timeAmount: 1,
+              timeScale: 2,
+            },
+          },
+          leaders: [],
+        };
+      }
       
       // Transform to Funifier format
       const leaders: Player[] = data.map((entry: any) => ({
