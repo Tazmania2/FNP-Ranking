@@ -146,7 +146,15 @@ export const useRealTimeUpdates = (
     } catch (error) {
       console.error('Failed to fetch leaderboard data:', error);
       
-      const apiError = error as ApiError;
+      const apiError: ApiError = (error && typeof error === 'object' && 'type' in error && 'timestamp' in error)
+        ? error as ApiError
+        : {
+            type: 'network',
+            message: error instanceof Error ? error.message : 'Unknown error',
+            retryable: true,
+            timestamp: Date.now(),
+            originalError: error instanceof Error ? error : undefined,
+          };
       
       // Only retry if the error is retryable and we haven't exceeded max retries
       if (apiError.retryable && retryCountRef.current < maxRetries) {

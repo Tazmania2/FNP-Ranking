@@ -119,7 +119,13 @@ export const useChallengeProgress = ({
       setState(prev => ({
         ...prev,
         loading: false,
-        error: error as ApiError,
+        error: {
+          type: 'network',
+          message: error instanceof Error ? error.message : 'Unknown error',
+          retryable: true,
+          timestamp: Date.now(),
+          originalError: error instanceof Error ? error : undefined,
+        } as ApiError,
       }));
     }
   }, []); // Empty dependency array since we use refs

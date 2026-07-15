@@ -73,7 +73,15 @@ const getErrorIcon = (error: ApiError): string => {
  * Format timestamp for display
  */
 const formatTimestamp = (timestamp: number): string => {
+  if (!timestamp || isNaN(timestamp)) {
+    return 'just now';
+  }
+
   const date = new Date(timestamp);
+  if (isNaN(date.getTime())) {
+    return 'just now';
+  }
+
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();
   const diffMinutes = Math.floor(diffMs / (1000 * 60));

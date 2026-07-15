@@ -118,8 +118,8 @@ SELECT
 FROM actions a
 INNER JOIN players p ON a.player_id = p.id
 WHERE a.action_id = 'sell_product'
-  AND DATE(a.created_at AT TIME ZONE 'America/Sao_Paulo') >= '2026-06-01'  -- DATA INICIAL
-  AND DATE(a.created_at AT TIME ZONE 'America/Sao_Paulo') <= '2026-06-30'  -- DATA FINAL
+  AND DATE(a.created_at AT TIME ZONE 'America/Sao_Paulo') >= '2026-05-01'  -- DATA INICIAL
+  AND DATE(a.created_at AT TIME ZONE 'America/Sao_Paulo') <= '2026-05-31'  -- DATA FINAL
 ORDER BY a.created_at DESC;
 
 
