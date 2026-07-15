@@ -73,9 +73,26 @@ export function useDashboardSnapshot(pollInterval = 60000): DashboardData {
         .single();
 
       if (fetchError) {
-        // If no row found for today, it's not a critical error
+        // If no row found for today, try the real-time RPC fallback
         if (fetchError.code === 'PGRST116') {
-          setError('Nenhum snapshot encontrado para hoje.');
+          const { data: rpcData, error: rpcError } = await supabase.rpc('get_daily_sales_summary', {
+            p_date: today
+          });
+
+          if (!rpcError && rpcData) {
+            setDailySales({
+              total: rpcData.daily_sales_total || 0,
+              target: rpcData.daily_sales_target || 50000,
+              count: rpcData.daily_sales_count || 0,
+              goalMet: rpcData.daily_goal_met || false,
+            });
+            setLastUpdated(new Date().toISOString());
+            setError(null);
+          } else {
+            // No snapshot and RPC failed - show zeros (no sales yet today)
+            setDailySales({ total: 0, target: 50000, count: 0, goalMet: false });
+            setError(null);
+          }
         } else {
           throw fetchError;
         }
