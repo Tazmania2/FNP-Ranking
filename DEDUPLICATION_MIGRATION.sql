@@ -1,39 +1,38 @@
 -- ============================================================================
 -- MIGRATION: Sale Deduplication via delivery_id
 -- 
--- Problem: n8n re-sends old sales without deduplication, inflating daily_sales.
--- Solution: Use delivery_id as unique key. If a sale with that delivery_id
--- already exists, ignore it entirely.
+-- A tabela daily_sales atual é agregada (1 row por dia, PK = sale_date).
+-- Precisamos de uma tabela de registros individuais para deduplicar.
+-- Estratégia: renomear a antiga, criar nova com a estrutura certa.
 --
--- Steps:
--- 1. Create daily_sales table (stores each unique sale once)
--- 2. Replace log_store_sale() to check delivery_id before processing
--- 3. Update refresh_dashboard_snapshot() to read from daily_sales
--- 4. Update get_daily_sales_summary() to read from daily_sales
--- 5. Reset today's data for a clean start
+-- RODE CADA STEP SEPARADO NO SQL EDITOR DO SUPABASE
 -- ============================================================================
 
+
 -- ============================================================================
--- STEP 1: Create daily_sales table for deduplication
+-- STEP 1: Renomear tabela antiga (preserva dados) e criar nova
 -- ============================================================================
 
-CREATE TABLE IF NOT EXISTS daily_sales (
+-- Preserva a tabela antiga como backup
+ALTER TABLE daily_sales RENAME TO daily_sales_old;
+
+-- Cria a nova tabela com delivery_id como chave de deduplicação
+CREATE TABLE daily_sales (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  delivery_id TEXT NOT NULL UNIQUE,
+  delivery_id TEXT NOT NULL,
   delivery_title TEXT NOT NULL,
   price NUMERIC NOT NULL,
   sale_date DATE NOT NULL,
   sale_timestamp TIMESTAMPTZ NOT NULL,
-  created_at TIMESTAMPTZ DEFAULT NOW()
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  CONSTRAINT daily_sales_delivery_id_unique UNIQUE (delivery_id)
 );
 
--- Index for fast lookups by date
-CREATE INDEX IF NOT EXISTS idx_daily_sales_date ON daily_sales (sale_date);
--- Index for deduplication check
-CREATE INDEX IF NOT EXISTS idx_daily_sales_delivery_id ON daily_sales (delivery_id);
+CREATE INDEX idx_daily_sales_sale_date ON daily_sales (sale_date);
+
 
 -- ============================================================================
--- STEP 2: Replace log_store_sale() with delivery_id deduplication
+-- STEP 2: Recriar log_store_sale() com deduplicação por delivery_id
 -- ============================================================================
 
 CREATE OR REPLACE FUNCTION log_store_sale(
@@ -52,13 +51,12 @@ DECLARE
   v_total_points_awarded INTEGER := 0;
   v_existing_id UUID;
 BEGIN
-  -- Check if this delivery_id already exists (deduplication)
+  -- DEDUPLICATION: Check if this delivery_id already exists
   SELECT id INTO v_existing_id
   FROM daily_sales
   WHERE delivery_id = p_delivery_id;
 
   IF v_existing_id IS NOT NULL THEN
-    -- Sale already processed, return duplicate signal
     RETURN json_build_object(
       'success', true,
       'duplicate', true,
@@ -70,7 +68,7 @@ BEGIN
   -- Get sale date in São Paulo timezone
   v_sale_date := (p_sale_timestamp AT TIME ZONE 'America/Sao_Paulo')::DATE;
 
-  -- Insert into daily_sales (deduplication record)
+  -- Record the sale (source of truth for deduplication)
   INSERT INTO daily_sales (delivery_id, delivery_title, price, sale_date, sale_timestamp)
   VALUES (p_delivery_id, p_delivery_title, p_price, v_sale_date, p_sale_timestamp);
 
@@ -85,9 +83,7 @@ BEGIN
 
   -- If no players with presence, just log the sale without awarding points
   IF v_players_with_presence IS NULL OR array_length(v_players_with_presence, 1) = 0 THEN
-    -- Still refresh dashboard to show the sale
     PERFORM refresh_dashboard_snapshot(v_sale_date);
-
     RETURN json_build_object(
       'success', true,
       'duplicate', false,
@@ -105,7 +101,6 @@ BEGIN
   -- Award points to each player with presence
   FOREACH v_player_id IN ARRAY v_players_with_presence
   LOOP
-    -- Update player stats
     INSERT INTO player_stats (player_id, total_points)
     VALUES (v_player_id, v_points_per_player)
     ON CONFLICT (player_id)
@@ -113,7 +108,6 @@ BEGIN
       total_points = player_stats.total_points + v_points_per_player,
       updated_at = NOW();
 
-    -- Log action for this player
     INSERT INTO actions (
       action_id,
       player_id,
@@ -141,7 +135,6 @@ BEGIN
   -- Refresh dashboard snapshot
   PERFORM refresh_dashboard_snapshot(v_sale_date);
 
-  -- Return success with summary
   RETURN json_build_object(
     'success', true,
     'duplicate', false,
@@ -157,8 +150,9 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+
 -- ============================================================================
--- STEP 3: Update get_daily_sales_summary() to use daily_sales table
+-- STEP 3: Recriar get_daily_sales_summary() lendo da nova daily_sales
 -- ============================================================================
 
 CREATE OR REPLACE FUNCTION get_daily_sales_summary(
@@ -172,7 +166,7 @@ DECLARE
   v_goal_met BOOLEAN;
   v_dow INTEGER;
 BEGIN
-  -- Get sales from daily_sales table (already deduplicated)
+  -- Get sales from new daily_sales table (each row = 1 unique sale)
   SELECT
     COALESCE(SUM(price), 0),
     COUNT(*)
@@ -180,30 +174,13 @@ BEGIN
   FROM daily_sales
   WHERE sale_date = p_date;
 
-  -- Dynamic target based on day of week
-  -- 1=Monday...7=Sunday (ISO)
+  -- Dynamic target based on day of week (ISO: 1=Mon...7=Sun)
   v_dow := EXTRACT(ISODOW FROM p_date);
-  
   CASE
     WHEN v_dow = 6 THEN v_target := 12000;  -- Sábado
     WHEN v_dow = 7 THEN v_target := 8000;   -- Domingo
     ELSE v_target := 6600;                   -- Seg-Sex
   END CASE;
-
-  -- Override with snapshot target if manually set
-  SELECT daily_sales_target INTO v_target
-  FROM dashboard_snapshot
-  WHERE snapshot_date = p_date
-    AND daily_sales_target IS NOT NULL;
-
-  IF v_target IS NULL THEN
-    v_dow := EXTRACT(ISODOW FROM p_date);
-    CASE
-      WHEN v_dow = 6 THEN v_target := 12000;
-      WHEN v_dow = 7 THEN v_target := 8000;
-      ELSE v_target := 6600;
-    END CASE;
-  END IF;
 
   v_goal_met := v_total >= v_target;
 
@@ -217,8 +194,9 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+
 -- ============================================================================
--- STEP 4: Update refresh_dashboard_snapshot() to use daily_sales table
+-- STEP 4: Recriar refresh_dashboard_snapshot() lendo da nova daily_sales
 -- ============================================================================
 
 CREATE OR REPLACE FUNCTION refresh_dashboard_snapshot(
@@ -234,7 +212,7 @@ DECLARE
   v_leader_points NUMERIC;
   v_leaderboard JSONB;
 BEGIN
-  -- Get sales from daily_sales (already deduplicated by delivery_id)
+  -- Get sales from daily_sales (each row = 1 unique sale by delivery_id)
   SELECT
     COALESCE(SUM(price), 0),
     COUNT(*)
@@ -249,21 +227,6 @@ BEGIN
     WHEN v_dow = 7 THEN v_target := 8000;
     ELSE v_target := 6600;
   END CASE;
-
-  -- Override with existing manual target if set
-  SELECT daily_sales_target INTO v_target
-  FROM dashboard_snapshot
-  WHERE snapshot_date = p_date
-    AND daily_sales_target IS NOT NULL;
-
-  IF v_target IS NULL THEN
-    v_dow := EXTRACT(ISODOW FROM p_date);
-    CASE
-      WHEN v_dow = 6 THEN v_target := 12000;
-      WHEN v_dow = 7 THEN v_target := 8000;
-      ELSE v_target := 6600;
-    END CASE;
-  END IF;
 
   -- Get total active players
   SELECT COUNT(*) INTO v_total_players
@@ -316,6 +279,7 @@ BEGIN
   ON CONFLICT (snapshot_date)
   DO UPDATE SET
     daily_sales_total = EXCLUDED.daily_sales_total,
+    daily_sales_target = EXCLUDED.daily_sales_target,
     daily_sales_count = EXCLUDED.daily_sales_count,
     daily_goal_met = EXCLUDED.daily_goal_met,
     leaderboard = EXCLUDED.leaderboard,
@@ -325,36 +289,38 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+
 -- ============================================================================
--- STEP 5: Reset today's inflated data for a clean start
+-- STEP 5: Limpar actions infladas de hoje e resetar snapshot
 -- ============================================================================
 
--- Remove today's inflated actions (old sales without delivery_id)
+-- Remove today's duplicated action rows
 DELETE FROM actions
 WHERE action_id = 'sell_product'
   AND DATE(created_at AT TIME ZONE 'America/Sao_Paulo') = (NOW() AT TIME ZONE 'America/Sao_Paulo')::DATE
   AND (attributes->>'store_wide_sale')::BOOLEAN = true;
 
--- Reset today's snapshot sales values
-UPDATE dashboard_snapshot
-SET daily_sales_total = 0,
-    daily_sales_count = 0,
-    daily_goal_met = false,
-    updated_at = NOW()
-WHERE snapshot_date = (NOW() AT TIME ZONE 'America/Sao_Paulo')::DATE;
-
--- Refresh the snapshot (will show 0 sales until new ones come in)
+-- Refresh snapshot (will show 0 sales since daily_sales is empty)
 SELECT refresh_dashboard_snapshot();
 
+
 -- ============================================================================
--- VERIFICATION
+-- STEP 6: Testar deduplicação
 -- ============================================================================
 
--- Check daily_sales table is empty (ready for new deduplicated sales)
-SELECT COUNT(*) AS sales_today FROM daily_sales
-WHERE sale_date = (NOW() AT TIME ZONE 'America/Sao_Paulo')::DATE;
+-- Primeira vez: deve registrar
+SELECT log_store_sale('TEST-001', 'TESTE DEDUP', 19.04, NOW());
 
--- Check dashboard shows 0
-SELECT snapshot_date, daily_sales_total, daily_sales_count, daily_goal_met
-FROM dashboard_snapshot
-WHERE snapshot_date = (NOW() AT TIME ZONE 'America/Sao_Paulo')::DATE;
+-- Segunda vez com mesmo delivery_id: deve retornar duplicate: true
+SELECT log_store_sale('TEST-001', 'TESTE DEDUP', 19.04, NOW());
+
+-- Limpar teste
+DELETE FROM daily_sales WHERE delivery_id = 'TEST-001';
+DELETE FROM actions WHERE attributes->>'delivery_id' = 'TEST-001';
+SELECT refresh_dashboard_snapshot();
+
+
+-- ============================================================================
+-- NOTA: A tabela daily_sales_old fica de backup. Pode dropar depois se quiser:
+-- DROP TABLE daily_sales_old;
+-- ============================================================================
