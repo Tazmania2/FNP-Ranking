@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { useDashboardSnapshot } from './hooks/useDashboardSnapshot';
 import { useChickenRaceManager } from './hooks/useChickenRaceManager';
 import { ChickenRace } from './components/ChickenRace';
@@ -39,22 +39,31 @@ function App() {
     };
   }, []);
 
-  // Dashboard snapshot: single source of truth
-  const { players, dailySales, totalPlayers, leaderPoints, loading, error, lastUpdated } =
+  // Dashboard snapshot: used ONLY for daily sales data
+  const { dailySales, loading: snapshotLoading, error: snapshotError, lastUpdated: snapshotLastUpdated } =
     useDashboardSnapshot(60000);
 
-  // Chicken race manager uses pre-fetched players (no API calls)
+  // Chicken race manager uses apiConfig to fetch monthly leaderboard via RPC
   const {
+    players,
     raceStatus,
     playerPositions,
     currentLeaderboard,
+    loading: raceLoading,
+    lastUpdated: raceLastUpdated,
     retryFailedOperation,
     clearError,
     error: raceError,
   } = useChickenRaceManager({
-    initialPlayers: players,
-    autoRefreshConfig: { enabled: false },
+    apiConfig: {
+      url: import.meta.env.VITE_SUPABASE_URL,
+      anonKey: import.meta.env.VITE_SUPABASE_ANON_KEY,
+    },
+    autoRefreshConfig: { enabled: true, interval: 60000 },
   });
+
+  const loading = raceLoading.leaderboards || raceLoading.currentLeaderboard;
+  const lastUpdated = raceLastUpdated || snapshotLastUpdated;
 
   // Show loading screen while first fetch is in progress
   if (loading && players.length === 0) {
@@ -80,9 +89,9 @@ function App() {
       <ResponsiveWrapper enableAutoDetection={true}>
         <div className="min-h-screen bg-gradient-to-br from-green-400 via-blue-500 to-purple-600">
           {/* Floating Error Display */}
-          {(error || raceError) && (
+          {(snapshotError || raceError) && (
             <FloatingErrorDisplay
-              error={raceError || { type: 'network', message: error || '', retryable: true, timestamp: Date.now() }}
+              error={raceError || { type: 'network', message: snapshotError || '', retryable: true, timestamp: Date.now() }}
               onRetry={retryFailedOperation}
               onDismiss={clearError}
             />
@@ -131,6 +140,13 @@ function App() {
                       isLoading={loading && players.length === 0}
                       playerPositions={playerPositions}
                     />
+                    {/* Empty state message when no ranking data */}
+                    {!loading && players.length === 0 && (
+                      <div className="text-center py-8">
+                        <div className="text-4xl mb-4">📊</div>
+                        <p className="text-white/80 text-lg">Nenhum dado de ranking disponível para este mês</p>
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -139,7 +155,7 @@ function App() {
                   <Sidebar
                     topPlayers={players.slice(0, 5)}
                     currentLeaderboard={currentLeaderboard}
-                    totalPlayers={totalPlayers}
+                    totalPlayers={players.length}
                     isLoading={loading && players.length === 0}
                   />
                 </div>

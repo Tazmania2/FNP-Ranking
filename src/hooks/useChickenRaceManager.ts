@@ -7,69 +7,7 @@ import { useLeaderboardStore } from '../store/leaderboardStore';
 import { appStoreActions } from '../store/appStore';
 import type { SupabaseConfig } from '../types';
 
-// Mock data for fallback - defined outside component to prevent re-creation
-const MOCK_LEADERBOARD_DATA = [
-  {
-    "_id": "ana.silva@exemplo.com.br_DEMO1",
-    "total": 95,
-    "position": 1,
-    "move": "up" as const,
-    "player": "ana.silva@exemplo.com.br",
-    "name": "Ana Silva",
-    "extra": { "cache": "DEMO1" },
-    "boardId": "DEMO"
-  },
-  {
-    "_id": "bruno.costa@exemplo.com.br_DEMO2",
-    "total": 87,
-    "position": 2,
-    "move": "up" as const,
-    "player": "bruno.costa@exemplo.com.br",
-    "name": "Bruno Costa",
-    "extra": { "cache": "DEMO2" },
-    "boardId": "DEMO"
-  },
-  {
-    "_id": "carlos.mendes@exemplo.com.br_DEMO3",
-    "total": 82,
-    "position": 3,
-    "move": "down" as const,
-    "player": "carlos.mendes@exemplo.com.br",
-    "name": "Carlos Mendes",
-    "extra": { "cache": "DEMO3" },
-    "boardId": "DEMO"
-  },
-  {
-    "_id": "diana.santos@exemplo.com.br_DEMO4",
-    "total": 78,
-    "position": 4,
-    "move": "up" as const,
-    "player": "diana.santos@exemplo.com.br",
-    "name": "Diana Santos",
-    "extra": { "cache": "DEMO4" },
-    "boardId": "DEMO"
-  },
-  {
-    "_id": "eduardo.lima@exemplo.com.br_DEMO5",
-    "total": 75,
-    "position": 5,
-    "move": "same" as const,
-    "player": "eduardo.lima@exemplo.com.br",
-    "name": "Eduardo Lima",
-    "extra": { "cache": "DEMO5" },
-    "boardId": "DEMO"
-  },
-  {
-    "_id": "fernanda.rocha@exemplo.com.br_DEMO6",
-    "total": 71,
-    "position": 6,
-    "move": "up" as const,
-    "player": "fernanda.rocha@exemplo.com.br",
-    "name": "Fernanda Rocha",
-    "extra": { "cache": "DEMO6" },
-    "boardId": "DEMO"
-  }
-];
+
 
 /**
  * Configuration for the chicken race manager
@@ -251,19 +189,18 @@ export const useChickenRaceManager = (config: ChickenRaceManagerConfig = {}) => 
   };
 
   /**
-   * Fallback to mock data when API fails repeatedly
+   * Handle empty state when API returns no data or fails repeatedly.
+   * Instead of falling back to mock data, show an empty players array.
    */
-  const activateMockDataFallback = useCallback(() => {
-    console.warn('🐔 API failed after maximum retries. Using mock data for demonstration.');
-    console.warn('Mock data is being displayed. This is not real leaderboard data.');
+  const handleEmptyState = useCallback((title?: string) => {
+    console.log('🐔 No leaderboard data available. Setting empty state.');
 
-    setUsingMockData(true);
+    setUsingMockData(false);
 
-    // Criar leaderboard simulado com tipagem adequada
-    const mockLeaderboard = {
-      _id: 'DEMO',
-      title: 'Ranking Demonstração (Dados Simulados)',
-      description: 'Estes são dados simulados mostrados devido a problemas de conexão com a API',
+    const emptyLeaderboard = {
+      _id: 'EMPTY',
+      title: title || 'Ranking FNP',
+      description: 'Nenhum dado de ranking disponível para este mês',
       principalType: 0,
       operation: {
         type: 0,
@@ -278,35 +215,33 @@ export const useChickenRaceManager = (config: ChickenRaceManagerConfig = {}) => 
       },
     };
 
-    // Set mock leaderboard and data in store
     const leaderboardStore = useLeaderboardStore.getState();
-    leaderboardStore.setLeaderboards([mockLeaderboard]);
-    leaderboardStore.setCurrentLeaderboard(mockLeaderboard);
-    leaderboardStore.setCurrentLeaderboardId(mockLeaderboard._id);
-    updatePlayers(processPlayersData(MOCK_LEADERBOARD_DATA));
+    leaderboardStore.setLeaderboards([emptyLeaderboard]);
+    leaderboardStore.setCurrentLeaderboard(emptyLeaderboard);
+    leaderboardStore.setCurrentLeaderboardId(emptyLeaderboard._id);
+    updatePlayers([]);
 
     // Clear any errors and loading states
-    console.log('🐔 Clearing all loading states and errors...');
     clearError();
     setLoadingState('leaderboards', false);
     setLoadingState('currentLeaderboard', false);
     setLoadingState('switchingLeaderboard', false);
 
-    // Force reset initialization flags
+    // Reset initialization flags
     isInitializingRef.current = false;
     retryCountRef.current = 0;
 
-    console.log('🐔 Mock data setup complete!');
-  }, [updatePlayers, clearError, setLoadingState, processPlayersData]);
+    console.log('🐔 Empty state setup complete.');
+  }, [updatePlayers, clearError, setLoadingState]);
 
   /**
    * Initialize the chicken race with leaderboards
    */
   const initializeRace = useCallback(async () => {
-    // If no API service is available, fall back to mock data immediately
+    // If no API service is available, show empty state
     if (!apiService) {
-      console.warn('🔐 No API service available (likely auth error), falling back to mock data');
-      activateMockDataFallback();
+      console.warn('🔐 No API service available (likely auth error), showing empty state');
+      handleEmptyState();
       return;
     }
 
@@ -318,8 +253,8 @@ export const useChickenRaceManager = (config: ChickenRaceManagerConfig = {}) => 
 
     // Check if we've exceeded max retries
     if (retryCountRef.current >= MAX_RETRY_ATTEMPTS) {
-      console.warn(`Maximum retry attempts (${MAX_RETRY_ATTEMPTS}) exceeded. Falling back to mock data.`);
-      activateMockDataFallback();
+      console.warn(`Maximum retry attempts (${MAX_RETRY_ATTEMPTS}) exceeded. Showing empty state.`);
+      handleEmptyState();
       return;
     }
 
@@ -368,25 +303,25 @@ export const useChickenRaceManager = (config: ChickenRaceManagerConfig = {}) => 
 
       // Check if it's an auth error
       if (error && typeof error === 'object' && 'type' in error && error.type === 'auth') {
-        console.warn('🔐 Authentication error detected, triggering demo mode');
+        console.warn('🔐 Authentication error detected');
         if (onAuthError) {
           onAuthError();
         }
         return;
       }
 
-      setError(error as any);
-
-      // Fall back to mock data if we've tried multiple times
-      if (retryCountRef.current >= 3) {
-        console.warn('Multiple initialization failures, falling back to mock data');
-        activateMockDataFallback();
+      // Fall back to empty state if we've tried multiple times
+      if (retryCountRef.current >= MAX_RETRY_ATTEMPTS) {
+        console.warn('Multiple initialization failures, showing empty state');
+        handleEmptyState();
+      } else {
+        setError(error as any);
       }
     } finally {
       setLoadingState('leaderboards', false);
       isInitializingRef.current = false;
     }
-  }, [apiService, setLoadingState, clearError, setError, switchToLeaderboard, activateMockDataFallback, onAuthError]);
+  }, [apiService, setLoadingState, clearError, setError, switchToLeaderboard, handleEmptyState, onAuthError, processPlayersData, updatePlayers]);
 
   /**
    * Manually refresh current leaderboard data
